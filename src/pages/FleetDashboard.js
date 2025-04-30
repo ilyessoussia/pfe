@@ -23,6 +23,7 @@ const FleetDashboard = () => {
   const [showForm, setShowForm] = useState(false);
   const [trucks, setTrucks] = useState([]);
   const [alerts, setAlerts] = useState([]);
+  const [dismissedAlerts, setDismissedAlerts] = useState([]);
   const [recentFuelActivities, setRecentFuelActivities] = useState([]);
   const [fleetStats, setFleetStats] = useState({ totalTrucks: 0 });
   const [mapView, setMapView] = useState(false);
@@ -86,11 +87,12 @@ const FleetDashboard = () => {
       const alerts = [];
       trucksData.forEach(truck => {
         const fuelEntry = fuelByTruck[truck.id];
-        if (fuelEntry && fuelEntry.litersPer100km > 15) {
+        if (fuelEntry && fuelEntry.litersPer100km > 40) {
           alerts.push({
             type: "fuel",
             message: `Consommation élevée pour ${truck.immatriculation}`,
             truckId: truck.id,
+            id: `fuel-${truck.id}`,
           });
         }
         const maintenance = maintenanceData.find(
@@ -101,28 +103,31 @@ const FleetDashboard = () => {
             type: "maintenance",
             message: `Maintenance en retard pour ${truck.immatriculation}`,
             truckId: truck.id,
+            id: `maintenance-${truck.id}`,
           });
         }
       });
-      stockData.forEach(item => {
+      stockData.forEach((item, index) => {
         if (item.quantity < 5) {
           alerts.push({
             type: "stock",
             message: `Stock faible pour ${item.material}`,
+            id: `stock-${index}`,
           });
         }
       });
-      partsData.forEach(part => {
+      partsData.forEach((part, index) => {
         if (part.quantity < 5) {
           alerts.push({
             type: "part",
             message: `Stock faible pour ${part.name}`,
+            id: `part-${index}`,
           });
         }
       });
       setAlerts(alerts);
 
-      // Compute recent fuel activities (limit to 5 items)
+      // Compute recent fuel activities (limit to 8 items)
       const fuelActivities = fuelSnapshot.docs
         .slice(0, 8)
         .map(doc => ({
@@ -161,6 +166,12 @@ const FleetDashboard = () => {
   // Handle refresh
   const handleRefresh = () => {
     fetchData();
+    setDismissedAlerts([]); // Reset dismissed alerts on refresh
+  };
+
+  // Handle closing an alert
+  const handleCloseAlert = (alertId) => {
+    setDismissedAlerts([...dismissedAlerts, alertId]);
   };
 
   // Apply filters, sorting, and search
@@ -281,34 +292,7 @@ const FleetDashboard = () => {
         {error && <div className="error-message">{error}</div>}
 
         <div className="dashboard-grid">
-          {/* Alerts Section (Left) */}
-          <section className={`alerts-section ${showAlerts ? "expanded" : "collapsed"}`}>
-            <div className="alerts-header">
-              <h2>⚠️ Alertes ({alerts.length})</h2>
-              <button onClick={() => setShowAlerts(!showAlerts)}>
-                {showAlerts ? "X" : "Afficher"}
-              </button>
-            </div>
-            {showAlerts && (
-              <div className="alerts-list">
-                {alerts.length > 0 ? (
-                  alerts.map((alert, index) => (
-                    <div key={index} className={`alert-card alert-${alert.type}`}>
-                      <span className="alert-icon">
-                        {alert.type === "fuel" ? "⛽" : alert.type === "maintenance" ? "🛠️" : "📦"}
-                      </span>
-                      <p>{alert.message}</p>
-                      {alert.truckId && <Link to={`/fleet/truck/${alert.truckId}`}>Détails</Link>}
-                    </div>
-                  ))
-                ) : (
-                  <p>Aucune alerte.</p>
-                )}
-              </div>
-            )}
-          </section>
-
-          {/* Main Dashboard Content (Center) */}
+          {/* Main Dashboard Content (Left) */}
           <div className="main-content">
             {/* Truck Filter and List/Map */}
             <section className="truck-section">
@@ -391,15 +375,15 @@ const FleetDashboard = () => {
                         <p className="truck-model">{truck.model}</p>
                         <div className="truck-details">
                           <div className="detail-row">
-                            <span className="detail-label">👤</span>
+                            <span className="detail-label">👤chaffeur</span>
                             <span className="detail-value">{truck.driver}</span>
                           </div>
                           <div className="detail-row">
-                            <span className="detail-label">⛽</span>
+                            <span className="detail-label">⛽Dernier plein</span>
                             <span className="detail-value">{truck.lastFuel}</span>
                           </div>
                           <div className="detail-row">
-                            <span className="detail-label">🛣️</span>
+                            <span className="detail-label">🛣️Kilomètrage </span>
                             <span className="detail-value">{truck.currentMileage}</span>
                           </div>
                         </div>
@@ -416,6 +400,41 @@ const FleetDashboard = () => {
               )}
             </section>
           </div>
+
+          {/* Alerts Section (Middle) */}
+          <section className={`alerts-section ${showAlerts ? "expanded" : "collapsed"}`}>
+            <div className="alerts-header">
+              <h2>⚠️ Alertes ({alerts.filter(alert => !dismissedAlerts.includes(alert.id)).length})</h2>
+              <button onClick={() => setShowAlerts(!showAlerts)}>
+                {showAlerts ? "X" : "Afficher"}
+              </button>
+            </div>
+            {showAlerts && (
+              <div className="alerts-list">
+                {alerts.length > 0 ? (
+                  alerts
+                    .filter(alert => !dismissedAlerts.includes(alert.id))
+                    .map((alert, index) => (
+                      <div key={alert.id} className={`alert-card alert-${alert.type}`}>
+                        <span className="alert-icon">
+                          {alert.type === "fuel" ? "⛽" : alert.type === "maintenance" ? "🛠️" : "📦"}
+                        </span>
+                        <p>{alert.message}</p>
+                        {alert.truckId && <Link to={`/fleet/truck/${alert.truckId}`}>Détails</Link>}
+                        <button
+                          className="close-alert"
+                          onClick={() => handleCloseAlert(alert.id)}
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    ))
+                ) : (
+                  <p>Aucune alerte.</p>
+                )}
+              </div>
+            )}
+          </section>
 
           {/* Recent Fuel Activities (Right) */}
           <section className={`recent-fuel-activities ${showFuelActivities ? "expanded" : "collapsed"}`}>

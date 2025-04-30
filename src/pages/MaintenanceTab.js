@@ -385,7 +385,7 @@ const MaintenanceTab = ({ maintenanceHistory: initialMaintenanceHistory = [] }) 
                         <td>{maintenance.type}</td>
                         <td>{maintenance.kilometrage}</td>
                         <td>{maintenance.technicien}</td>
-                        <td>{maintenance.cout?.toFixed(2) || 0} €</td>
+                        <td>{maintenance.cout?.toFixed(2) || 0} DT</td>
                         <td>
                           <span className="status completed">Terminé</span>
                         </td>
@@ -566,7 +566,7 @@ const MaintenanceTab = ({ maintenanceHistory: initialMaintenanceHistory = [] }) 
                 />
               </div>
               <div className="form-group">
-                <label htmlFor="cout">Coût estimé (€)</label>
+                <label htmlFor="cout">Coût estimé (DT)</label>
                 <input
                   type="number"
                   id="cout"
