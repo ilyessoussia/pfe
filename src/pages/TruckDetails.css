@@ -1,0 +1,298 @@
+.truck-details-container {
+  display: flex;
+  min-height: 100vh;
+  background-color: #0f0f0f;
+  font-family: 'Playfair Display', 'Times New Roman', serif;
+}
+
+.fleet-title {
+  color: #d4af37; 
+}
+
+.truck-content {
+  flex: 1;
+  padding: 25px;
+  background-color: #121212;
+  color: #e5e5e5;
+}
+
+header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 25px;
+}
+
+header h1 {
+  margin: 0;
+  font-size: 2rem;
+  color: #d4af37;
+  font-weight: 400;
+  letter-spacing: 1px;
+}
+
+.back-btn {
+  text-decoration: none;
+  color: #d4af37;
+  font-weight: 400;
+  display: flex;
+  align-items: center;
+  transition: all 0.3s;
+}
+
+.back-btn:hover {
+  color: #c4a030;
+}
+
+.edit-truck {
+  background-color: #d4af37;
+  color: #000000;
+  border: none;
+  border-radius: 3px;
+  padding: 10px 20px;
+  cursor: pointer;
+  font-weight: 500;
+  letter-spacing: 0.5px;
+  transition: all 0.3s;
+}
+
+.edit-truck:hover {
+  background-color: #c4a030;
+}
+
+/* Tabs styling */
+.tabs {
+  display: flex;
+  margin-bottom: 25px;
+  border-bottom: 1px solid #333333;
+}
+
+.tab {
+  background: none;
+  border: none;
+  padding: 12px 24px;
+  font-size: 1rem;
+  cursor: pointer;
+  border-bottom: 3px solid transparent;
+  margin-right: 15px;
+  transition: all 0.3s;
+  color: #a9a9a9;
+  letter-spacing: 0.5px;
+}
+
+.tab:hover {
+  color: #d4af37;
+}
+
+.tab.active {
+  border-bottom: 3px solid #d4af37;
+  color: #d4af37;
+  font-weight: 400;
+}
+
+/* Content sections styling */
+.overview-content, .fuel-history, .maintenance-tab {
+  background-color: #1a1a1a;
+  border-radius: 5px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+  padding: 25px;
+  border: 1px solid #333333;
+}
+
+/* Truck info section */
+.truck-info {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 25px;
+  margin-bottom: 30px;
+}
+
+.driver-info, .truck-details {
+  background-color: #222222;
+  padding: 25px;
+  border-radius: 5px;
+  border: 1px solid #333333;
+  transition: all 0.3s;
+}
+
+.driver-info:hover, .truck-details:hover {
+  border-color: #d4af37;
+  box-shadow: 0 8px 15px rgba(0, 0, 0, 0.3);
+}
+
+.driver-info h3, .truck-details h3 {
+  margin-top: 0;
+  margin-bottom: 20px;
+  color: #d4af37;
+  font-size: 1.3rem;
+  font-weight: 400;
+  letter-spacing: 0.5px;
+}
+
+
+/* Section headers with edit buttons */
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+  border-bottom: 1px solid #333;
+  padding-bottom: 0.5rem;
+}
+
+.section-header h3 {
+  margin: 0;
+  color: #FFD700;
+}
+
+/* Edit button styling */
+.edit-btn {
+  padding: 0.4rem 0.8rem;
+  background-color: #333;
+  border: 1px solid #FFD700;
+  border-radius: 6px;
+  color: #FFD700;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: all 0.2s;
+}
+
+.edit-btn:hover {
+  background-color: #444;
+}
+
+/* Edit forme styling */
+.edit-forme {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+  background-color: #111;
+  padding: 1.5rem;
+  border-radius: 8px;
+  box-shadow: 0 0 15px rgba(255, 215, 0, 0.15);
+  margin-bottom: 1rem;
+}
+
+.forme-group {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 0.5rem;
+}
+
+.forme-group label {
+  font-weight: bold;
+  margin-bottom: 0.4rem;
+  color: #FFD700;
+}
+
+.forme-group input,
+.forme-group select {
+  padding: 0.7rem;
+  background-color: #222;
+  color: #FFD700;
+  border: 1px solid #FFD700;
+  border-radius: 6px;
+  font-size: 1rem;
+  transition: border 0.2s, background-color 0.2s;
+}
+
+.forme-group input:focus,
+.forme-group select:focus {
+  border-color: #ffcc00;
+  outline: none;
+  background-color: #333;
+}
+
+
+/* Form actions (save/cancel buttons) */
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.save-btn {
+  padding: 0.6rem 1.2rem;
+  background-color: #FFD700;
+  color: #111;
+  border: none;
+  border-radius: 6px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.save-btn:hover {
+  background-color: #e6c200;
+}
+
+.cancel-btn {
+  padding: 0.6rem 1.2rem;
+  background-color: #555;
+  color: #FFD700;
+  border: none;
+  border-radius: 6px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.cancel-btn:hover {
+  background-color: #333;
+}
+
+
+
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .truck-details-container {
+    flex-direction: column;
+  }
+  
+  .sidebar {
+    width: 100%;
+    padding: 15px;
+  }
+  
+  .truck-info {
+    grid-template-columns: 1fr;
+  }
+  
+  .maintenance-stats {
+    grid-template-columns: 1fr;
+  }
+  
+  .maintenance-header, .fuel-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 15px;
+  }
+  
+  .maintenance-table {
+    display: block;
+    overflow-x: auto;
+  }
+  
+  .tabs {
+    overflow-x: auto;
+    white-space: nowrap;
+    padding-bottom: 5px;
+  }
+  
+  header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 15px;
+  }
+  
+  .header-actions {
+    width: 100%;
+  }
+}
+
+
+
+
+

@@ -1,0 +1,681 @@
+/* TripScheduler.css */
+.trip-scheduler-container {
+  display: flex;
+  min-height: 100vh;
+  background-color: #0f0f0f;
+  font-family: 'Playfair Display', 'Times New Roman', serif;
+}
+
+.trip-scheduler-sidebar {
+  width: 240px;
+  background-color: #000000;
+  color: #d4af37;
+  padding: 20px;
+  box-shadow: 2px 0 10px rgba(0, 0, 0, 0.4);
+  display: flex;
+  flex-direction: column;
+}
+
+.trip-scheduler-fleet-title {
+  font-size: 1.5rem;
+  margin-bottom: 30px;
+  padding-bottom: 15px;
+  border-bottom: 1px solid rgba(212, 175, 55, 0.3);
+  letter-spacing: 1px;
+  font-weight: 400;
+  color: #d4af37;
+}
+
+.trip-scheduler-sidebar nav {
+  flex: 1;
+}
+
+.trip-scheduler-sidebar nav ul {
+  list-style: none;
+  padding: 0;
+}
+
+.trip-scheduler-sidebar nav ul li {
+  margin-bottom: 10px;
+}
+
+.trip-scheduler-sidebar nav ul li.active a {
+  background-color: rgba(212, 175, 55, 0.15);
+  border-left: 3px solid #d4af37;
+}
+
+.trip-scheduler-sidebar nav ul li a {
+  color: #d4af37;
+  text-decoration: none;
+  display: block;
+  padding: 12px 10px;
+  border-radius: 3px;
+  transition: all 0.3s;
+  border-left: 3px solid transparent;
+}
+
+.trip-scheduler-sidebar nav ul li a:hover {
+  background-color: rgba(212, 175, 55, 0.1);
+}
+
+.trip-scheduler-sidebar-footer {
+  margin-top: auto;
+  padding-top: 20px;
+  border-top: 1px solid rgba(212, 175, 55, 0.2);
+  font-size: 0.8rem;
+  color: rgba(212, 175, 55, 0.7);
+}
+
+.trip-scheduler-content {
+  flex: 1;
+  padding: 25px;
+  background-color: #121212;
+  color: #e5e5e5;
+}
+
+.trip-scheduler-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 25px;
+}
+
+.trip-scheduler-header h1 {
+  margin: 0;
+  font-size: 2rem;
+  color: #d4af37;
+  font-weight: 400;
+  letter-spacing: 1px;
+}
+
+.trip-scheduler-header-actions {
+  display: flex;
+  gap: 15px;
+}
+
+.trip-scheduler-add-btn,
+.trip-scheduler-back-btn {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 3px;
+  cursor: pointer;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  transition: all 0.3s;
+  letter-spacing: 0.5px;
+  background-color: #d4af37;
+  color: #000000;
+}
+
+.trip-scheduler-back-btn {
+  text-decoration: none;
+}
+
+.trip-scheduler-add-btn:hover,
+.trip-scheduler-back-btn:hover {
+  background-color: #c4a030;
+}
+
+.trip-scheduler-error-message {
+  color: #ff6b6b;
+  font-size: 0.85rem;
+  padding: 10px;
+  background-color: rgba(255, 107, 107, 0.2);
+  border-radius: 3px;
+  margin-bottom: 25px;
+  border: 1px solid #ff6b6b;
+}
+
+.trip-scheduler-success-message {
+  color: #6dd17a;
+  font-size: 0.85rem;
+  padding: 10px;
+  background-color: rgba(46, 125, 50, 0.2);
+  border-radius: 3px;
+  margin-bottom: 25px;
+  border: 1px solid rgba(46, 125, 50, 0.3);
+}
+
+.trip-scheduler-tabs {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 25px;
+}
+
+.trip-scheduler-tab {
+  padding: 8px 18px;
+  border: 1px solid #333333;
+  border-radius: 3px;
+  background-color: #1e1e1e;
+  color: #a9a9a9;
+  cursor: pointer;
+  transition: all 0.3s;
+  letter-spacing: 0.5px;
+  font-size: 0.95rem;
+}
+
+.trip-scheduler-tab:hover {
+  background-color: #252525;
+  border-color: #d4af37;
+  color: #d4af37;
+}
+
+.trip-scheduler-tab.active {
+  background-color: #d4af37;
+  color: #000000;
+  border-color: #d4af37;
+}
+
+.trip-scheduler-form-section {
+  background-color: #1a1a1a;
+  border-radius: 5px;
+  padding: 25px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+  border: 1px solid #333333;
+}
+
+.trip-scheduler-form-section h2 {
+  margin: 0 0 20px 0;
+  font-size: 1.5rem;
+  color: #d4af37;
+  font-weight: 400;
+  letter-spacing: 0.5px;
+}
+
+.trip-scheduler-form {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.trip-scheduler-form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  position: relative;
+}
+
+.trip-scheduler-form-group label {
+  color: #d4af37;
+  font-weight: 400;
+  font-size: 0.95rem;
+}
+
+.trip-scheduler-form-group input,
+.trip-scheduler-form-group select {
+  padding: 10px;
+  background-color: #2a2a2a;
+  color: #e5e5e5;
+  border: 1px solid #d4af37;
+  border-radius: 3px;
+  font-size: 0.95rem;
+  transition: all 0.3s;
+}
+
+.trip-scheduler-form-group input:focus,
+.trip-scheduler-form-group select:focus {
+  border-color: #c4a030;
+  outline: none;
+  background-color: #333333;
+}
+
+.trip-scheduler-form-group input::placeholder {
+  color: #a9a9a9;
+}
+
+.trip-scheduler-truck-list {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background-color: #2a2a2a;
+  border: 1px solid #d4af37;
+  border-radius: 3px;
+  max-height: 200px;
+  overflow-y: auto;
+  z-index: 1000;
+}
+
+.trip-scheduler-truck-item {
+  padding: 10px;
+  color: #e5e5e5;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.trip-scheduler-truck-item:hover {
+  background-color: #333333;
+}
+
+.trip-scheduler-no-trucks {
+  padding: 10px;
+  color: #a9a9a9;
+  text-align: center;
+}
+
+.trip-scheduler-form-actions {
+  display: flex;
+  gap: 15px;
+  margin-top: 15px;
+}
+
+.trip-scheduler-save-btn {
+  padding: 10px 20px;
+  background-color: #d4af37;
+  color: #000000;
+  border: none;
+  border-radius: 3px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.3s;
+  letter-spacing: 0.5px;
+}
+
+.trip-scheduler-save-btn:hover {
+  background-color: #c4a030;
+}
+
+.trip-scheduler-cancel-btn {
+  padding: 10px 20px;
+  background-color: #1e1e1e;
+  color: #d4af37;
+  border: 1px solid #d4af37;
+  border-radius: 3px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.3s;
+  letter-spacing: 0.5px;
+}
+
+.trip-scheduler-cancel-btn:hover {
+  background-color: #252525;
+}
+
+.trip-scheduler-list-section {
+  background-color: #1a1a1a;
+  border-radius: 5px;
+  padding: 25px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+  border: 1px solid #333333;
+}
+
+.trip-scheduler-filter-controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.trip-scheduler-filter-controls h2 {
+  margin: 0;
+  font-size: 1.5rem;
+  color: #d4af37;
+  font-weight: 400;
+  letter-spacing: 0.5px;
+}
+
+.trip-scheduler-filter-options {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.trip-scheduler-search-bar,
+.trip-scheduler-filter-status {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.trip-scheduler-label {
+  color: #e5e5e5;
+  font-size: 0.95rem;
+}
+
+.trip-scheduler-search-bar input {
+  padding: 8px;
+  background-color: #2a2a2a;
+  color: #e5e5e5;
+  border: 1px solid #d4af37;
+  border-radius: 3px;
+  font-size: 0.95rem;
+  transition: all 0.3s;
+  width: 200px;
+}
+
+.trip-scheduler-search-bar input:focus {
+  border-color: #c4a030;
+  outline: none;
+  background-color: #333333;
+}
+
+.trip-scheduler-search-bar input::placeholder {
+  color: #a9a9a9;
+}
+
+.trip-scheduler-filter-status select {
+  padding: 8px;
+  background-color: #2a2a2a;
+  color: #e5e5e5;
+  border: 1px solid #d4af37;
+  border-radius: 3px;
+  font-size: 0.95rem;
+  transition: all 0.3s;
+}
+
+.trip-scheduler-filter-status select:focus {
+  border-color: #c4a030;
+  outline: none;
+  background-color: #333333;
+}
+
+.trip-scheduler-items {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 25px;
+}
+
+.trip-scheduler-item {
+  background-color: #1a1a1a;
+  border-radius: 5px;
+  padding: 22px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+  transition: transform 0.3s, box-shadow 0.3s;
+  border: 1px solid #333333;
+}
+
+.trip-scheduler-item-scheduled {
+  background-color: rgba(212, 175, 55, 0.1);
+}
+
+.trip-scheduler-item-in_progress {
+  background-color: rgba(255, 235, 59, 0.1);
+}
+
+.trip-scheduler-item-completed {
+  background-color: rgba(46, 125, 50, 0.1);
+}
+
+.trip-scheduler-item-canceled {
+  background-color: rgba(128, 128, 128, 0.1);
+  opacity: 0.7;
+}
+
+.trip-scheduler-item:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+  border-color: #d4af37;
+}
+
+.trip-scheduler-item h3 {
+  margin: 0 0 15px 0;
+  font-size: 1.8rem;
+  color: #d4af37;
+  font-weight: 400;
+  letter-spacing: 0.5px;
+}
+
+.trip-scheduler-item p {
+  margin: 0 0 10px 0;
+  font-size: 0.95rem;
+  color: #a9a9a9;
+}
+
+.trip-scheduler-item-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 15px;
+}
+
+.trip-scheduler-cancel-trip-btn,
+.trip-scheduler-complete-btn {
+  padding: 8px 15px;
+  border: none;
+  border-radius: 3px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.3s;
+  letter-spacing: 0.5px;
+}
+
+.trip-scheduler-cancel-trip-btn {
+  background-color: #ff6b6b;
+  color: #ffffff;
+}
+
+.trip-scheduler-cancel-trip-btn:hover {
+  background-color: #e55a5a;
+}
+
+.trip-scheduler-complete-btn {
+  background-color: #6dd17a;
+  color: #000000;
+}
+
+.trip-scheduler-complete-btn:hover {
+  background-color: #5cbf6a;
+}
+
+.trip-scheduler-timeline {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.trip-scheduler-timeline-item {
+  display: flex;
+  gap: 20px;
+  background-color: #1a1a1a;
+  border-radius: 5px;
+  padding: 22px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+  border: 1px solid #333333;
+  position: relative;
+}
+
+.trip-scheduler-timeline-item::before {
+  content: '';
+  position: absolute;
+  left: 100px;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background-color: #d4af37;
+}
+
+.trip-scheduler-timeline-date {
+  width: 80px;
+  font-size: 1rem;
+  color: #d4af37;
+  font-weight: 500;
+  text-align: right;
+  position: relative;
+}
+
+.trip-scheduler-timeline-date::after {
+  content: '●';
+  position: absolute;
+  right: -10px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #d4af37;
+  font-size: 1.5rem;
+}
+
+.trip-scheduler-timeline-content {
+  flex: 1;
+}
+
+.trip-scheduler-timeline-content h3 {
+  margin: 0 0 15px 0;
+  font-size: 1.8rem;
+  color: #d4af37;
+  font-weight: 400;
+  letter-spacing: 0.5px;
+}
+
+.trip-scheduler-timeline-content p {
+  margin: 0 0 10px 0;
+  font-size: 0.95rem;
+  color: #a9a9a9;
+}
+
+.trip-scheduler-no-trips,
+.trip-scheduler-loading {
+  text-align: center;
+  padding: 25px;
+  color: #a9a9a9;
+  font-size: 0.95rem;
+  background-color: #1a1a1a;
+  border-radius: 5px;
+}
+
+.trip-scheduler-pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 15px;
+  margin-top: 25px;
+}
+
+.trip-scheduler-pagination button {
+  padding: 8px 15px;
+  background-color: #d4af37;
+  color: #000000;
+  border: none;
+  border-radius: 3px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.3s;
+}
+
+.trip-scheduler-pagination button:disabled {
+  background-color: #666;
+  cursor: not-allowed;
+}
+
+.trip-scheduler-pagination button:hover:not(:disabled) {
+  background-color: #c4a030;
+}
+
+.trip-scheduler-pagination span {
+  color: #e5e5e5;
+  font-size: 0.95rem;
+}
+
+.trip-scheduler-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.7);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.trip-scheduler-modal-content {
+  background-color: #1a1a1a;
+  border-radius: 5px;
+  padding: 25px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+  border: 1px solid #333333;
+  position: relative;
+  width: 90%;
+  max-width: 500px;
+}
+
+.trip-scheduler-modal-close {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: none;
+  border: none;
+  color: #d4af37;
+  font-size: 1.2rem;
+  cursor: pointer;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .trip-scheduler-container {
+      flex-direction: column;
+  }
+
+  .trip-scheduler-sidebar {
+      width: 100%;
+      padding: 15px;
+  }
+
+  .trip-scheduler-content {
+      padding: 15px;
+  }
+
+  .trip-scheduler-header {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 15px;
+  }
+
+  .trip-scheduler-header-actions {
+      width: 100%;
+  }
+
+  .trip-scheduler-items {
+      grid-template-columns: 1fr;
+  }
+
+  .trip-scheduler-tabs {
+      flex-direction: column;
+      gap: 10px;
+  }
+
+  .trip-scheduler-tab {
+      width: 100%;
+  }
+
+  .trip-scheduler-filter-controls {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 10px;
+  }
+
+  .trip-scheduler-filter-options {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 10px;
+  }
+
+  .trip-scheduler-search-bar,
+  .trip-scheduler-filter-status {
+      width: 100%;
+  }
+
+  .trip-scheduler-search-bar input {
+      width: 100%;
+  }
+
+  .trip-scheduler-filter-status select {
+      width: 100%;
+  }
+
+  .trip-scheduler-timeline-item {
+      flex-direction: column;
+  }
+
+  .trip-scheduler-timeline-date {
+      text-align: left;
+      margin-bottom: 10px;
+  }
+
+  .trip-scheduler-timeline-date::after {
+      display: none;
+  }
+
+  .trip-scheduler-timeline-item::before {
+      display: none;
+  }
+}

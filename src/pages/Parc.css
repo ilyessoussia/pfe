@@ -1,0 +1,479 @@
+/* Parc.css */
+.fleet-management-container {
+  display: flex;
+  min-height: 100vh;
+  background-color: #0f0f0f;
+  font-family: 'Playfair Display', 'Times New Roman', serif;
+}
+
+.fleet-management-sidebar {
+  width: 240px;
+  background-color: #000000;
+  color: #d4af37;
+  padding: 20px;
+  box-shadow: 2px 0 10px rgba(0, 0, 0, 0.4);
+  display: flex;
+  flex-direction: column;
+}
+
+.fleet-management-fleet-title {
+  font-size: 1.5rem;
+  margin-bottom: 30px;
+  padding-bottom: 15px;
+  border-bottom: 1px solid rgba(212, 175, 55, 0.3);
+  letter-spacing: 1px;
+  font-weight: 400;
+  color: #d4af37;
+}
+
+.fleet-management-sidebar nav {
+  flex: 1;
+}
+
+.fleet-management-sidebar nav ul {
+  list-style: none;
+  padding: 0;
+}
+
+.fleet-management-sidebar nav ul li {
+  margin-bottom: 10px;
+}
+
+.fleet-management-sidebar nav ul li.active a {
+  background-color: rgba(212, 175, 55, 0.15);
+  border-left: 3px solid #d4af37;
+}
+
+.fleet-management-sidebar nav ul li a {
+  color: #d4af37;
+  text-decoration: none;
+  display: block;
+  padding: 12px 10px;
+  border-radius: 3px;
+  transition: all 0.3s;
+  border-left: 3px solid transparent;
+}
+
+.fleet-management-sidebar nav ul li a:hover {
+  background-color: rgba(212, 175, 55, 0.1);
+}
+
+.fleet-management-sidebar-footer {
+  margin-top: auto;
+  padding-top: 20px;
+  border-top: 1px solid rgba(212, 175, 55, 0.2);
+  font-size: 0.8rem;
+  color: rgba(212, 175, 55, 0.7);
+}
+
+.fleet-management-content {
+  flex: 1;
+  padding: 25px;
+  background-color: #121212;
+  color: #e5e5e5;
+}
+
+.fleet-management-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 25px;
+}
+
+.fleet-management-header h1 {
+  margin: 0;
+  font-size: 2rem;
+  color: #d4af37;
+  font-weight: 400;
+  letter-spacing: 1px;
+}
+
+.fleet-management-last-updated {
+  margin: 5px 0 0;
+  color: #a9a9a9;
+  font-size: 0.85rem;
+}
+
+.fleet-management-header-actions {
+  display: flex;
+  gap: 15px;
+}
+
+.fleet-management-refresh-btn,
+.fleet-management-back-btn {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 3px;
+  cursor: pointer;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  transition: all 0.3s;
+  letter-spacing: 0.5px;
+  text-decoration: none;
+}
+
+.fleet-management-refresh-btn {
+  background-color: #1e1e1e;
+  color: #d4af37;
+  border: 1px solid #d4af37;
+}
+
+.fleet-management-refresh-btn:hover {
+  background-color: #252525;
+}
+
+.fleet-management-back-btn {
+  background-color: #d4af37;
+  color: #000000;
+}
+
+.fleet-management-back-btn:hover {
+  background-color: #c4a030;
+}
+
+.fleet-management-tabs {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 25px;
+}
+
+.fleet-management-tab {
+  padding: 8px 18px;
+  border: 1px solid #333333;
+  border-radius: 3px;
+  background-color: #1e1e1e;
+  color: #a9a9a9;
+  cursor: pointer;
+  transition: all 0.3s;
+  letter-spacing: 0.5px;
+  font-size: 0.95rem;
+}
+
+.fleet-management-tab:hover {
+  background-color: #252525;
+  border-color: #d4af37;
+  color: #d4af37;
+}
+
+.fleet-management-tab.active {
+  background-color: #d4af37;
+  color: #000000;
+  border-color: #d4af37;
+}
+
+.fleet-management-alert {
+  padding: 10px;
+  margin-bottom: 25px;
+  border-radius: 3px;
+  font-weight: 500;
+  font-size: 0.85rem;
+}
+
+.fleet-management-success-alert {
+  background-color: rgba(46, 125, 50, 0.2);
+  color: #6dd17a;
+  border: 1px solid rgba(46, 125, 50, 0.3);
+}
+
+.fleet-management-error-alert {
+  background-color: rgba(255, 107, 107, 0.2);
+  color: #ff6b6b;
+  border: 1px solid #ff6b6b;
+}
+
+.fleet-management-inventory-section {
+  background-color: #1a1a1a;
+  border-radius: 5px;
+  padding: 25px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+  margin-bottom: 30px;
+  border: 1px solid #333333;
+}
+
+.fleet-management-filter-controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.fleet-management-filter-controls h2 {
+  margin: 0;
+  font-size: 1.5rem;
+  color: #d4af37;
+  font-weight: 400;
+  letter-spacing: 0.5px;
+}
+
+.fleet-management-filter-options {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.fleet-management-label {
+  color: #e5e5e5;
+  font-size: 0.95rem;
+}
+
+.fleet-management-search-bar {
+  padding: 8px;
+  background-color: #2a2a2a;
+  color: #e5e5e5;
+  border: 1px solid #d4af37;
+  border-radius: 3px;
+  font-size: 0.95rem;
+  transition: all 0.3s;
+}
+
+.fleet-management-search-bar::placeholder {
+  color: #a9a9a9;
+}
+
+.fleet-management-search-bar:focus {
+  border-color: #c4a030;
+  outline: none;
+  background-color: #333333;
+}
+
+.fleet-management-filter-options select {
+  padding: 8px;
+  background-color: #2a2a2a;
+  color: #e5e5e5;
+  border: 1px solid #d4af37;
+  border-radius: 3px;
+  font-size: 0.95rem;
+  transition: all 0.3s;
+}
+
+.fleet-management-filter-options select:focus {
+  border-color: #c4a030;
+  outline: none;
+  background-color: #333333;
+}
+
+.fleet-management-loading {
+  text-align: center;
+  padding: 25px;
+  color: #a9a9a9;
+  font-size: 0.95rem;
+  background-color: #1a1a1a;
+  border-radius: 5px;
+}
+
+.fleet-management-parts-table-container {
+  overflow-x: auto;
+}
+
+.fleet-management-parts-table {
+  width: 100%;
+  border-collapse: collapse;
+  background-color: #1a1a1a;
+  color: #e5e5e5;
+  border: 1px solid #ffffff;
+}
+
+.fleet-management-parts-table thead {
+  background-color: #000000;
+  color: #d4af37;
+}
+
+.fleet-management-parts-table th {
+  text-align: left;
+  padding: 12px;
+  font-weight: 500;
+  font-size: 1rem;
+  letter-spacing: 0.5px;
+  border: 1px solid #ffffff;
+}
+
+.fleet-management-parts-table td {
+  padding: 12px;
+  color: #d0d0d0;
+  font-weight: 400;
+  font-size: 1rem;
+  border: 1px solid #ffffff;
+}
+
+.fleet-management-parts-table tr:hover {
+  background-color: rgba(212, 175, 55, 0.1);
+}
+
+.fleet-management-parts-table .fleet-management-no-data {
+  text-align: center;
+  padding: 25px;
+  color: #a9a9a9;
+  font-size: 1rem;
+  background-color: #1a1a1a;
+}
+
+.fleet-management-edit-btn {
+  padding: 8px 15px;
+  background-color: #d4af37;
+  color: #000000;
+  border: none;
+  border-radius: 3px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.3s;
+  letter-spacing: 0.5px;
+  font-size: 0.85rem;
+}
+
+.fleet-management-edit-btn:hover {
+  background-color: #c4a030;
+}
+
+.fleet-management-add-part-section {
+  background-color: #1a1a1a;
+  border-radius: 5px;
+  padding: 25px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+  margin-bottom: 30px;
+  border: 1px solid #333333;
+}
+
+.fleet-management-add-part-section h2 {
+  margin: 0 0 20px 0;
+  font-size: 1.5rem;
+  color: #d4af37;
+  font-weight: 400;
+  letter-spacing: 0.5px;
+}
+
+.fleet-management-part-form {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.fleet-management-form-row {
+  display: flex;
+  gap: 15px;
+}
+
+.fleet-management-form-row .fleet-management-form-group {
+  flex: 1;
+}
+
+.fleet-management-form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.fleet-management-form-group label {
+  color: #d4af37;
+  font-weight: 400;
+  font-size: 0.95rem;
+}
+
+.fleet-management-form-group input,
+.fleet-management-form-group textarea,
+.fleet-management-form-group select {
+  padding: 10px;
+  background-color: #2a2a2a;
+  color: #e5e5e5;
+  border: 1px solid #d4af37;
+  border-radius: 3px;
+  font-size: 0.95rem;
+  transition: all 0.3s;
+}
+
+.fleet-management-form-group input:focus,
+.fleet-management-form-group textarea:focus,
+.fleet-management-form-group select:focus {
+  border-color: #c4a030;
+  outline: none;
+  background-color: #333333;
+}
+
+.fleet-management-form-group input::placeholder,
+.fleet-management-form-group textarea::placeholder {
+  color: #a9a9a9;
+}
+
+.fleet-management-form-actions {
+  display: flex;
+  gap: 15px;
+  margin-top: 15px;
+}
+
+.fleet-management-btn-submit {
+  padding: 10px 20px;
+  background-color: #d4af37;
+  color: #000000;
+  border: none;
+  border-radius: 3px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.3s;
+  letter-spacing: 0.5px;
+}
+
+.fleet-management-btn-submit:hover {
+  background-color: #c4a030;
+}
+
+.fleet-management-btn-cancel {
+  padding: 10px 20px;
+  background-color: #1e1e1e;
+  color: #d4af37;
+  border: 1px solid #d4af37;
+  border-radius: 3px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.3s;
+  letter-spacing: 0.5px;
+}
+
+.fleet-management-btn-cancel:hover {
+  background-color: #252525;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .fleet-management-container {
+    flex-direction: column;
+  }
+
+  .fleet-management-sidebar {
+    width: 100%;
+    padding: 15px;
+  }
+
+  .fleet-management-content {
+    padding: 15px;
+  }
+
+  .fleet-management-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 15px;
+  }
+
+  .fleet-management-header-actions {
+    width: 100%;
+  }
+
+  .fleet-management-tabs {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .fleet-management-tab {
+    width: 100%;
+  }
+
+  .fleet-management-filter-controls {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  .fleet-management-form-row {
+    flex-direction: column;
+    gap: 15px;
+  }
+}

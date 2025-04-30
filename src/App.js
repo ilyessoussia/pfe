@@ -1,0 +1,73 @@
+import React from "react";
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import Home from "./Home";
+import Login from "./pages/Login";
+import Fleet from "./pages/FleetDashboard";
+import TruckDetails from "./pages/TruckDetails";
+import Parc from "./pages/Parc";
+import StockManagement from "./pages/StockManagement";
+import TripScheduler from "./pages/TripScheduler";
+import MaintenanceOverview from "./pages/MaintenanceOverview";
+import ProtectedRoute from "./ProtectedRoute";
+import { AuthProvider } from "./AuthContext";
+
+const App = () => (
+  <AuthProvider>
+    <Router>
+      <Routes>
+        <Route path="/" element={<Home />} />
+        <Route path="/fleet" element={<Login />} />
+        <Route
+          path="/fleet/dashboard"
+          element={
+            <ProtectedRoute>
+              <Fleet />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/fleet/truck/:id"
+          element={
+            <ProtectedRoute>
+              <TruckDetails />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/parc"
+          element={
+            <ProtectedRoute>
+              <Parc />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/stock"
+          element={
+            <ProtectedRoute>
+              <StockManagement />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/schedule"
+          element={
+            <ProtectedRoute>
+              <TripScheduler />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/maintenance"
+          element={
+            <ProtectedRoute>
+              <MaintenanceOverview />
+            </ProtectedRoute>
+          }
+        />
+      </Routes>
+    </Router>
+  </AuthProvider>
+);
+
+export default App;

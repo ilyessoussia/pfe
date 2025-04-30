@@ -1,0 +1,139 @@
+.truck-form-container {
+  background-color: #111;
+  padding: 2rem;
+  max-width: 800px;
+  margin: 2rem auto;
+  border-radius: 12px;
+  box-shadow: 0 0 20px rgba(255, 215, 0, 0.2);
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  color: #FFD700;
+}
+
+.truck-form-container h2 {
+  margin-bottom: 1.5rem;
+  text-align: center;
+  color: #FFD700;
+}
+
+.truck-form {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem 2rem;
+}
+
+.truck-field-group {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 0.5rem;
+}
+
+.truck-form label {
+  font-weight: bold;
+  margin-bottom: 0.4rem;
+  color: #FFD700;
+}
+
+.truck-form input,
+.truck-form select,
+.truck-form textarea {
+  padding: 0.7rem;
+  background-color: #222;
+  color: #FFD700;
+  border: 1px solid #FFD700;
+  border-radius: 6px;
+  font-size: 1rem;
+  transition: border 0.2s, background-color 0.2s;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.truck-form input:focus,
+.truck-form select:focus,
+.truck-form textarea:focus {
+  border-color: #ffcc00;
+  outline: none;
+  background-color: #333;
+}
+
+.truck-form textarea {
+  min-height: 100px;
+  resize: vertical;
+}
+
+.full-width {
+  grid-column: 1 / -1;
+}
+
+.truck-form-note {
+  margin: 1rem 0;
+  font-size: 0.9rem;
+  color: #c4a300;
+}
+
+.truck-input-error {
+  border: 1px solid #ff6b6b !important;
+  background-color: #221a1a !important;
+}
+
+.truck-error-message {
+  color: #ff6b6b;
+  font-size: 0.8rem;
+  margin-top: 0.25rem;
+}
+
+.form-buttons {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 1.5rem;
+  grid-column: 1 / -1;
+}
+
+.form-buttons button {
+  flex: 1;
+  padding: 0.75rem;
+  border: none;
+  border-radius: 8px;
+  font-weight: bold;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+button[type="submit"] {
+  background-color: #FFD700;
+  color: #111;
+}
+
+button[type="submit"]:hover {
+  background-color: #e6c200;
+}
+
+button.cancel-btn {
+  background-color: #555;
+  color: #FFD700;
+}
+
+button.cancel-btn:hover {
+  background-color: #333;
+}
+
+button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Responsive layout for small screens */
+@media (max-width: 600px) {
+  .truck-form {
+    grid-template-columns: 1fr;
+  }
+
+  .form-buttons {
+    flex-direction: column;
+  }
+
+  .form-buttons button {
+    width: 100%;
+  }
+}
