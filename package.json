@@ -4,6 +4,7 @@
   "private": true,
   "dependencies": {
     "@emailjs/browser": "^4.4.1",
+    "@supabase/supabase-js": "^2.49.4",
     "chart.js": "^4.4.9",
     "cra-template": "1.2.0",
     "firebase": "^11.6.0",
@@ -16,7 +17,7 @@
     "react-leaflet": "^5.0.0",
     "react-router-dom": "^7.1.5",
     "react-scripts": "5.0.1",
-    "recharts": "^2.15.1",
+    "recharts": "^2.15.3",
     "stream-browserify": "^3.0.0",
     "swiper": "^11.2.2",
     "web-vitals": "^4.2.4"

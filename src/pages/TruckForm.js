@@ -1,6 +1,5 @@
 import React, { useState } from "react";
-import { db } from "../firebase";
-import { collection, addDoc, serverTimestamp } from "firebase/firestore";
+import { supabase } from "../supabase"; // Adjust path to your supabase.js
 import './TruckForm.css';
 
 const TruckForm = ({ onClose }) => {
@@ -10,8 +9,8 @@ const TruckForm = ({ onClose }) => {
     modele: "",
     anneeFabrication: "",
     dateAcquisition: "",
-    typeCarburant: "diesel", // Default value
-    status: "active", // Default value
+    typeCarburant: "diesel",
+    status: "active",
     equipements: "",
     accessoires: "",
     chauffeur: "",
@@ -32,16 +31,12 @@ const TruckForm = ({ onClose }) => {
     "biodiesel"
   ];
 
-  const statusOptions = [
-    "active",
-    "inactive"
-  ];
+  const statusOptions = ["active", "inactive"];
 
   const validateForm = () => {
     const newErrors = {};
     const currentYear = new Date().getFullYear();
-    
-    // Required fields
+
     if (!formData.numeroSerie.trim()) {
       newErrors.numeroSerie = "Le numéro de série est requis";
     } else if (!/^[A-Z0-9]{5,17}$/i.test(formData.numeroSerie)) {
@@ -53,12 +48,11 @@ const TruckForm = ({ onClose }) => {
     } else if (!/^\d{1,3}\s[A-Z]{2}\s\d{4}$/.test(formData.immatriculation.trim())) {
       newErrors.immatriculation = "Format d'immatriculation invalide (ex: 150 TU 4444)";
     }
-    
+
     if (!formData.modele.trim()) {
       newErrors.modele = "Le modèle est requis";
     }
 
-    // Year validations
     if (!formData.anneeFabrication) {
       newErrors.anneeFabrication = "L'année de fabrication est requise";
     } else {
@@ -68,26 +62,21 @@ const TruckForm = ({ onClose }) => {
       }
     }
 
-    // Date validations
     if (!formData.dateAcquisition) {
       newErrors.dateAcquisition = "La date d'acquisition est requise";
     }
 
-    // Fuel type validation
     if (!formData.typeCarburant) {
       newErrors.typeCarburant = "Le type de carburant est requis";
     }
 
-    // Status validation
     if (!formData.status) {
       newErrors.status = "L'état du camion est requis";
     }
 
-    // Phone number validation
     if (formData.telephoneChauffeur && !/^\d{8}$/.test(formData.telephoneChauffeur)) {
       newErrors.telephoneChauffeur = "Format de numéro de téléphone invalide (8 chiffres requis)";
     }
-    
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -96,24 +85,40 @@ const TruckForm = ({ onClose }) => {
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
-    
-    // Clear the error for this field when user changes it
+
     if (errors[name]) {
-      setErrors(prev => ({ ...prev, [name]: null }));
+      setErrors((prev) => ({ ...prev, [name]: null }));
     }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     if (validateForm()) {
       setIsSubmitting(true);
       try {
         console.log("Attempting to add truck with data:", formData);
-        await addDoc(collection(db, "trucks"), {
-          ...formData,
-          createdAt: serverTimestamp()
-        });
+        const {  error } = await supabase
+          .from('trucks')
+          .insert([{
+            numero_serie: formData.numeroSerie,
+            immatriculation: formData.immatriculation,
+            modele: formData.modele,
+            annee_fabrication: parseInt(formData.anneeFabrication),
+            date_acquisition: formData.dateAcquisition,
+            type_carburant: formData.typeCarburant,
+            status: formData.status,
+            equipements: formData.equipements || null,
+            accessoires: formData.accessoires || null,
+            chauffeur: formData.chauffeur || null,
+            telephone_chauffeur: formData.telephoneChauffeur || null,
+            residence_chauffeur: formData.residenceChauffeur || null,
+          }]);
+
+        if (error) {
+          throw error;
+        }
+
         alert("✅ Camion ajouté avec succès !");
         onClose();
       } catch (error) {
@@ -123,7 +128,6 @@ const TruckForm = ({ onClose }) => {
         setIsSubmitting(false);
       }
     } else {
-      // Scroll to the first error
       const firstErrorField = Object.keys(errors)[0];
       if (firstErrorField) {
         const element = document.querySelector(`[name="${firstErrorField}"]`);
@@ -139,8 +143,6 @@ const TruckForm = ({ onClose }) => {
     switch (status) {
       case "active":
         return "Actif";
-      case "maintenance":
-        return "En Maintenance";
       case "inactive":
         return "Inactif";
       default:
@@ -285,7 +287,7 @@ const TruckForm = ({ onClose }) => {
           <input 
             name="telephoneChauffeur" 
             value={formData.telephoneChauffeur}
-            placeholder="ex: +33612345678"
+            placeholder="ex: 0612345678"
             onChange={handleChange} 
             className={errors.telephoneChauffeur ? "truck-input-error" : ""}
           />

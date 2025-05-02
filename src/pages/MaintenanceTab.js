@@ -1,21 +1,10 @@
 import React, { useState, useEffect } from "react";
 import "./MaintenanceTab.css";
-import { db } from "../firebase";
-import {
-  collection,
-  addDoc,
-  updateDoc,
-  doc,
-  Timestamp,
-  getDocs,
-  query,
-  where,
-} from "firebase/firestore";
+import { supabase } from "../supabase"; // Adjust path to your supabase.js
 import { useParams } from "react-router-dom";
 
 const MaintenanceTab = ({ maintenanceHistory: initialMaintenanceHistory = [] }) => {
   const { id } = useParams();
-
   const [showModal, setShowModal] = useState(false);
   const [formData, setFormData] = useState({
     date: "",
@@ -33,7 +22,6 @@ const MaintenanceTab = ({ maintenanceHistory: initialMaintenanceHistory = [] }) 
   const [scheduledMaintenance, setScheduledMaintenance] = useState([]);
   const [completedMaintenance, setCompletedMaintenance] = useState([]);
 
-  // Fetch maintenance data from Firestore
   useEffect(() => {
     const fetchMaintenanceData = async () => {
       try {
@@ -43,32 +31,28 @@ const MaintenanceTab = ({ maintenanceHistory: initialMaintenanceHistory = [] }) 
           return;
         }
 
-        const maintenanceQuery = query(
-          collection(db, "maintenances"),
-          where("truckId", "==", id)
-        );
+        const { data, error } = await supabase
+          .from('maintenance_records')
+          .select('*')
+          .eq('truck_id', id)
+          .order('created_at', { ascending: false });
 
-        const querySnapshot = await getDocs(maintenanceQuery);
-        const maintenanceList = [];
+        if (error) {
+          throw error;
+        }
 
-        querySnapshot.forEach((doc) => {
-          maintenanceList.push({
-            id: doc.id,
-            ...doc.data(),
-          });
-        });
-
-        maintenanceList.sort((a, b) => {
-          if (a.createdAt && b.createdAt) {
-            if (
-              typeof a.createdAt.toDate === "function" &&
-              typeof b.createdAt.toDate === "function"
-            ) {
-              return b.createdAt.toDate() - a.createdAt.toDate(); // newest first
-            }
-          }
-          return 0;
-        });
+        const maintenanceList = data.map(record => ({
+          id: record.id,
+          truckId: record.truck_id,
+          date: new Date(record.date).toLocaleDateString('fr-FR'),
+          type: record.type,
+          kilometrage: record.kilometrage.toString(),
+          technicien: record.technicien,
+          cout: record.cout,
+          status: record.status,
+          createdAt: record.created_at,
+          completedAt: record.completed_at,
+        }));
 
         setMaintenanceData(maintenanceList);
       } catch (error) {
@@ -82,7 +66,6 @@ const MaintenanceTab = ({ maintenanceHistory: initialMaintenanceHistory = [] }) 
     fetchMaintenanceData();
   }, [id]);
 
-  // Filter maintenance history into scheduled and completed
   useEffect(() => {
     if (maintenanceData && maintenanceData.length > 0) {
       const scheduled = maintenanceData.filter((m) => m.status === "scheduled");
@@ -95,13 +78,11 @@ const MaintenanceTab = ({ maintenanceHistory: initialMaintenanceHistory = [] }) 
     }
   }, [maintenanceData]);
 
-  // Reset messages when modal opens/closes
   useEffect(() => {
     setError(null);
     setSuccess(false);
   }, [showModal]);
 
-  // Handle input changes
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData({
@@ -110,7 +91,6 @@ const MaintenanceTab = ({ maintenanceHistory: initialMaintenanceHistory = [] }) 
     });
   };
 
-  // Calculate upcoming maintenance
   const upcomingMaintenance =
     scheduledMaintenance.length > 0
       ? scheduledMaintenance.sort((a, b) => {
@@ -120,7 +100,6 @@ const MaintenanceTab = ({ maintenanceHistory: initialMaintenanceHistory = [] }) 
         })[0]
       : null;
 
-  // Calculate days remaining until next maintenance
   const calculateDaysRemaining = () => {
     if (!upcomingMaintenance || !upcomingMaintenance.date) return "N/A";
 
@@ -134,22 +113,28 @@ const MaintenanceTab = ({ maintenanceHistory: initialMaintenanceHistory = [] }) 
     return diffDays > 0 ? `${diffDays} jours` : "0 jours";
   };
 
-  // Handle marking maintenance as completed
   const handleCompleteMaintenance = async (maintenance) => {
     try {
       if (!maintenance.id) {
         throw new Error("ID de maintenance non disponible");
       }
 
-      await updateDoc(doc(db, "maintenances", maintenance.id), {
-        status: "completed",
-        completedAt: Timestamp.now(),
-      });
+      const { error } = await supabase
+        .from('maintenance_records')
+        .update({
+          status: "completed",
+          completed_at: new Date().toISOString(),
+        })
+        .eq('id', maintenance.id);
+
+      if (error) {
+        throw error;
+      }
 
       setMaintenanceData((prev) =>
         prev.map((item) =>
           item.id === maintenance.id
-            ? { ...item, status: "completed", completedAt: Timestamp.now() }
+            ? { ...item, status: "completed", completedAt: new Date() }
             : item
         )
       );
@@ -162,43 +147,51 @@ const MaintenanceTab = ({ maintenanceHistory: initialMaintenanceHistory = [] }) 
     }
   };
 
-  // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSubmitting(true);
     setError(null);
 
     try {
-      if (!formData.date || !formData.type || !formData.kilometrage || !formData.technicien) {
+      if (!formData.date || !formData.type || !formData.kilometrage || !formData.technicien || !formData.cout) {
         throw new Error("Veuillez remplir tous les champs obligatoires");
       }
 
-      let formattedDate = formData.date;
-      if (formData.date && formData.date.includes("-")) {
-        const [year, month, day] = formData.date.split("-");
-        formattedDate = `${day}/${month}/${year}`;
-      }
+      const kilometrage = parseFloat(formData.kilometrage.replace(/[^0-9.]/g, '')) || 0;
 
       if (!id) {
         throw new Error("ID du camion non disponible");
       }
 
-      const maintenanceData = {
+      const { data, error } = await supabase
+        .from('maintenance_records')
+        .insert([{
+          truck_id: id,
+          date: formData.date,
+          type: formData.type,
+          kilometrage: kilometrage,
+          technicien: formData.technicien,
+          cout: parseFloat(formData.cout) || 0,
+          status: formData.status,
+        }]);
+
+      if (error) {
+        throw error;
+      }
+
+      const newMaintenance = {
+        id: data[0].id,
         truckId: id,
-        date: formattedDate,
+        date: new Date(formData.date).toLocaleDateString('fr-FR'),
         type: formData.type,
-        kilometrage: formData.kilometrage,
+        kilometrage: kilometrage.toString(),
         technicien: formData.technicien,
         cout: parseFloat(formData.cout) || 0,
         status: formData.status,
-        createdAt: Timestamp.now(),
+        createdAt: new Date(),
       };
 
-      const docRef = await addDoc(collection(db, "maintenances"), maintenanceData);
-
-      const newMaintenance = { ...maintenanceData, id: docRef.id };
       setMaintenanceData((prev) => [newMaintenance, ...prev]);
-
       setSuccess(true);
 
       setTimeout(() => {
@@ -220,17 +213,13 @@ const MaintenanceTab = ({ maintenanceHistory: initialMaintenanceHistory = [] }) 
     }
   };
 
-  // Format date for better display
   const formatDateForDisplay = (dateString) => {
     if (!dateString) return "";
-
     if (dateString.includes("/")) return dateString;
-
     if (dateString.includes("-")) {
       const [year, month, day] = dateString.split("-");
       return `${day}/${month}/${year}`;
     }
-
     return dateString;
   };
 
@@ -265,8 +254,7 @@ const MaintenanceTab = ({ maintenanceHistory: initialMaintenanceHistory = [] }) 
                     ? formatDateForDisplay(
                         completedMaintenance
                           .sort((a, b) =>
-                            new Date(b.completedAt?.toDate?.() || 0) -
-                            new Date(a.completedAt?.toDate?.() || 0)
+                            new Date(b.completedAt || 0) - new Date(a.completedAt || 0)
                           )[0]?.date
                       ) || "N/A"
                     : "N/A"}
@@ -275,8 +263,7 @@ const MaintenanceTab = ({ maintenanceHistory: initialMaintenanceHistory = [] }) 
                   {completedMaintenance.length > 0
                     ? completedMaintenance
                         .sort((a, b) =>
-                          new Date(b.completedAt?.toDate?.() || 0) -
-                          new Date(a.completedAt?.toDate?.() || 0)
+                          new Date(b.completedAt || 0) - new Date(a.completedAt || 0)
                         )[0]?.type || "Aucun entretien enregistré"
                     : "Aucun entretien enregistré"}
                 </p>
@@ -306,7 +293,6 @@ const MaintenanceTab = ({ maintenanceHistory: initialMaintenanceHistory = [] }) 
             </div>
           </div>
 
-          {/* Scheduled Maintenance Section */}
           <div className="scheduled-maintenance-section">
             <h3>Maintenances Programmées</h3>
             {scheduledMaintenance.length > 0 ? (
@@ -493,7 +479,6 @@ const MaintenanceTab = ({ maintenanceHistory: initialMaintenanceHistory = [] }) 
         </>
       )}
 
-      {/* Modal for adding maintenance */}
       {showModal && (
         <div className="maintenance-modal-overlay">
           <div className="maintenance-modal">
@@ -550,7 +535,7 @@ const MaintenanceTab = ({ maintenanceHistory: initialMaintenanceHistory = [] }) 
                   name="kilometrage"
                   value={formData.kilometrage}
                   onChange={handleInputChange}
-                  placeholder="ex: 45,000 km"
+                  placeholder="ex: 45000"
                   required
                 />
               </div>

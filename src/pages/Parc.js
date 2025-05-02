@@ -1,16 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from "react-router-dom";
-import { collection, addDoc, getDocs, query, orderBy, serverTimestamp, updateDoc, doc } from 'firebase/firestore';
-import { db } from "../firebase";
+import { supabase } from "../supabase"; // Adjust path to your supabase.js
 import './Parc.css';
 
 const Parc = () => {
-  // State management
   const [parts, setParts] = useState([]);
   const [activeTab, setActiveTab] = useState('view');
   const [formData, setFormData] = useState({
     name: '',
-    category: 'truck', // 'truck' or 'general'
+    category: 'truck',
     quantity: 1,
     price: '',
     truckType: '',
@@ -28,7 +26,6 @@ const Parc = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [lastUpdated, setLastUpdated] = useState(new Date().toLocaleString());
 
-  // Fetch parts data from Firebase on component mount
   useEffect(() => {
     fetchParts();
   }, []);
@@ -37,21 +34,21 @@ const Parc = () => {
     try {
       setLoading(true);
       setError(null);
-      
-      const partsCollection = collection(db, "spareParts");
-      const partsQuery = query(partsCollection, orderBy("createdAt", "desc"));
-      const partsSnapshot = await getDocs(partsQuery);
-      
-      const partsList = partsSnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      }));
-      
-      setParts(partsList);
+
+      const { data, error } = await supabase
+        .from('spare_parts')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        throw error;
+      }
+
+      setParts(data);
       setLastUpdated(new Date().toLocaleString());
     } catch (err) {
       console.error("Erreur lors du chargement des pièces:", err);
-      setError("Échec du chargement des données d'inventaire. La collection sera créée automatiquement lors de l'ajout de votre première pièce.");
+      setError("Échec du chargement des données d'inventaire. La table sera créée automatiquement lors de l'ajout de votre première pièce.");
     } finally {
       setLoading(false);
     }
@@ -77,26 +74,29 @@ const Parc = () => {
     e.preventDefault();
     setSubmitting(true);
     setError(null);
-    
+
     try {
-      // Ensuring we have the correct category based on the active tab
       const category = activeTab === 'add-truck' ? 'truck' : 'general';
-      
-      // Prepare data for Firebase
+
       const newPart = {
-        ...formData,
+        name: formData.name,
         category: category,
-        createdAt: serverTimestamp(), // Use serverTimestamp for better consistency
-        lastUpdated: serverTimestamp(),
-        // Ensure numeric fields are properly formatted
         quantity: parseInt(formData.quantity) || 1,
-        price: parseFloat(formData.price) || 0
+        price: parseFloat(formData.price) || 0,
+        truck_type: formData.truckType || null,
+        part_number: formData.partNumber || null,
+        location: formData.location || null,
+        description: formData.description || null,
       };
 
-      // Add to Firebase - this will create the collection if it doesn't exist
-      await addDoc(collection(db, "spareParts"), newPart);
-      
-      // Reset form and show success message
+      const { error } = await supabase
+        .from('spare_parts')
+        .insert([newPart]);
+
+      if (error) {
+        throw error;
+      }
+
       setFormData({
         name: '',
         category: category,
@@ -107,11 +107,10 @@ const Parc = () => {
         location: '',
         description: '',
       });
-      
+
       setSuccessMessage('Pièce ajoutée avec succès!');
       setTimeout(() => setSuccessMessage(''), 3000);
-      
-      // Refresh parts list
+
       fetchParts();
     } catch (err) {
       console.error("Erreur lors de l'ajout de la pièce:", err);
@@ -129,8 +128,8 @@ const Parc = () => {
       category: part.category,
       quantity: part.quantity,
       price: part.price,
-      truckType: part.truckType || '',
-      partNumber: part.partNumber || '',
+      truckType: part.truck_type || '',
+      partNumber: part.part_number || '',
       location: part.location || '',
       description: part.description || '',
     });
@@ -143,21 +142,31 @@ const Parc = () => {
     setError(null);
 
     try {
-      const partRef = doc(db, "spareParts", editingPartId);
-      await updateDoc(partRef, {
-        ...editFormData,
+      const updatedPart = {
+        name: editFormData.name,
+        category: editFormData.category,
         quantity: parseInt(editFormData.quantity) || 1,
         price: parseFloat(editFormData.price) || 0,
-        lastUpdated: serverTimestamp(),
-      });
+        truck_type: editFormData.truckType || null,
+        part_number: editFormData.partNumber || null,
+        location: editFormData.location || null,
+        description: editFormData.description || null,
+      };
+
+      const { error } = await supabase
+        .from('spare_parts')
+        .update(updatedPart)
+        .eq('id', editingPartId);
+
+      if (error) {
+        throw error;
+      }
 
       setSuccessMessage('Pièce modifiée avec succès!');
       setTimeout(() => setSuccessMessage(''), 3000);
-      
-      // Refresh parts list
+
       fetchParts();
-      
-      // Reset edit state
+
       setEditingPartId(null);
       setEditFormData(null);
       setActiveTab('view');
@@ -179,7 +188,6 @@ const Parc = () => {
 
   return (
     <div className="fleet-management-container">
-      {/* Sidebar */}
       <aside className="fleet-management-sidebar">
         <h2 className="fleet-management-fleet-title">Système de Gestion & Contrôle</h2>
         <nav>
@@ -318,10 +326,10 @@ const Parc = () => {
                           <td>{part.category === 'truck' ? 'Pièce de Camion' : 'Pièce Générale'}</td>
                           <td>{part.quantity}</td>
                           <td>{parseFloat(part.price).toFixed(2)} DT</td>
-                          <td>{part.partNumber || '-'}</td>
+                          <td>{part.part_number || '-'}</td>
                           <td>{part.location || '-'}</td>
                           {(filterType === 'truck' || filterType === 'all') && 
-                            <td>{part.category === 'truck' ? part.truckType : '-'}</td>
+                            <td>{part.category === 'truck' ? part.truck_type : '-'}</td>
                           }
                           <td>
                             <button 

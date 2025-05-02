@@ -2,8 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import "./FleetDashboard.css";
 import TruckForm from "./TruckForm";
-import { db } from "../firebase";
-import { collection, getDocs, query, orderBy } from "firebase/firestore";
+import { supabase } from "../supabase"; // Adjust path to your supabase.js
 import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
@@ -34,58 +33,76 @@ const FleetDashboard = () => {
   const [showAlerts, setShowAlerts] = useState(true);
   const [showFuelActivities, setShowFuelActivities] = useState(true);
 
-  // Fetch all data
   const fetchData = async () => {
     try {
       setLoading(true);
 
       // Fetch trucks
-      const trucksCollection = collection(db, "trucks");
-      const trucksQuery = query(trucksCollection, orderBy("createdAt", "desc"));
-      const trucksSnapshot = await getDocs(trucksQuery);
-      const trucksData = trucksSnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data(),
-        model: doc.data().modele || "Unknown Model",
-        driver: doc.data().chauffeur || "No Driver Assigned",
-        status: doc.data().status || "active",
+      const { data: trucksData, error: trucksError } = await supabase
+        .from('trucks')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (trucksError) throw trucksError;
+
+      const formattedTrucks = trucksData.map(truck => ({
+        id: truck.id,
+        immatriculation: truck.immatriculation,
+        model: truck.modele || "Unknown Model",
+        driver: truck.chauffeur || "No Driver Assigned",
+        status: truck.status || "active",
       }));
 
       // Fetch fuel records
-      const fuelCollection = collection(db, "fuelRecords");
-      const fuelQuery = query(fuelCollection, orderBy("timestamp", "desc"));
-      const fuelSnapshot = await getDocs(fuelQuery);
+      const { data: fuelData, error: fuelError } = await supabase
+        .from('fuel_records')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (fuelError) throw fuelError;
+
       const fuelByTruck = {};
-      fuelSnapshot.forEach(doc => {
-        const fuelData = doc.data();
-        if (!fuelByTruck[fuelData.truckId]) {
-          fuelByTruck[fuelData.truckId] = fuelData;
+      fuelData.forEach(fuel => {
+        if (!fuelByTruck[fuel.truck_id]) {
+          fuelByTruck[fuel.truck_id] = {
+            truckId: fuel.truck_id,
+            date: new Date(fuel.date).toLocaleDateString('fr-FR'),
+            kilometers: fuel.kilometers,
+            litersPer100km: fuel.liters_per_100km,
+          };
         }
       });
       setLatestFuelByTruck(fuelByTruck);
 
       // Fetch maintenance records
-      const maintenanceCollection = collection(db, "maintenances");
-      const maintenanceSnapshot = await getDocs(maintenanceCollection);
-      const maintenanceData = maintenanceSnapshot.docs.map(doc => doc.data());
+      const { data: maintenanceData, error: maintenanceError } = await supabase
+        .from('maintenance_records')
+        .select('*');
 
-      // Fetch stock and spare parts
-      const stockCollection = collection(db, "stockItems");
-      const stockSnapshot = await getDocs(stockCollection);
-      const stockData = stockSnapshot.docs.map(doc => doc.data());
+      if (maintenanceError) throw maintenanceError;
 
-      const partsCollection = collection(db, "spareParts");
-      const partsSnapshot = await getDocs(partsCollection);
-      const partsData = partsSnapshot.docs.map(doc => doc.data());
+      // Fetch stock items
+      const { data: stockData, error: stockError } = await supabase
+        .from('stock_items')
+        .select('*');
 
-      // Compute fleet stats (only total trucks needed now)
+      if (stockError) throw stockError;
+
+      // Fetch spare parts
+      const { data: partsData, error: partsError } = await supabase
+        .from('spare_parts')
+        .select('*');
+
+      if (partsError) throw partsError;
+
+      // Compute fleet stats
       setFleetStats({
-        totalTrucks: trucksData.length,
+        totalTrucks: formattedTrucks.length,
       });
 
       // Compute alerts
       const alerts = [];
-      trucksData.forEach(truck => {
+      formattedTrucks.forEach(truck => {
         const fuelEntry = fuelByTruck[truck.id];
         if (fuelEntry && fuelEntry.litersPer100km > 40) {
           alerts.push({
@@ -96,7 +113,7 @@ const FleetDashboard = () => {
           });
         }
         const maintenance = maintenanceData.find(
-          m => m.truckId === truck.id && new Date(m.date) < new Date()
+          m => m.truck_id === truck.id && new Date(m.date) < new Date()
         );
         if (maintenance) {
           alerts.push({
@@ -128,19 +145,22 @@ const FleetDashboard = () => {
       setAlerts(alerts);
 
       // Compute recent fuel activities (limit to 8 items)
-      const fuelActivities = fuelSnapshot.docs
+      const fuelActivities = fuelData
         .slice(0, 8)
-        .map(doc => ({
+        .map(fuel => ({
           type: "fuel",
-          data: doc.data(),
-          timestamp: doc.data().timestamp?.toDate() || new Date(),
-          truck: trucksData.find(t => t.id === doc.data().truckId)?.immatriculation || "Camion",
+          data: {
+            truckId: fuel.truck_id,
+            litersPer100km: fuel.liters_per_100km,
+          },
+          timestamp: new Date(fuel.created_at),
+          truck: formattedTrucks.find(t => t.id === fuel.truck_id)?.immatriculation || "Camion",
         }));
       setRecentFuelActivities(fuelActivities);
 
       // Update trucks with fuel data
       setTrucks(
-        trucksData.map(truck => ({
+        formattedTrucks.map(truck => ({
           ...truck,
           lastFuel: fuelByTruck[truck.id]?.date || "N/A",
           currentMileage: fuelByTruck[truck.id]?.kilometers
@@ -158,23 +178,19 @@ const FleetDashboard = () => {
     }
   };
 
-  // Run fetchData on mount
   useEffect(() => {
     fetchData();
   }, []);
 
-  // Handle refresh
   const handleRefresh = () => {
     fetchData();
-    setDismissedAlerts([]); // Reset dismissed alerts on refresh
+    setDismissedAlerts([]);
   };
 
-  // Handle closing an alert
   const handleCloseAlert = (alertId) => {
     setDismissedAlerts([...dismissedAlerts, alertId]);
   };
 
-  // Apply filters, sorting, and search
   const filteredTrucks = trucks
     .filter(truck => filter.status === "all" || truck.status === filter.status)
     .filter(truck => {
@@ -206,7 +222,6 @@ const FleetDashboard = () => {
       return 0;
     });
 
-  // Get status label and class
   const getStatusLabel = status => {
     switch (status) {
       case "active":
@@ -235,7 +250,6 @@ const FleetDashboard = () => {
 
   return (
     <div className="dashboard-container">
-      {/* Sidebar */}
       <aside className="sidebar">
         <h2 className="fleet-title">Fleet Manager</h2>
         <nav>
@@ -263,7 +277,6 @@ const FleetDashboard = () => {
         </div>
       </aside>
 
-      {/* Main Content */}
       <main className="dashboard-content">
         <header className="dashboard-header">
           <div>
@@ -292,9 +305,7 @@ const FleetDashboard = () => {
         {error && <div className="error-message">{error}</div>}
 
         <div className="dashboard-grid">
-          {/* Main Dashboard Content (Left) */}
           <div className="main-content">
-            {/* Truck Filter and List/Map */}
             <section className="truck-section">
               <div className="truck-filter">
                 <div>
@@ -401,7 +412,6 @@ const FleetDashboard = () => {
             </section>
           </div>
 
-          {/* Alerts Section (Middle) */}
           <section className={`alerts-section ${showAlerts ? "expanded" : "collapsed"}`}>
             <div className="alerts-header">
               <h2>⚠️ Alertes ({alerts.filter(alert => !dismissedAlerts.includes(alert.id)).length})</h2>
@@ -436,7 +446,6 @@ const FleetDashboard = () => {
             )}
           </section>
 
-          {/* Recent Fuel Activities (Right) */}
           <section className={`recent-fuel-activities ${showFuelActivities ? "expanded" : "collapsed"}`}>
             <div className="fuel-activities-header">
               <h2>Activités de Carburant Récentes</h2>

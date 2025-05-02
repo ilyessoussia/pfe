@@ -1,8 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import "./StockManagement.css";
-import { db } from "../firebase";
-import { collection, addDoc, getDocs, updateDoc, doc, query, orderBy } from "firebase/firestore";
+import { supabase } from "../supabase"; // Adjust path to your supabase.js
 import Chart from "chart.js/auto";
 
 const StockManagement = () => {
@@ -23,7 +22,6 @@ const StockManagement = () => {
   const chartRef = useRef(null);
   const chartInstanceRef = useRef(null);
 
-  // Fetch stock items and sales history from Firebase
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -31,23 +29,24 @@ const StockManagement = () => {
         setError(null);
 
         // Fetch stock items
-        const stockCollection = collection(db, "stockItems");
-        const stockSnapshot = await getDocs(stockCollection);
-        const stockData = stockSnapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        }));
+        const { data: stockData, error: stockError } = await supabase
+          .from('stock_items')
+          .select('*');
+
+        if (stockError) throw stockError;
         setStockItems(stockData);
 
         // Fetch sales history
-        const salesCollection = collection(db, "salesHistory");
-        const salesQuery = query(salesCollection, orderBy("date", "desc"));
-        const salesSnapshot = await getDocs(salesQuery);
-        const salesData = salesSnapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        }));
-        setSalesHistory(salesData);
+        const { data: salesData, error: salesError } = await supabase
+          .from('sales_history')
+          .select('*')
+          .order('date', { ascending: false });
+
+        if (salesError) throw salesError;
+        setSalesHistory(salesData.map(sale => ({
+          ...sale,
+          date: new Date(sale.date).toLocaleString(),
+        })));
       } catch (err) {
         console.error("Error fetching data:", err);
         setError("Échec du chargement des données.");
@@ -58,26 +57,22 @@ const StockManagement = () => {
     fetchData();
   }, []);
 
-  // Update chart when sales history changes
   useEffect(() => {
     if (chartRef.current && activeTab === "statistics") {
       const ctx = chartRef.current.getContext("2d");
 
-      // Destroy previous chart instance if it exists
       if (chartInstanceRef.current) {
         chartInstanceRef.current.destroy();
       }
 
-      // Aggregate sales data by material
       const salesByMaterial = salesHistory.reduce((acc, sale) => {
-        acc[sale.material] = (acc[sale.material] || 0) + sale.quantitySold;
+        acc[sale.material] = (acc[sale.material] || 0) + sale.quantity_sold;
         return acc;
       }, {});
 
       const labels = Object.keys(salesByMaterial);
       const data = Object.values(salesByMaterial);
 
-      // Create new chart
       chartInstanceRef.current = new Chart(ctx, {
         type: "bar",
         data: {
@@ -133,7 +128,6 @@ const StockManagement = () => {
       });
     }
 
-    // Cleanup on component unmount or tab change
     return () => {
       if (chartInstanceRef.current) {
         chartInstanceRef.current.destroy();
@@ -141,13 +135,11 @@ const StockManagement = () => {
     };
   }, [salesHistory, activeTab]);
 
-  // Handle form input changes
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  // Handle form submission (add or update stock item)
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!formData.material || !formData.quantity) {
@@ -163,14 +155,17 @@ const StockManagement = () => {
     try {
       setError(null);
       if (editingId) {
-        // Update existing item
-        const itemRef = doc(db, "stockItems", editingId);
-        await updateDoc(itemRef, {
-          material: formData.material,
-          quantity: quantity,
-          unit: formData.unit,
-          updatedAt: new Date(),
-        });
+        const { error } = await supabase
+          .from('stock_items')
+          .update({
+            material: formData.material,
+            quantity: quantity,
+            unit: formData.unit,
+          })
+          .eq('id', editingId);
+
+        if (error) throw error;
+
         setStockItems((prev) =>
           prev.map((item) =>
             item.id === editingId
@@ -180,19 +175,20 @@ const StockManagement = () => {
         );
         setEditingId(null);
       } else {
-        // Add new item
-        const docRef = await addDoc(collection(db, "stockItems"), {
-          material: formData.material,
-          quantity: quantity,
-          unit: formData.unit,
-          createdAt: new Date(),
-        });
-        setStockItems((prev) => [
-          ...prev,
-          { id: docRef.id, material: formData.material, quantity, unit: formData.unit },
-        ]);
+        const { data, error } = await supabase
+          .from('stock_items')
+          .insert([{
+            material: formData.material,
+            quantity: quantity,
+            unit: formData.unit,
+          }])
+          .select();
+
+        if (error) throw error;
+
+        setStockItems((prev) => [...prev, data[0]]);
       }
-      // Reset form and close modal
+
       setFormData({ material: "", quantity: "", unit: "units" });
       setShowForm(false);
     } catch (err) {
@@ -201,7 +197,6 @@ const StockManagement = () => {
     }
   };
 
-  // Handle edit button click
   const handleEdit = (item) => {
     setFormData({
       material: item.material,
@@ -212,7 +207,6 @@ const StockManagement = () => {
     setShowForm(true);
   };
 
-  // Handle sell button click
   const handleSell = async (item) => {
     const quantityToSell = parseFloat(prompt(`Entrez la quantité à vendre pour ${item.material} (${item.unit}):`, "0"));
     if (isNaN(quantityToSell) || quantityToSell <= 0) {
@@ -227,31 +221,36 @@ const StockManagement = () => {
     try {
       setError(null);
       const newQuantity = item.quantity - quantityToSell;
-      const itemRef = doc(db, "stockItems", item.id);
-      await updateDoc(itemRef, {
-        quantity: newQuantity,
-        updatedAt: new Date(),
-      });
 
-      // Update local stock items
+      const { error: updateError } = await supabase
+        .from('stock_items')
+        .update({ quantity: newQuantity })
+        .eq('id', item.id);
+
+      if (updateError) throw updateError;
+
       setStockItems((prev) =>
         prev.map((stockItem) =>
           stockItem.id === item.id ? { ...stockItem, quantity: newQuantity } : stockItem
         )
       );
 
-      // Log the sale in Firebase
       const sale = {
         material: item.material,
-        quantitySold: quantityToSell,
+        quantity_sold: quantityToSell,
         unit: item.unit,
         date: new Date().toISOString(),
       };
-      const saleDocRef = await addDoc(collection(db, "salesHistory"), sale);
 
-      // Update local sales history
+      const { data: saleData, error: saleError } = await supabase
+        .from('sales_history')
+        .insert([sale])
+        .select();
+
+      if (saleError) throw saleError;
+
       setSalesHistory((prev) => [
-        { ...sale, id: saleDocRef.id, date: new Date(sale.date).toLocaleString() },
+        { ...saleData[0], date: new Date(saleData[0].date).toLocaleString() },
         ...prev,
       ]);
     } catch (err) {
@@ -260,7 +259,6 @@ const StockManagement = () => {
     }
   };
 
-  // Handle sorting of sales history
   const handleSort = (key) => {
     let direction = "asc";
     if (sortConfig.key === key && sortConfig.direction === "asc") {
@@ -268,10 +266,10 @@ const StockManagement = () => {
     }
 
     const sortedData = [...salesHistory].sort((a, b) => {
-      if (key === "quantitySold") {
+      if (key === "quantity_sold") {
         return direction === "asc"
-          ? a.quantitySold - b.quantitySold
-          : b.quantitySold - a.quantitySold;
+          ? a.quantity_sold - b.quantity_sold
+          : b.quantity_sold - a.quantity_sold;
       } else {
         const valueA = a[key].toString().toLowerCase();
         const valueB = b[key].toString().toLowerCase();
@@ -287,14 +285,12 @@ const StockManagement = () => {
     setSortConfig({ key, direction });
   };
 
-  // Filter stock items based on search query
   const filteredStockItems = stockItems.filter((item) =>
     item.material.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   return (
     <div className="stock-management-container">
-      {/* Sidebar */}
       <aside className="stock-management-sidebar">
         <h2 className="stock-management-fleet-title">Système de Gestion & Contrôle</h2>
         <nav>
@@ -322,7 +318,6 @@ const StockManagement = () => {
         </div>
       </aside>
 
-      {/* Main Content */}
       <main className="stock-management-content">
         <header className="stock-management-header">
           <div>
@@ -364,7 +359,6 @@ const StockManagement = () => {
 
         {error && <div className="stock-management-error-message">{error}</div>}
 
-        {/* Inventory Tab */}
         {activeTab === "inventory" && (
           <div className="stock-management-inventory-section">
             <div className="stock-management-filter-controls">
@@ -428,7 +422,6 @@ const StockManagement = () => {
           </div>
         )}
 
-        {/* Sales History Tab */}
         {activeTab === "history" && (
           <div className="stock-management-inventory-section">
             <div className="stock-management-filter-controls">
@@ -445,9 +438,9 @@ const StockManagement = () => {
                           <span>{sortConfig.direction === "asc" ? " ↑" : " ↓"}</span>
                         )}
                       </th>
-                      <th onClick={() => handleSort("quantitySold")} className="sortable">
+                      <th onClick={() => handleSort("quantity_sold")} className="sortable">
                         Quantité Vendue
-                        {sortConfig.key === "quantitySold" && (
+                        {sortConfig.key === "quantity_sold" && (
                           <span>{sortConfig.direction === "asc" ? " ↑" : " ↓"}</span>
                         )}
                       </th>
@@ -469,7 +462,7 @@ const StockManagement = () => {
                     {salesHistory.map((sale) => (
                       <tr key={sale.id}>
                         <td>{sale.material}</td>
-                        <td>{sale.quantitySold}</td>
+                        <td>{sale.quantity_sold}</td>
                         <td>{sale.unit}</td>
                         <td>{sale.date}</td>
                       </tr>
@@ -483,7 +476,6 @@ const StockManagement = () => {
           </div>
         )}
 
-        {/* Statistics Tab */}
         {activeTab === "statistics" && (
           <div className="stock-management-inventory-section">
             <div className="stock-management-filter-controls">
@@ -495,7 +487,6 @@ const StockManagement = () => {
           </div>
         )}
 
-        {/* Form Modal */}
         {showForm && (
           <div className="stock-management-modal">
             <div className="stock-management-modal-content">

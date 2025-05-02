@@ -1,8 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import "./TripScheduler.css";
-import { db } from "../firebase";
-import { collection, addDoc, getDocs, updateDoc, doc } from "firebase/firestore";
+import { supabase } from "../supabase"; // Adjust path to your supabase.js
 
 const TripScheduler = () => {
   const [trips, setTrips] = useState([]);
@@ -22,35 +21,45 @@ const TripScheduler = () => {
   const [showAddTripModal, setShowAddTripModal] = useState(false);
   const [activeTab, setActiveTab] = useState("list");
   const [filterStatus, setFilterStatus] = useState("all");
-  const [searchQuery, setSearchQuery] = useState(""); // New state for search bar
+  const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const tripsPerPage = 10;
 
   const truckListRef = useRef(null);
 
-  // Fetch trucks and trips from Firebase
   useEffect(() => {
     const fetchData = async () => {
       try {
         setLoading(true);
+
         // Fetch trucks
-        const trucksCollection = collection(db, "trucks");
-        const trucksSnapshot = await getDocs(trucksCollection);
-        const trucksData = trucksSnapshot.docs.map((doc) => ({
-          id: doc.id,
-          immatriculation: doc.data().immatriculation || doc.id,
+        const { data: trucksData, error: trucksError } = await supabase
+          .from('trucks')
+          .select('id, immatriculation');
+
+        if (trucksError) throw trucksError;
+        const formattedTrucks = trucksData.map(truck => ({
+          id: truck.id,
+          immatriculation: truck.immatriculation || truck.id,
         }));
-        setTrucks(trucksData);
-        setFilteredTrucks(trucksData);
+        setTrucks(formattedTrucks);
+        setFilteredTrucks(formattedTrucks);
 
         // Fetch trips
-        const tripsCollection = collection(db, "trips");
-        const tripsSnapshot = await getDocs(tripsCollection);
-        const tripsData = tripsSnapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        }));
-        setTrips(tripsData);
+        const { data: tripsData, error: tripsError } = await supabase
+          .from('trips')
+          .select('*');
+
+        if (tripsError) throw tripsError;
+        setTrips(tripsData.map(trip => ({
+          id: trip.id,
+          truckId: trip.truck_id,
+          destination: trip.destination,
+          date: new Date(trip.date).toLocaleDateString('fr-FR'),
+          cargo: trip.cargo,
+          status: trip.status,
+          createdAt: new Date(trip.created_at),
+        })));
       } catch (err) {
         console.error("Error fetching data:", err);
         setError("Échec du chargement des données.");
@@ -61,7 +70,6 @@ const TripScheduler = () => {
     fetchData();
   }, []);
 
-  // Handle truck search
   useEffect(() => {
     const filtered = trucks.filter((truck) =>
       truck.immatriculation.toLowerCase().includes(truckSearch.toLowerCase())
@@ -69,7 +77,6 @@ const TripScheduler = () => {
     setFilteredTrucks(filtered);
   }, [truckSearch, trucks]);
 
-  // Handle clicks outside the truck list to close it
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (truckListRef.current && !truckListRef.current.contains(e.target)) {
@@ -80,20 +87,17 @@ const TripScheduler = () => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Handle form input changes
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  // Select truck from search
   const handleTruckSelect = (truck) => {
     setFormData((prev) => ({ ...prev, truckId: truck.id }));
     setTruckSearch(truck.immatriculation);
-    setFilteredTrucks([]); // Close the truck list after selection
+    setFilteredTrucks([]);
   };
 
-  // Handle form submission (add new trip)
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!formData.truckId || !formData.destination || !formData.date || !formData.cargo) {
@@ -101,7 +105,7 @@ const TripScheduler = () => {
       return;
     }
     const tripDate = new Date(formData.date);
-    if (tripDate < new Date()) {
+    if (tripDate < new Date().setHours(0, 0, 0, 0)) {
       setError("La date du voyage doit être dans le futur.");
       return;
     }
@@ -109,25 +113,28 @@ const TripScheduler = () => {
     try {
       setError(null);
       const formattedDate = tripDate.toLocaleDateString("fr-FR");
-      const docRef = await addDoc(collection(db, "trips"), {
-        truckId: formData.truckId,
-        destination: formData.destination,
-        date: formattedDate,
-        rawDate: tripDate,
-        cargo: formData.cargo,
-        status: formData.status,
-        createdAt: new Date(),
-      });
-      setTrips((prev) => [
-        {
-          id: docRef.id,
-          truckId: formData.truckId,
+      const { data, error } = await supabase
+        .from('trips')
+        .insert([{
+          truck_id: formData.truckId,
           destination: formData.destination,
-          date: formattedDate,
-          rawDate: tripDate,
+          date: formData.date,
           cargo: formData.cargo,
           status: formData.status,
-          createdAt: new Date(),
+        }])
+        .select();
+
+      if (error) throw error;
+
+      setTrips((prev) => [
+        {
+          id: data[0].id,
+          truckId: data[0].truck_id,
+          destination: data[0].destination,
+          date: formattedDate,
+          cargo: data[0].cargo,
+          status: data[0].status,
+          createdAt: new Date(data[0].created_at),
         },
         ...prev,
       ]);
@@ -142,12 +149,16 @@ const TripScheduler = () => {
     }
   };
 
-  // Handle trip cancellation
   const handleCancel = async (tripId) => {
     if (window.confirm("Êtes-vous sûr de vouloir annuler ce voyage ?")) {
       try {
-        const tripRef = doc(db, "trips", tripId);
-        await updateDoc(tripRef, { status: "canceled" });
+        const { error } = await supabase
+          .from('trips')
+          .update({ status: "canceled" })
+          .eq('id', tripId);
+
+        if (error) throw error;
+
         setTrips((prev) =>
           prev.map((t) => (t.id === tripId ? { ...t, status: "canceled" } : t))
         );
@@ -160,12 +171,16 @@ const TripScheduler = () => {
     }
   };
 
-  // Handle trip completion
   const handleComplete = async (tripId) => {
     if (window.confirm("Êtes-vous sûr de vouloir marquer ce voyage comme terminé ?")) {
       try {
-        const tripRef = doc(db, "trips", tripId);
-        await updateDoc(tripRef, { status: "completed" });
+        const { error } = await supabase
+          .from('trips')
+          .update({ status: "completed" })
+          .eq('id', tripId);
+
+        if (error) throw error;
+
         setTrips((prev) =>
           prev.map((t) => (t.id === tripId ? { ...t, status: "completed" } : t))
         );
@@ -178,17 +193,14 @@ const TripScheduler = () => {
     }
   };
 
-  // Sort trips by createdAt (newest first)
   const sortedTrips = [...trips].sort((a, b) => {
     return new Date(b.createdAt) - new Date(a.createdAt);
   });
 
-  // Filter trips by status
   const filteredTripsByStatus = sortedTrips.filter(
     (trip) => filterStatus === "all" || trip.status === filterStatus
   );
 
-  // Filter trips by search query
   const filteredTrips = filteredTripsByStatus.filter((trip) => {
     const truck = trucks.find((t) => t.id === trip.truckId);
     const searchLower = searchQuery.toLowerCase();
@@ -199,7 +211,6 @@ const TripScheduler = () => {
     );
   });
 
-  // Pagination
   const totalPages = Math.ceil(filteredTrips.length / tripsPerPage);
   const paginatedTrips = filteredTrips.slice(
     (currentPage - 1) * tripsPerPage,
@@ -208,7 +219,6 @@ const TripScheduler = () => {
 
   return (
     <div className="trip-scheduler-container">
-      {/* Sidebar */}
       <aside className="trip-scheduler-sidebar">
         <h2 className="trip-scheduler-fleet-title">Système de Gestion & Contrôle</h2>
         <nav>
@@ -236,7 +246,6 @@ const TripScheduler = () => {
         </div>
       </aside>
 
-      {/* Main Content */}
       <main className="trip-scheduler-content">
         <header className="trip-scheduler-header">
           <div>
@@ -260,7 +269,6 @@ const TripScheduler = () => {
         )}
         {error && <div className="trip-scheduler-error-message">{error}</div>}
 
-        {/* Tabs for List and Timeline View */}
         <div className="trip-scheduler-tabs">
           <button
             className={`trip-scheduler-tab ${activeTab === "list" ? "active" : ""}`}
@@ -276,7 +284,6 @@ const TripScheduler = () => {
           </button>
         </div>
 
-        {/* Trip List Section */}
         <section className="trip-scheduler-list-section">
           <div className="trip-scheduler-filter-controls">
             <h2>Voyages Planifiés</h2>
@@ -415,7 +422,6 @@ const TripScheduler = () => {
                 </div>
               )}
 
-              {/* Pagination */}
               <div className="trip-scheduler-pagination">
                 <button
                   onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
@@ -443,7 +449,6 @@ const TripScheduler = () => {
           )}
         </section>
 
-        {/* Add Trip Modal */}
         {showAddTripModal && (
           <div className="trip-scheduler-modal">
             <div className="trip-scheduler-modal-content">

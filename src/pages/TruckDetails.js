@@ -1,8 +1,6 @@
-// TruckDetails.js - Updated version with Edit Truck button moved to overview content
 import React, { useState, useEffect, useCallback } from "react";
 import { Link, useParams, useNavigate } from "react-router-dom";
-import { db } from "../firebase";
-import { doc, getDoc, collection, query, where, getDocs, updateDoc } from "firebase/firestore";
+import { supabase } from "../supabase"; // Adjust path to your supabase.js
 import "./TruckDetails.css";
 import FuelTab from "./FuelTab";
 import MaintenanceTab from "./MaintenanceTab";
@@ -17,173 +15,156 @@ const TruckDetails = () => {
   const [fuelHistory, setFuelHistory] = useState([]);
   const [maintenanceHistory, setMaintenanceHistory] = useState([]);
   const [isEditing, setIsEditing] = useState(false);
-  const [editSection, setEditSection] = useState(null); // "driver" or "truck"
+  const [editSection, setEditSection] = useState(null);
   const [editedTruck, setEditedTruck] = useState(null);
 
-  // Fetch fuel data separately to allow refreshing
   const fetchFuelData = useCallback(async () => {
     try {
       console.log("Fetching fuel data for truck ID:", id);
       
-      const fuelQuery = query(
-        collection(db, "fuelRecords"),
-        where("truckId", "==", id)
-        // Note: Removed orderBy temporarily as it might require an index
-      );
+      const { data: fuelData, error: fuelError } = await supabase
+        .from('fuel_records')
+        .select('*')
+        .eq('truck_id', id)
+        .order('date', { ascending: false }); // Newest first
       
-      const fuelSnapshot = await getDocs(fuelQuery);
-      console.log(`Found ${fuelSnapshot.docs.length} fuel records`);
+      if (fuelError) {
+        throw fuelError;
+      }
       
-      if (fuelSnapshot.empty) {
+      console.log(`Found ${fuelData.length} fuel records`);
+      
+      if (!fuelData.length) {
         console.log("No fuel records found for this truck");
         setFuelHistory([]);
         return;
       }
       
-      const fuelData = fuelSnapshot.docs.map(doc => {
-        const data = doc.data();
-        console.log("Raw fuel record:", data);
-        
-        // Format date for display
-        let formattedDate = "N/A";
-        if (data.date) {
-          if (typeof data.date.toDate === 'function') {
-            // Firestore timestamp
-            formattedDate = data.date.toDate().toLocaleDateString('fr-FR');
-          } else if (data.date instanceof Date) {
-            // JavaScript Date object
-            formattedDate = data.date.toLocaleDateString('fr-FR');
-          } else if (typeof data.date === 'string') {
-            // String date
-            formattedDate = data.date;
-          }
-        }
-        
-        return {
-          id: doc.id,
-          ...data,
-          date: formattedDate,
-          // Ensure these values are numbers
-          kilometers: parseFloat(data.kilometers) || 0,
-          liters: parseFloat(data.liters) || 0,
-          consumption: parseFloat(data.consumption) || 0,
-          cost: parseFloat(data.cost) || 0,
-          fuelPrice: parseFloat(data.fuelPrice) || 0
-        };
-      });
+      const formattedFuelData = fuelData.map(record => ({
+        id: record.id,
+        truckId: record.truck_id,
+        date: new Date(record.date).toLocaleDateString('fr-FR'),
+        kilometers: parseFloat(record.kilometers) || 0,
+        liters: parseFloat(record.liters) || 0,
+        consumption: parseFloat(record.consumption) || 0,
+        cost: parseFloat(record.cost) || 0,
+        fuelPrice: parseFloat(record.fuel_price) || 0,
+      }));
       
-      console.log("Processed fuel data:", fuelData);
-      
-      // Sort by date (newest first)
-      const sortedFuelData = fuelData.sort((a, b) => {
-        // Parse dates in DD/MM/YYYY format
-        const partsA = a.date.split('/');
-        const partsB = b.date.split('/');
-        
-        if (partsA.length === 3 && partsB.length === 3) {
-          const dateA = new Date(partsA[2], partsA[1] - 1, partsA[0]);
-          const dateB = new Date(partsB[2], partsB[1] - 1, partsB[0]);
-          return dateB - dateA; // Descending order (newest first)
-        }
-        return 0;
-      });
-      
-      setFuelHistory(sortedFuelData);
+      console.log("Processed fuel data:", formattedFuelData);
+      setFuelHistory(formattedFuelData);
     } catch (fuelError) {
       console.error("Error fetching fuel history:", fuelError);
       setFuelHistory([]);
     }
   }, [id]);
-  // Fetch truck data from Firebase
+
   useEffect(() => {
     const fetchTruckData = async () => {
       try {
         setLoading(true);
         console.log("Fetching truck data for ID:", id);
         
-        // Fetch the truck document
-        const truckDoc = await getDoc(doc(db, "trucks", id));
+        const { data: truckData, error: truckError } = await supabase
+          .from('trucks')
+          .select('*')
+          .eq('id', id)
+          .single();
         
-        if (!truckDoc.exists()) {
+        if (truckError || !truckData) {
           setError("Ce camion n'existe pas dans la base de données.");
           setLoading(false);
           return;
         }
         
-        const truckData = truckDoc.data();
         console.log("Truck data:", truckData);
         
-        // Set truck data using the exact field names from Firebase
         setTruck({
-          id: truckDoc.id,
-          ...truckData
+          id: truckData.id,
+          numeroSerie: truckData.numero_serie,
+          immatriculation: truckData.immatriculation,
+          modele: truckData.modele,
+          anneeFabrication: truckData.annee_fabrication,
+          dateAcquisition: truckData.date_acquisition,
+          typeCarburant: truckData.type_carburant,
+          status: truckData.status,
+          equipements: truckData.equipements,
+          accessoires: truckData.accessoires,
+          chauffeur: truckData.chauffeur,
+          telephoneChauffeur: truckData.telephone_chauffeur,
+          residenceChauffeur: truckData.residence_chauffeur,
+          kilometrage: truckData.kilometrage,
         });
         
         setEditedTruck({
-          id: truckDoc.id,
-          ...truckData
+          id: truckData.id,
+          numeroSerie: truckData.numero_serie,
+          immatriculation: truckData.immatriculation,
+          modele: truckData.modele,
+          anneeFabrication: truckData.annee_fabrication,
+          dateAcquisition: truckData.date_acquisition,
+          typeCarburant: truckData.type_carburant,
+          status: truckData.status,
+          equipements: truckData.equipements,
+          accessoires: truckData.accessoires,
+          chauffeur: truckData.chauffeur,
+          telephoneChauffeur: truckData.telephone_chauffeur,
+          residenceChauffeur: truckData.residence_chauffeur,
+          kilometrage: truckData.kilometrage,
         });
         
-        // Fetch fuel history from Firebase
         await fetchFuelData();
         
-        // Fetch maintenance history
         try {
-          const maintenanceQuery = query(
-            collection(db, "maintenanceRecords"),
-            where("truckId", "==", id)
-          );
+          const { data: maintenanceData, error: maintenanceError } = await supabase
+            .from('maintenance_records')
+            .select('*')
+            .eq('truck_id', id)
+            .order('date', { ascending: false });
           
-          const maintenanceSnapshot = await getDocs(maintenanceQuery);
-          const maintenanceData = maintenanceSnapshot.docs.map(doc => {
-            const data = doc.data();
-            let formattedDate = "N/A";
-            if (data.date) {
-              if (typeof data.date.toDate === 'function') {
-                formattedDate = data.date.toDate().toLocaleDateString('fr-FR');
-              } else if (data.date instanceof Date) {
-                formattedDate = data.date.toLocaleDateString('fr-FR');
-              } else {
-                formattedDate = data.date;
-              }
-            }
-            
-            return {
-              id: doc.id,
-              ...data,
-              date: formattedDate
-            };
-          });
+          if (maintenanceError) {
+            throw maintenanceError;
+          }
           
-          setMaintenanceHistory(maintenanceData);
+          const formattedMaintenanceData = maintenanceData.map(record => ({
+            id: record.id,
+            truckId: record.truck_id,
+            date: new Date(record.date).toLocaleDateString('fr-FR'),
+            type: record.type,
+            kilometrage: record.kilometrage,
+            technicien: record.technicien,
+            cout: record.cout,
+            status: record.status,
+          }));
+          
+          setMaintenanceHistory(formattedMaintenanceData);
         } catch (maintenanceError) {
           console.error("Error fetching maintenance history:", maintenanceError);
-          // Use mock data if maintenance history fetch fails
           setMaintenanceHistory([
             {
               date: "12/02/2025",
               type: "Vidange d'huile",
-              kilometrage: "51,230 km",
+              kilometrage: 51230,
               technicien: "Pierre Dupont",
               cout: 120.50,
-              status: "completed"
+              status: "completed",
             },
             {
               date: "03/01/2025",
               type: "Changement de freins",
-              kilometrage: "49,105 km",
+              kilometrage: 49105,
               technicien: "Michel Lambert",
               cout: 345.75,
-              status: "completed"
+              status: "completed",
             },
             {
               date: "15/12/2024",
               type: "Contrôle général",
-              kilometrage: "47,890 km",
+              kilometrage: 47890,
               technicien: "Sophie Martin",
               cout: 85.00,
-              status: "completed"
-            }
+              status: "completed",
+            },
           ]);
         }
       } catch (err) {
@@ -197,35 +178,49 @@ const TruckDetails = () => {
     fetchTruckData();
   }, [id, fetchFuelData]);
 
-  // Function to refresh fuel data after adding a new entry
   const refreshFuelData = () => {
     console.log("Refreshing fuel data");
     fetchFuelData();
   };
 
-  // Handle editing section
   const handleEditClick = (section) => {
     setIsEditing(true);
     setEditSection(section);
   };
 
-  // Handle input change in edit form
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setEditedTruck(prev => ({
       ...prev,
-      [name]: value
+      [name]: value,
     }));
   };
 
-  // Handle save changes
   const handleSaveChanges = async () => {
     try {
-      // Update Firebase document
-      const truckRef = doc(db, "trucks", id);
-      await updateDoc(truckRef, editedTruck);
+      const { error } = await supabase
+        .from('trucks')
+        .update({
+          numero_serie: editedTruck.numeroSerie,
+          immatriculation: editedTruck.immatriculation,
+          modele: editedTruck.modele,
+          annee_fabrication: parseInt(editedTruck.anneeFabrication),
+          date_acquisition: editedTruck.dateAcquisition,
+          type_carburant: editedTruck.typeCarburant,
+          status: editedTruck.status,
+          equipements: editedTruck.equipements || null,
+          accessoires: editedTruck.accessoires || null,
+          chauffeur: editedTruck.chauffeur || null,
+          telephone_chauffeur: editedTruck.telephoneChauffeur || null,
+          residence_chauffeur: editedTruck.residenceChauffeur || null,
+          kilometrage: parseFloat(editedTruck.kilometrage) || null,
+        })
+        .eq('id', id);
       
-      // Update local state
+      if (error) {
+        throw error;
+      }
+      
       setTruck(editedTruck);
       setIsEditing(false);
       setEditSection(null);
@@ -237,11 +232,10 @@ const TruckDetails = () => {
     }
   };
 
-  // Handle cancel edit
   const handleCancelEdit = () => {
     setIsEditing(false);
     setEditSection(null);
-    setEditedTruck(truck); // Reset to original data
+    setEditedTruck(truck);
   };
 
   if (loading) {
@@ -410,7 +404,7 @@ const TruckDetails = () => {
                     <div className="forme-group">
                       <label>Année:</label>
                       <input 
-                        type="text" 
+                        type="number" 
                         name="anneeFabrication" 
                         value={editedTruck?.anneeFabrication || ""} 
                         onChange={handleInputChange}
@@ -458,7 +452,7 @@ const TruckDetails = () => {
                     <div className="forme-group">
                       <label>Date d'Acquisition:</label>
                       <input 
-                        type="text" 
+                        type="date" 
                         name="dateAcquisition" 
                         value={editedTruck?.dateAcquisition || ""} 
                         onChange={handleInputChange}

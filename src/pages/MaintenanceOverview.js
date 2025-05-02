@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import "./MaintenanceOverview.css";
-import { db } from "../firebase";
-import { collection, getDocs, updateDoc, doc } from "firebase/firestore";
+import { supabase } from "../supabase"; // Adjust path to your supabase.js
 
 const MaintenanceOverview = () => {
   const [maintenances, setMaintenances] = useState([]);
@@ -11,28 +10,45 @@ const MaintenanceOverview = () => {
   const [error, setError] = useState(null);
   const [filter, setFilter] = useState("scheduled");
 
-  // Fetch trucks and maintenances from Firebase
   useEffect(() => {
     const fetchData = async () => {
       try {
         setLoading(true);
+
         // Fetch trucks
-        const trucksCollection = collection(db, "trucks");
-        const trucksSnapshot = await getDocs(trucksCollection);
-        const trucksData = trucksSnapshot.docs.map((doc) => ({
-          id: doc.id,
-          immatriculation: doc.data().immatriculation || doc.id,
-        }));
-        setTrucks(trucksData);
+        const { data: trucksData, error: trucksError } = await supabase
+          .from('trucks')
+          .select('id, immatriculation');
+
+        if (trucksError) {
+          throw trucksError;
+        }
+
+        setTrucks(trucksData.map(truck => ({
+          id: truck.id,
+          immatriculation: truck.immatriculation,
+        })));
 
         // Fetch maintenances
-        const maintenancesCollection = collection(db, "maintenances");
-        const maintenancesSnapshot = await getDocs(maintenancesCollection);
-        const maintenancesData = maintenancesSnapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        }));
-        setMaintenances(maintenancesData);
+        const { data: maintenancesData, error: maintenancesError } = await supabase
+          .from('maintenance_records')
+          .select('*');
+
+        if (maintenancesError) {
+          throw maintenancesError;
+        }
+
+        setMaintenances(maintenancesData.map(maintenance => ({
+          id: maintenance.id,
+          truckId: maintenance.truck_id,
+          type: maintenance.type,
+          date: new Date(maintenance.date).toLocaleDateString('fr-FR'),
+          kilometrage: maintenance.kilometrage.toString(),
+          technicien: maintenance.technicien,
+          cout: maintenance.cout,
+          status: maintenance.status,
+          completedAt: maintenance.completed_at,
+        })));
       } catch (err) {
         console.error("Error fetching data:", err);
         setError("Échec du chargement des données de maintenance.");
@@ -43,17 +59,25 @@ const MaintenanceOverview = () => {
     fetchData();
   }, []);
 
-  // Handle marking maintenance as completed
   const handleCompleteMaintenance = async (maintenance) => {
     try {
-      const maintenanceRef = doc(db, "maintenances", maintenance.id);
-      await updateDoc(maintenanceRef, {
-        status: "completed",
-        completedAt: new Date(),
-      });
+      const { error } = await supabase
+        .from('maintenance_records')
+        .update({
+          status: "completed",
+          completed_at: new Date().toISOString(),
+        })
+        .eq('id', maintenance.id);
+
+      if (error) {
+        throw error;
+      }
+
       setMaintenances((prev) =>
         prev.map((m) =>
-          m.id === maintenance.id ? { ...m, status: "completed" } : m
+          m.id === maintenance.id
+            ? { ...m, status: "completed", completedAt: new Date() }
+            : m
         )
       );
     } catch (err) {
@@ -62,7 +86,6 @@ const MaintenanceOverview = () => {
     }
   };
 
-  // Filter maintenances based on status
   const filteredMaintenances =
     filter === "all"
       ? maintenances
@@ -70,9 +93,8 @@ const MaintenanceOverview = () => {
 
   return (
     <div className="maintenance-overview-container">
-      {/* Sidebar */}
       <aside className="maintenance-overview-sidebar">
-        <h2 className="maintenance-overview-fleet-title">Système de Gestion & Contrôle </h2>
+        <h2 className="maintenance-overview-fleet-title">Système de Gestion & Contrôle</h2>
         <nav>
           <ul>
             <li>
@@ -98,7 +120,6 @@ const MaintenanceOverview = () => {
         </div>
       </aside>
 
-      {/* Main Content */}
       <main className="maintenance-overview-content">
         <header className="maintenance-overview-header">
           <h1>🛠️ Aperçu de la Maintenance</h1>
@@ -106,7 +127,6 @@ const MaintenanceOverview = () => {
 
         {error && <div className="maintenance-overview-error-message">{error}</div>}
 
-        {/* Filter Buttons */}
         <section className="maintenance-overview-filter-section">
           <h2>Maintenances</h2>
           <div className="maintenance-overview-filter-buttons">
@@ -126,7 +146,6 @@ const MaintenanceOverview = () => {
           </div>
         </section>
 
-        {/* Maintenance List */}
         <section className="maintenance-overview-list-section">
           {loading ? (
             <div className="maintenance-overview-loading">Chargement des données...</div>
@@ -146,9 +165,9 @@ const MaintenanceOverview = () => {
                     <h3>{maintenance.type}</h3>
                     <p><strong>Camion:</strong> {truck?.immatriculation || "Inconnu"}</p>
                     <p><strong>Date:</strong> {maintenance.date}</p>
-                    <p><strong>Kilométrage:</strong> {maintenance.kilometrage}</p>
+                    <p><strong>Kilométrage:</strong> {maintenance.kilometrage} km</p>
                     <p><strong>Technicien:</strong> {maintenance.technicien}</p>
-                    <p><strong>Coût:</strong> {maintenance.cout?.toFixed(2) || 0} €</p>
+                    <p><strong>Coût:</strong> {maintenance.cout?.toFixed(2) || 0} DT</p>
                     <p><strong>Statut:</strong> {maintenance.status === "scheduled" ? "Planifiée" : "Terminée"}</p>
                     {maintenance.status === "scheduled" && (
                       <button
