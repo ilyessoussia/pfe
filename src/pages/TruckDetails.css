@@ -291,7 +291,48 @@ header h1 {
     width: 100%;
   }
 }
+/* Trip Scheduler Truck Selection Styles */
 
+.truck-select-container {
+  width: 100%;
+  margin-bottom: 8px;
+}
+
+.trip-scheduler-truck-list {
+  width: 100%;
+  position: absolute;
+  top: 100%;
+  z-index: 100;
+  max-height: 200px;
+  overflow-y: auto;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.trip-scheduler-truck-item {
+  padding: 8px 12px;
+  cursor: pointer;
+  background-color: #141111;
+  border-bottom: 1px solid #ddd;
+}
+
+.trip-scheduler-truck-item:hover {
+  background-color: #000; /* Black background on hover as requested */
+  color: white;
+}
+
+.trip-scheduler-selected-truck {
+  margin-top: 6px;
+  color: green;
+  font-weight: bold;
+}
+
+.trip-scheduler-no-trucks {
+  color: red;
+  font-size: 0.9em;
+  margin-top: 4px;
+}
 
 
 

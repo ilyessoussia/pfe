@@ -151,18 +151,19 @@ const MaintenanceTab = ({ maintenanceHistory: initialMaintenanceHistory = [] }) 
     e.preventDefault();
     setSubmitting(true);
     setError(null);
-
+  
     try {
       if (!formData.date || !formData.type || !formData.kilometrage || !formData.technicien || !formData.cout) {
         throw new Error("Veuillez remplir tous les champs obligatoires");
       }
-
+  
       const kilometrage = parseFloat(formData.kilometrage.replace(/[^0-9.]/g, '')) || 0;
-
+  
       if (!id) {
         throw new Error("ID du camion non disponible");
       }
-
+  
+      // Add .select() to return the inserted data
       const { data, error } = await supabase
         .from('maintenance_records')
         .insert([{
@@ -173,27 +174,36 @@ const MaintenanceTab = ({ maintenanceHistory: initialMaintenanceHistory = [] }) 
           technicien: formData.technicien,
           cout: parseFloat(formData.cout) || 0,
           status: formData.status,
-        }]);
-
+        }])
+        .select();
+  
       if (error) {
         throw error;
       }
-
-      const newMaintenance = {
-        id: data[0].id,
-        truckId: id,
-        date: new Date(formData.date).toLocaleDateString('fr-FR'),
-        type: formData.type,
-        kilometrage: kilometrage.toString(),
-        technicien: formData.technicien,
-        cout: parseFloat(formData.cout) || 0,
-        status: formData.status,
-        createdAt: new Date(),
-      };
-
-      setMaintenanceData((prev) => [newMaintenance, ...prev]);
+  
+      // Check if data exists before trying to access it
+      if (data && data.length > 0) {
+        const newMaintenance = {
+          id: data[0].id,
+          truckId: id,
+          date: new Date(formData.date).toLocaleDateString('fr-FR'),
+          type: formData.type,
+          kilometrage: kilometrage.toString(),
+          technicien: formData.technicien,
+          cout: parseFloat(formData.cout) || 0,
+          status: formData.status,
+          createdAt: new Date(),
+        };
+  
+        setMaintenanceData((prev) => [newMaintenance, ...prev]);
+      } else {
+        // Insertion successful but no data returned, refresh data from database
+        console.log("Insertion successful but no data returned, refreshing data");
+        // You could optionally re-fetch all maintenance data here
+      }
+      
       setSuccess(true);
-
+  
       setTimeout(() => {
         setShowModal(false);
         setFormData({

@@ -24,6 +24,8 @@ const TripScheduler = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const tripsPerPage = 10;
+  const [selectedTruck, setSelectedTruck] = useState(null); // Added state to track selected truck
+  const [showTruckList, setShowTruckList] = useState(false); // New state to control dropdown visibility
 
   const truckListRef = useRef(null);
 
@@ -71,16 +73,26 @@ const TripScheduler = () => {
   }, []);
 
   useEffect(() => {
-    const filtered = trucks.filter((truck) =>
-      truck.immatriculation.toLowerCase().includes(truckSearch.toLowerCase())
-    );
-    setFilteredTrucks(filtered);
-  }, [truckSearch, trucks]);
+    // Only filter trucks when search is active and no truck is selected
+    if (truckSearch && !selectedTruck) {
+      const filtered = trucks.filter((truck) =>
+        truck.immatriculation.toLowerCase().includes(truckSearch.toLowerCase())
+      );
+      setFilteredTrucks(filtered);
+      setShowTruckList(true);
+    } else {
+      setFilteredTrucks([]);
+      setShowTruckList(false);
+    }
+  }, [truckSearch, trucks, selectedTruck]);
 
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (truckListRef.current && !truckListRef.current.contains(e.target)) {
-        setFilteredTrucks([]);
+        // Don't close the dropdown if we're clicking the search input itself
+        if (e.target.id !== "truckSearch") {
+          setShowTruckList(false);
+        }
       }
     };
     document.addEventListener("mousedown", handleClickOutside);
@@ -93,25 +105,53 @@ const TripScheduler = () => {
   };
 
   const handleTruckSelect = (truck) => {
+    console.log("Selected truck:", truck);
     setFormData((prev) => ({ ...prev, truckId: truck.id }));
     setTruckSearch(truck.immatriculation);
-    setFilteredTrucks([]);
+    setSelectedTruck(truck); // Store the selected truck for display
+    setShowTruckList(false); // Hide dropdown after selection
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!formData.truckId || !formData.destination || !formData.date || !formData.cargo) {
-      setError("Veuillez remplir tous les champs obligatoires.");
+    setError(null); // Clear previous errors
+    
+    // Log form data for debugging
+    console.log("Form data at submission:", formData);
+    
+    // Check all required fields with detailed errors
+    if (!formData.truckId) {
+      setError("Veuillez sélectionner un camion dans la liste déroulante.");
+      document.getElementById("truckSelect").focus();
       return;
     }
+    
+    if (!formData.destination) {
+      setError("Veuillez indiquer une destination.");
+      document.getElementById("destination").focus();
+      return;
+    }
+    
+    if (!formData.date) {
+      setError("Veuillez sélectionner une date de voyage.");
+      document.getElementById("date").focus();
+      return;
+    }
+    
+    if (!formData.cargo) {
+      setError("Veuillez décrire la cargaison.");
+      document.getElementById("cargo").focus();
+      return;
+    }
+    
     const tripDate = new Date(formData.date);
     if (tripDate < new Date().setHours(0, 0, 0, 0)) {
       setError("La date du voyage doit être dans le futur.");
+      document.getElementById("date").focus();
       return;
     }
 
     try {
-      setError(null);
       const formattedDate = tripDate.toLocaleDateString("fr-FR");
       const { data, error } = await supabase
         .from('trips')
@@ -138,8 +178,11 @@ const TripScheduler = () => {
         },
         ...prev,
       ]);
+      
+      // Reset form
       setFormData({ truckId: "", destination: "", date: "", cargo: "", status: "scheduled" });
       setTruckSearch("");
+      setSelectedTruck(null);
       setShowAddTripModal(false);
       setSuccessMessage("Voyage planifié avec succès !");
       setTimeout(() => setSuccessMessage(""), 3000);
@@ -217,6 +260,26 @@ const TripScheduler = () => {
     currentPage * tripsPerPage
   );
 
+  // Reset form and clear errors when opening the modal
+  const openAddTripModal = () => {
+    // Reset all form-related state
+    setFormData({ truckId: "", destination: "", date: "", cargo: "", status: "scheduled" });
+    setTruckSearch("");
+    setSelectedTruck(null);
+    setError(null);
+    
+    // Get tomorrow's date in YYYY-MM-DD format for the date input default
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const tomorrowFormatted = tomorrow.toISOString().split('T')[0];
+    
+    // Set a default date (tomorrow) for better UX
+    setFormData(prev => ({ ...prev, date: tomorrowFormatted }));
+    
+    // Show the modal
+    setShowAddTripModal(true);
+  };
+
   return (
     <div className="trip-scheduler-container">
       <aside className="trip-scheduler-sidebar">
@@ -254,7 +317,7 @@ const TripScheduler = () => {
           <div className="trip-scheduler-header-actions">
             <button
               className="trip-scheduler-add-btn"
-              onClick={() => setShowAddTripModal(true)}
+              onClick={openAddTripModal}
             >
               ➕ Planifier un Voyage
             </button>
@@ -464,6 +527,8 @@ const TripScheduler = () => {
                     status: "scheduled",
                   });
                   setTruckSearch("");
+                  setSelectedTruck(null);
+                  setError(null);
                 }}
               >
                 ✕
@@ -472,31 +537,87 @@ const TripScheduler = () => {
                 <h2>Planifier un Nouveau Voyage</h2>
                 <form onSubmit={handleSubmit} className="trip-scheduler-form">
                   <div className="trip-scheduler-form-group">
-                    <label htmlFor="truckSearch">Camion</label>
-                    <input
-                      type="text"
-                      id="truckSearch"
-                      value={truckSearch}
-                      onChange={(e) => setTruckSearch(e.target.value)}
-                      placeholder="Rechercher un camion..."
-                      required
-                    />
-                    {truckSearch && filteredTrucks.length > 0 && (
-                      <div className="trip-scheduler-truck-list" ref={truckListRef}>
-                        {filteredTrucks.map((truck) => (
-                          <div
-                            key={truck.id}
-                            className="trip-scheduler-truck-item"
-                            onClick={() => handleTruckSelect(truck)}
-                          >
+                    <label htmlFor="truckSelect">Camion <span className="required-field">*</span></label>
+                    
+                    {/* Dropdown selection instead of text search */}
+                    <div className="truck-select-container">
+                      <select
+                        id="truckSelect"
+                        name="truckId"
+                        value={formData.truckId}
+                        onChange={(e) => {
+                          const selectedId = e.target.value;
+                          const truck = trucks.find(t => t.id === selectedId);
+                          if (truck) {
+                            setFormData(prev => ({ ...prev, truckId: truck.id }));
+                            setTruckSearch(truck.immatriculation);
+                            setSelectedTruck(truck);
+                          } else {
+                            setFormData(prev => ({ ...prev, truckId: "" }));
+                            setTruckSearch("");
+                            setSelectedTruck(null);
+                          }
+                        }}
+                        required
+                      >
+                        <option value="">-- Sélectionnez un camion --</option>
+                        {trucks.map(truck => (
+                          <option key={truck.id} value={truck.id}>
                             {truck.immatriculation}
-                          </div>
+                          </option>
                         ))}
+                      </select>
+                    </div>
+                    
+                    {/* Alternative search functionality */}
+                    <div style={{ marginTop: '8px' }}>
+                      <label htmlFor="truckSearch">Recherche rapide:</label>
+                      <div style={{ display: 'flex', position: 'relative' }}>
+                        <input
+                          type="text"
+                          id="truckSearch"
+                          value={truckSearch}
+                          onChange={(e) => {
+                            setTruckSearch(e.target.value);
+                            if (selectedTruck && e.target.value !== selectedTruck.immatriculation) {
+                              setSelectedTruck(null);
+                              setFormData(prev => ({ ...prev, truckId: "" }));
+                            }
+                          }}
+                          placeholder="Filtrer par immatriculation..."
+                          autoComplete="off"
+                          onFocus={() => {
+                            if (truckSearch && !selectedTruck) {
+                              setShowTruckList(true);
+                            }
+                          }}
+                        />
+                        {showTruckList && truckSearch && filteredTrucks.length > 0 && (
+                          <div className="trip-scheduler-truck-list" ref={truckListRef}>
+                            {filteredTrucks.map((truck) => (
+                              <div
+                                key={truck.id}
+                                className="trip-scheduler-truck-item"
+                                onClick={() => handleTruckSelect(truck)}
+                              >
+                                {truck.immatriculation}
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    
+                    {selectedTruck && (
+                      <div className="trip-scheduler-selected-truck">
+                        Camion sélectionné: {selectedTruck.immatriculation}
                       </div>
                     )}
+                    
+                    {/* Removed the error message that was showing when a truck was selected */}
                   </div>
                   <div className="trip-scheduler-form-group">
-                    <label htmlFor="destination">Destination</label>
+                    <label htmlFor="destination">Destination <span className="required-field">*</span></label>
                     <input
                       type="text"
                       id="destination"
@@ -508,18 +629,19 @@ const TripScheduler = () => {
                     />
                   </div>
                   <div className="trip-scheduler-form-group">
-                    <label htmlFor="date">Date du Voyage</label>
+                    <label htmlFor="date">Date du Voyage <span className="required-field">*</span></label>
                     <input
                       type="date"
                       id="date"
                       name="date"
                       value={formData.date}
                       onChange={handleInputChange}
+                      min={new Date().toISOString().split('T')[0]} // Set min date to today
                       required
                     />
                   </div>
                   <div className="trip-scheduler-form-group">
-                    <label htmlFor="cargo">Cargaison</label>
+                    <label htmlFor="cargo">Cargaison <span className="required-field">*</span></label>
                     <input
                       type="text"
                       id="cargo"
@@ -559,6 +681,7 @@ const TripScheduler = () => {
                           status: "scheduled",
                         });
                         setTruckSearch("");
+                        setSelectedTruck(null);
                       }}
                     >
                       Effacer le Formulaire

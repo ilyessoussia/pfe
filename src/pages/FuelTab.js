@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from "react";
 import "./FuelTab.css";
-import { supabase } from "../supabase"; // Adjust path to your supabase.js
+import { supabase } from "../supabase";
 import { useParams } from "react-router-dom";
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend } from "recharts";
 
-const FuelTab = ({ fuelHistory, onFuelAdded }) => {
+const FuelTab = ({ onFuelAdded }) => {
   const { id } = useParams();
   const [showModal, setShowModal] = useState(false);
   const [newRefuel, setNewRefuel] = useState({
@@ -13,10 +13,12 @@ const FuelTab = ({ fuelHistory, onFuelAdded }) => {
     fuelPrice: "2.205",
     cost: "",
     date: new Date().toISOString().split('T')[0],
+    lastKilometrage: "",
   });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [lastEntryLoading, setLastEntryLoading] = useState(true);
+  const [fetchError, setFetchError] = useState("");
   const [fuelChartData, setFuelChartData] = useState([]);
   const [lastFuelEntry, setLastFuelEntry] = useState(null);
   const [monthlySummary, setMonthlySummary] = useState({
@@ -25,36 +27,143 @@ const FuelTab = ({ fuelHistory, onFuelAdded }) => {
   });
   const [groupedHistory, setGroupedHistory] = useState({});
   const [expandedMonths, setExpandedMonths] = useState({});
+  const [localHistory, setLocalHistory] = useState([]);
 
+  // Format date as DD/MM/YYYY for display
+  const formatDate = (dateInput) => {
+    let date;
+    if (typeof dateInput === 'string') {
+      date = new Date(dateInput);
+    } else if (dateInput instanceof Date) {
+      date = dateInput;
+    } else {
+      date = new Date();
+    }
+    if (isNaN(date.getTime())) {
+      console.warn(`Invalid date input: ${dateInput}`);
+      return "Invalid Date";
+    }
+    return date.toLocaleDateString('fr-FR', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+    });
+  };
+
+  // Parse date to Date object, handling YYYY-MM-DD
+  const parseDate = (dateInput) => {
+    if (dateInput instanceof Date) {
+      return dateInput;
+    }
+    if (typeof dateInput === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(dateInput)) {
+      const [year, month, day] = dateInput.split('-').map(Number);
+      const date = new Date(year, month - 1, day);
+      if (isNaN(date.getTime())) {
+        console.warn(`Invalid parsed date: ${dateInput}`);
+        return new Date(0);
+      }
+      return date;
+    }
+    console.warn(`Unrecognized date format: ${dateInput}`);
+    return new Date(dateInput);
+  };
+
+  // Calculate metrics (distance, consumption, cost per km, liters per 100km)
+  const calculateMetrics = (currentEntry, previousEntry) => {
+    const kilometers = parseFloat(currentEntry.kilometers) || 0;
+    const liters = parseFloat(currentEntry.liters) || 0;
+    const cost = parseFloat(currentEntry.cost) || 0;
+    const distanceTraveled = previousEntry
+      ? kilometers - parseFloat(previousEntry.kilometers)
+      : 0;
+    const consumption = distanceTraveled > 0 ? distanceTraveled / liters : 0;
+    const litersPer100km = distanceTraveled > 0 ? (liters * 100) / distanceTraveled : 0;
+    const costPerKm = distanceTraveled > 0 ? cost / distanceTraveled : 0;
+    return {
+      distanceTraveled: distanceTraveled.toFixed(2),
+      consumption: consumption.toFixed(2),
+      litersPer100km: litersPer100km.toFixed(2),
+      costPerKm: costPerKm.toFixed(3),
+    };
+  };
+
+  // Fetch fuel history from Supabase
+  const fetchFuelHistory = async () => {
+    if (!id) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('fuel_history')
+        .select('*')
+        .eq('truck_id', id)
+        .order('raw_date', { ascending: true });
+
+      if (error) {
+        console.error("Supabase fetch history error:", error);
+        throw error;
+      }
+
+      console.log("Fetched fuel history:", data);
+
+      const formattedHistory = data.map((entry) => ({
+        truckId: entry.truck_id,
+        kilometers: parseFloat(entry.kilometers),
+        liters: parseFloat(entry.liters),
+        fuelPrice: parseFloat(entry.fuel_price),
+        cost: parseFloat(entry.cost),
+        rawDate: entry.raw_date,
+        timestamp: parseDate(entry.raw_date).getTime(),
+        distanceTraveled: parseFloat(entry.distance_traveled) || 0,
+        consumption: parseFloat(entry.consumption) || 0,
+        costPerKm: parseFloat(entry.cost_per_km) || 0,
+        litersPer100km: parseFloat(entry.liters_per_100km) || 0,
+      }));
+
+      setLocalHistory(formattedHistory);
+    } catch (err) {
+      console.error("Error fetching fuel history:", err);
+      setFetchError(`Erreur lors du chargement de l'historique: ${err.message}`);
+    }
+  };
+
+  // Fetch last fuel entry from Supabase
   useEffect(() => {
     async function fetchLastFuelEntry() {
+      if (!id) return;
+
       try {
         setLastEntryLoading(true);
-        
         const { data, error } = await supabase
-          .from('fuel_records')
+          .from('fuel_history')
           .select('*')
           .eq('truck_id', id)
-          .order('created_at', { ascending: false })
-          .limit(1)
-          .single();
+          .order('raw_date', { ascending: false })
+          .limit(1);
 
-        if (error && error.code !== 'PGRST116') { // PGRST116: No rows found
+        if (error) {
+          console.error("Supabase query error:", error);
           throw error;
         }
 
-        if (data) {
-          console.log("Last fuel entry loaded:", data);
-          setLastFuelEntry({
-            kilometers: data.kilometers,
-            liters: data.liters,
-            fuelPrice: data.fuel_price,
-            cost: data.cost,
-            date: new Date(data.date).toLocaleDateString('fr-FR'),
-          });
-          setNewRefuel(prev => ({
+        if (data && data.length > 0) {
+          console.log("Last fuel entry loaded:", data[0]);
+          const lastEntry = {
+            truckId: data[0].truck_id,
+            kilometers: parseFloat(data[0].kilometers),
+            liters: parseFloat(data[0].liters),
+            fuelPrice: parseFloat(data[0].fuel_price),
+            cost: parseFloat(data[0].cost),
+            rawDate: data[0].raw_date,
+            timestamp: parseDate(data[0].raw_date).getTime(),
+            distanceTraveled: parseFloat(data[0].distance_traveled) || 0,
+            consumption: parseFloat(data[0].consumption) || 0,
+            costPerKm: parseFloat(data[0].cost_per_km) || 0,
+            litersPer100km: parseFloat(data[0].liters_per_100km) || 0,
+          };
+          setLastFuelEntry(lastEntry);
+          setNewRefuel((prev) => ({
             ...prev,
-            lastKilometrage: data.kilometers,
+            lastKilometrage: lastEntry.kilometers.toString(),
           }));
         } else {
           console.log("No previous fuel entries found");
@@ -62,83 +171,56 @@ const FuelTab = ({ fuelHistory, onFuelAdded }) => {
         }
       } catch (err) {
         console.error("Error fetching last fuel entry:", err);
+        setFetchError(`Erreur lors du chargement du dernier plein: ${err.message}`);
       } finally {
         setLastEntryLoading(false);
       }
     }
 
-    if (id) {
-      fetchLastFuelEntry();
-    }
+    fetchLastFuelEntry();
+    fetchFuelHistory();
   }, [id]);
 
+  // Process history for charts and summaries
   useEffect(() => {
-    if (fuelHistory && fuelHistory.length > 0) {
-      const sortedHistory = [...fuelHistory].sort((a, b) => {
-        const [dayA, monthA, yearA] = a.date.split('/');
-        const [dayB, monthB, yearB] = b.date.split('/');
-        const dateA = new Date(yearA, monthA - 1, dayA);
-        const dateB = new Date(yearB, monthB - 1, dayB);
-        return dateB - dateA;
-      });
-
-      if (sortedHistory[0]) {
-        console.log("Last fuel entry from history:", sortedHistory[0]);
-        setLastFuelEntry({
-          kilometers: sortedHistory[0].kilometers,
-          liters: sortedHistory[0].liters,
-          fuelPrice: sortedHistory[0].fuelPrice,
-          cost: sortedHistory[0].cost,
-          date: sortedHistory[0].date,
-        });
-        setNewRefuel(prev => ({
-          ...prev,
-          lastKilometrage: sortedHistory[0].kilometers,
-        }));
-      }
-    }
-  }, [fuelHistory]);
-
-  useEffect(() => {
-    if (fuelHistory && fuelHistory.length > 0) {
+    console.log("Processing history:", localHistory);
+    if (localHistory && localHistory.length > 0) {
       const last30Days = new Date();
       last30Days.setDate(last30Days.getDate() - 30);
 
-      const chartData = fuelHistory
-        .filter(entry => {
-          if (!entry.date.includes('/')) return false;
-          const [day, month, year] = entry.date.split('/');
-          const entryDate = new Date(year, month - 1, day);
-          return (
-            entryDate >= last30Days &&
-            entry.distanceTraveled > 0 &&
-            entry.consumption !== undefined &&
-            entry.consumption > 0
-          );
-        })
-        .map(entry => {
-          const dateParts = entry.date.split('/');
-          const shortDate = `${dateParts[0]}/${dateParts[1]}`;
-          const litersPer100km = entry.consumption > 0 ? (100 / entry.consumption) : 0;
-
+      // Process and filter data for charts - UPDATED: skip entries with distanceTraveled = 0
+      const chartData = localHistory
+        .map((entry, index, array) => {
+          if (!entry?.rawDate) {
+            console.log("Skipping entry, missing rawDate:", entry);
+            return null;
+          }
+          const previousEntry = index > 0 ? array[index - 1] : null;
+          const metrics = calculateMetrics(entry, previousEntry);
+          
+          // Skip entries with distanceTraveled = 0 (no previous entry)
+          if (parseFloat(metrics.distanceTraveled) <= 0) {
+            console.log("Skipping first entry from chart data (no distanceTraveled):", entry);
+            return null;
+          }
+          
+          const entryDate = parseDate(entry.rawDate);
           return {
-            date: shortDate,
-            consumption: entry.consumption || 0,
-            costPerKm: entry.costPerKm || 0,
-            cost: entry.cost || 0,
-            litersPer100km: litersPer100km,
+            date: entryDate.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' }),
+            consumption: parseFloat(metrics.consumption),
+            costPerKm: parseFloat(metrics.costPerKm),
+            cost: parseFloat(entry.cost) || 0,
+            litersPer100km: parseFloat(metrics.litersPer100km),
+            timestamp: entryDate.getTime(),
           };
         })
-        .sort((a, b) => {
-          const [dayA, monthA] = a.date.split('/');
-          const [dayB, monthB] = b.date.split('/');
-          const dateA = new Date(2025, parseInt(monthA) - 1, parseInt(dayA));
-          const dateB = new Date(2025, parseInt(monthB) - 1, parseInt(dayB));
-          return dateA - dateB;
-        });
+        .filter((entry) => entry && parseDate(entry.timestamp) >= last30Days)
+        .sort((a, b) => a.timestamp - b.timestamp);
 
+      console.log("Processed chart data:", chartData);
       setFuelChartData(chartData);
 
+      // Process monthly summaries and group history by month
       const grouped = {};
       let currentMonthCost = 0;
       let currentMonthMileage = 0;
@@ -146,51 +228,61 @@ const FuelTab = ({ fuelHistory, onFuelAdded }) => {
       const currentMonth = currentDate.getMonth();
       const currentYear = currentDate.getFullYear();
 
-      fuelHistory.forEach(entry => {
-        if (!entry.date.includes('/')) return;
-        const [day, month, year] = entry.date.split('/');
+      localHistory.forEach((entry, index, array) => {
+        if (!entry?.rawDate) {
+          console.log("Skipping invalid entry, missing rawDate:", entry);
+          return;
+        }
+        const entryDate = parseDate(entry.rawDate);
+        const month = entryDate.getMonth() + 1;
+        const year = entryDate.getFullYear();
         const monthYearKey = `${month}/${year}`;
-        const entryDate = new Date(year, month - 1, day);
+        const metrics = calculateMetrics(entry, index > 0 ? array[index - 1] : null);
 
         if (entryDate.getMonth() === currentMonth && entryDate.getFullYear() === currentYear) {
           currentMonthCost += parseFloat(entry.cost) || 0;
-          if (entry.distanceTraveled) {
-            currentMonthMileage += parseFloat(entry.distanceTraveled) || 0;
-          }
+          currentMonthMileage += parseFloat(metrics.distanceTraveled) || 0;
         }
 
         if (!grouped[monthYearKey]) {
           grouped[monthYearKey] = {
             entries: [],
-            month: month,
-            year: year,
+            month,
+            year,
             monthName: new Date(year, month - 1, 1).toLocaleString('fr-FR', { month: 'long' }),
             totalCost: 0,
             totalMileage: 0,
           };
-
           if (entryDate.getMonth() === currentMonth && entryDate.getFullYear() === currentYear) {
-            setExpandedMonths(prev => ({
+            setExpandedMonths((prev) => ({
               ...prev,
               [monthYearKey]: true,
             }));
           }
         }
 
-        grouped[monthYearKey].entries.push(entry);
+        grouped[monthYearKey].entries.push({
+          ...entry,
+          date: formatDate(entry.rawDate),
+          distanceTraveled: metrics.distanceTraveled,
+          consumption: metrics.consumption,
+          costPerKm: metrics.costPerKm,
+          litersPer100km: metrics.litersPer100km,
+        });
         grouped[monthYearKey].totalCost += parseFloat(entry.cost) || 0;
-        grouped[monthYearKey].totalMileage += parseFloat(entry.distanceTraveled) || 0;
+        grouped[monthYearKey].totalMileage += parseFloat(metrics.distanceTraveled) || 0;
       });
 
-      Object.keys(grouped).forEach(monthYear => {
+      Object.keys(grouped).forEach((monthYear) => {
         grouped[monthYear].entries.sort((a, b) => {
-          const [dayA, monthA, yearA] = a.date.split('/');
-          const [dayB, monthB, yearB] = b.date.split('/');
-          const dateA = new Date(yearA, monthA - 1, dayA);
-          const dateB = new Date(yearB, monthB - 1, dayB);
+          const dateA = parseDate(a.rawDate);
+          const dateB = parseDate(b.rawDate);
           return dateB - dateA;
         });
       });
+
+      console.log("Grouped history:", grouped);
+      console.log("Monthly summary:", { currentMonthCost, currentMonthMileage });
 
       setGroupedHistory(grouped);
       setMonthlySummary({
@@ -198,6 +290,7 @@ const FuelTab = ({ fuelHistory, onFuelAdded }) => {
         currentMonthMileage: currentMonthMileage.toFixed(0),
       });
     } else {
+      console.log("No history data available");
       setFuelChartData([]);
       setGroupedHistory({});
       setMonthlySummary({
@@ -205,7 +298,7 @@ const FuelTab = ({ fuelHistory, onFuelAdded }) => {
         currentMonthMileage: 0,
       });
     }
-  }, [fuelHistory]);
+  }, [localHistory]);
 
   const handleOpenModal = () => {
     setShowModal(true);
@@ -216,7 +309,7 @@ const FuelTab = ({ fuelHistory, onFuelAdded }) => {
       fuelPrice: "2.205",
       cost: "",
       date: new Date().toISOString().split('T')[0],
-      lastKilometrage: lastFuelEntry?.kilometers || "",
+      lastKilometrage: lastFuelEntry?.kilometers ? lastFuelEntry.kilometers.toString() : "",
     });
   };
 
@@ -261,7 +354,7 @@ const FuelTab = ({ fuelHistory, onFuelAdded }) => {
   };
 
   const toggleMonthExpand = (monthYear) => {
-    setExpandedMonths(prev => ({
+    setExpandedMonths((prev) => ({
       ...prev,
       [monthYear]: !prev[monthYear],
     }));
@@ -270,7 +363,7 @@ const FuelTab = ({ fuelHistory, onFuelAdded }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!newRefuel.kilometers || !newRefuel.liters || !newRefuel.cost) {
+    if (!newRefuel.kilometers || !newRefuel.liters || !newRefuel.cost || !newRefuel.fuelPrice) {
       setError("Tous les champs sont obligatoires");
       return;
     }
@@ -279,19 +372,24 @@ const FuelTab = ({ fuelHistory, onFuelAdded }) => {
     const liters = parseFloat(newRefuel.liters);
     const cost = parseFloat(newRefuel.cost);
     const fuelPrice = parseFloat(newRefuel.fuelPrice);
+    const inputDate = parseDate(newRefuel.date);
 
-    if (isNaN(kilometers) || isNaN(liters) || isNaN(cost)) {
-      setError("Le kilométrage, les litres et le coût total doivent être des nombres");
+    if (isNaN(kilometers) || isNaN(liters) || isNaN(cost) || isNaN(fuelPrice)) {
+      setError("Le kilométrage, les litres, le prix et le coût doivent être des nombres");
       return;
     }
 
-    if (kilometers <= 0 || liters <= 0 || cost <= 0) {
-      setError("Le kilométrage, les litres et le coût doivent être supérieurs à zéro");
+    if (kilometers <= 0 || liters <= 0 || cost <= 0 || fuelPrice <= 0) {
+      setError("Le kilométrage, les litres, le prix et le coût doivent être supérieurs à zéro");
+      return;
+    }
+
+    if (inputDate > new Date()) {
+      setError("La date ne peut pas être dans le futur");
       return;
     }
 
     if (!lastEntryLoading && lastFuelEntry && kilometers <= lastFuelEntry.kilometers) {
-      console.log("Validation failed:", kilometers, lastFuelEntry.kilometers);
       setError(`Le kilométrage doit être supérieur à ${lastFuelEntry.kilometers} km (dernier enregistrement)`);
       return;
     }
@@ -299,67 +397,66 @@ const FuelTab = ({ fuelHistory, onFuelAdded }) => {
     try {
       setLoading(true);
 
-      let consumption = 0;
-      let distanceTraveled = 0;
-      let costPerKm = 0;
-      let litersPer100km = 0;
+      const metrics = calculateMetrics(
+        { kilometers, liters, cost },
+        lastFuelEntry
+      );
 
-      if (lastFuelEntry) {
-        distanceTraveled = kilometers - lastFuelEntry.kilometers;
-        consumption = liters > 0 ? (distanceTraveled / liters) : 0;
-        litersPer100km = distanceTraveled > 0 ? (liters * 100 / distanceTraveled) : 0;
-        costPerKm = distanceTraveled > 0 ? (cost / distanceTraveled) : 0;
-      }
-
-      console.log("Adding new fuel record:", {
+      const newRecord = {
         truck_id: id,
         kilometers,
         liters,
         fuel_price: fuelPrice,
         cost,
-        date: newRefuel.date,
-        distance_traveled: distanceTraveled,
-        consumption,
-        cost_per_km: costPerKm,
-        liters_per_100km: litersPer100km,
-      });
+        raw_date: newRefuel.date,
+        distance_traveled: parseFloat(metrics.distanceTraveled),
+        consumption: parseFloat(metrics.consumption),
+        cost_per_km: parseFloat(metrics.costPerKm),
+        liters_per_100km: parseFloat(metrics.litersPer100km),
+        created_at: new Date().toISOString(),
+      };
 
-      const { error } = await supabase
-        .from('fuel_records')
-        .insert([{
-          truck_id: id,
-          kilometers,
-          liters,
-          fuel_price: fuelPrice,
-          cost,
-          date: newRefuel.date,
-          distance_traveled: distanceTraveled,
-          consumption,
-          cost_per_km: costPerKm,
-          liters_per_100km: litersPer100km,
-        }]);
+      console.log("Inserting fuel record:", newRecord);
+
+      const { data, error } = await supabase
+        .from('fuel_history')
+        .insert([newRecord])
+        .select();
 
       if (error) {
+        console.error("Supabase insert error:", error);
         throw error;
       }
 
+      console.log("Insert response:", data);
+
       const newEntry = {
+        truckId: id,
         kilometers,
         liters,
         fuelPrice,
         cost,
-        date: new Date(newRefuel.date).toLocaleDateString('fr-FR'),
+        rawDate: newRefuel.date,
+        timestamp: inputDate.getTime(),
+        distanceTraveled: parseFloat(metrics.distanceTraveled),
+        consumption: parseFloat(metrics.consumption),
+        costPerKm: parseFloat(metrics.costPerKm),
+        litersPer100km: parseFloat(metrics.litersPer100km),
       };
-      setLastFuelEntry(newEntry);
 
+      console.log("New fuel entry added:", newEntry);
+
+      // Append to localHistory and refresh from Supabase
+      setLocalHistory((prev) => [...prev, newEntry]);
+      setLastFuelEntry(newEntry);
+      fetchFuelHistory(); // Refresh full history
       setShowModal(false);
       alert("Plein ajouté avec succès !");
 
+      // Notify parent
       if (onFuelAdded && typeof onFuelAdded === 'function') {
-        console.log("Calling onFuelAdded callback");
+        console.log("Calling onFuelAdded");
         onFuelAdded();
-      } else {
-        console.log("onFuelAdded callback is not available");
       }
     } catch (err) {
       console.error("Error adding fuel record:", err);
@@ -368,9 +465,9 @@ const FuelTab = ({ fuelHistory, onFuelAdded }) => {
       setLoading(false);
     }
   };
-
   return (
     <div className="fuel-tab-content">
+      {fetchError && <div className="error-message">{fetchError}</div>}
       <div className="fuel-header">
         <h3>Carburant et Consommation</h3>
         <p>Enregistrez et suivez la consommation de carburant</p>
@@ -395,14 +492,14 @@ const FuelTab = ({ fuelHistory, onFuelAdded }) => {
           <h3>⛽ Rendement et Coût par Kilomètre</h3>
           {fuelChartData.length > 0 ? (
             <ResponsiveContainer width="100%" height={250}>
-              <AreaChart 
+              <AreaChart
                 data={fuelChartData}
                 margin={{ top: 10, right: 30, left: 0, bottom: 0 }}
               >
                 <XAxis dataKey="date" />
                 <YAxis yAxisId="left" orientation="left" stroke="#1E88E5" />
                 <YAxis yAxisId="right" orientation="right" stroke="#FF5722" />
-                <Tooltip 
+                <Tooltip
                   contentStyle={{ backgroundColor: "#fff", border: "none", color: "#000" }}
                   formatter={(value, name) => {
                     if (name === "consumption") {
@@ -415,22 +512,22 @@ const FuelTab = ({ fuelHistory, onFuelAdded }) => {
                   }}
                 />
                 <Legend />
-                <Area 
-                  type="monotone" 
-                  dataKey="consumption" 
+                <Area
+                  type="monotone"
+                  dataKey="consumption"
                   name="Rendement (km/L)"
                   yAxisId="left"
-                  stroke="#1E88E5" 
-                  fill="#BBDEFB" 
+                  stroke="#1E88E5"
+                  fill="#BBDEFB"
                   stackId="1"
                 />
-                <Area 
-                  type="monotone" 
-                  dataKey="costPerKm" 
+                <Area
+                  type="monotone"
+                  dataKey="costPerKm"
                   name="Coût/km (TND)"
                   yAxisId="right"
-                  stroke="#FF5722" 
-                  fill="#FFCCBC" 
+                  stroke="#FF5722"
+                  fill="#FFCCBC"
                   stackId="2"
                 />
               </AreaChart>
@@ -446,22 +543,22 @@ const FuelTab = ({ fuelHistory, onFuelAdded }) => {
           <h3>🚗 Consommation (L/100km)</h3>
           {fuelChartData.length > 0 ? (
             <ResponsiveContainer width="100%" height={250}>
-              <AreaChart 
+              <AreaChart
                 data={fuelChartData}
                 margin={{ top: 10, right: 30, left: 0, bottom: 0 }}
               >
                 <XAxis dataKey="date" />
                 <YAxis />
                 <Tooltip
-                  contentStyle={{ backgroundColor: "#fff", border: "none", color: "#000" }} 
+                  contentStyle={{ backgroundColor: "#fff", border: "none", color: "#000" }}
                   formatter={(value) => [`${value.toFixed(2)} L/100km`, "Consommation"]}
                 />
-                <Area 
-                  type="monotone" 
-                  dataKey="litersPer100km" 
+                <Area
+                  type="monotone"
+                  dataKey="litersPer100km"
                   name="L/100km"
-                  stroke="#9C27B0" 
-                  fill="#E1BEE7" 
+                  stroke="#9C27B0"
+                  fill="#E1BEE7"
                 />
               </AreaChart>
             </ResponsiveContainer>
@@ -483,12 +580,12 @@ const FuelTab = ({ fuelHistory, onFuelAdded }) => {
                   contentStyle={{ backgroundColor: "#fff", border: "none", color: "#000" }}
                   formatter={(value) => [`${value.toFixed(2)} TND`, "Coût Total"]}
                 />
-                <Area 
-                  type="monotone" 
-                  dataKey="cost" 
+                <Area
+                  type="monotone"
+                  dataKey="cost"
                   name="Coût Total"
-                  stroke="#4CAF50" 
-                  fill="#C8E6C9" 
+                  stroke="#4CAF50"
+                  fill="#C8E6C9"
                 />
               </AreaChart>
             </ResponsiveContainer>
@@ -509,17 +606,17 @@ const FuelTab = ({ fuelHistory, onFuelAdded }) => {
           {Object.keys(groupedHistory).length > 0 ? (
             Object.keys(groupedHistory)
               .sort((a, b) => {
-                const [monthA, yearA] = a.split('/');
-                const [monthB, yearB] = b.split('/');
+                const [monthA, yearA] = a.split('/').map(Number);
+                const [monthB, yearB] = b.split('/').map(Number);
                 if (yearA !== yearB) return yearB - yearA;
                 return monthB - monthA;
               })
-              .map(monthYear => {
+              .map((monthYear) => {
                 const monthData = groupedHistory[monthYear];
                 return (
                   <div key={monthYear} className="month-group">
-                    <div 
-                      className="month-header" 
+                    <div
+                      className="month-header"
                       onClick={() => toggleMonthExpand(monthYear)}
                     >
                       <h4>
@@ -534,25 +631,29 @@ const FuelTab = ({ fuelHistory, onFuelAdded }) => {
                         <span>{monthData.totalMileage.toFixed(0)} km</span>
                       </div>
                     </div>
-                    
+
                     {expandedMonths[monthYear] && (
                       <div className="month-entries">
                         {monthData.entries.map((entry, index) => (
-                          <div key={index} className="fuel-entry">
+                          <div key={`${entry.rawDate}-${entry.timestamp}-${index}`} className="fuel-entry">
                             <div className="fuel-date">
                               <h4>{entry.date}</h4>
                               <p>{entry.liters} L · {entry.kilometers} km</p>
-                              {entry.distanceTraveled > 0 && (
-                                <p className="distance-traveled">Distance: +{entry.distanceTraveled} km</p>
+                              {parseFloat(entry.distanceTraveled) > 0 && (
+                                <p className="distance-traveled">
+                                  Distance: +{parseFloat(entry.distanceTraveled).toFixed(0)} km
+                                </p>
                               )}
                             </div>
                             <div className="fuel-consumption">
-                              <h4>{entry.consumption?.toFixed(2) || "N/A"} km/L</h4>
+                              <h4>{parseFloat(entry.consumption)?.toFixed(2) || "N/A"} km/L</h4>
                               <p className="liters-per-100km">
-                                {entry.litersPer100km?.toFixed(2) || "N/A"} L/100km
+                                {parseFloat(entry.litersPer100km)?.toFixed(2) || "N/A"} L/100km
                               </p>
-                              <p className="cost-per-km">{entry.costPerKm?.toFixed(3) || "N/A"} TND/km</p>
-                              <p className="fuel-cost">{entry.cost?.toFixed(2) || "N/A"} TND</p>
+                              <p className="cost-per-km">
+                                {parseFloat(entry.costPerKm)?.toFixed(3) || "N/A"} TND/km
+                              </p>
+                              <p className="fuel-cost">{parseFloat(entry.cost)?.toFixed(2) || "N/A"} TND</p>
                             </div>
                           </div>
                         ))}
@@ -575,12 +676,14 @@ const FuelTab = ({ fuelHistory, onFuelAdded }) => {
           <div className="modal-content">
             <div className="modal-header">
               <h3>Ajouter un Plein</h3>
-              <button className="close-modal" onClick={handleCloseModal}>×</button>
+              <button className="close-modal" onClick={handleCloseModal}>
+                ×
+              </button>
             </div>
-            
+
             <form onSubmit={handleSubmit} className="refuel-form">
               {error && <div className="error-message">{error}</div>}
-              
+
               <div className="form-group">
                 <label htmlFor="date">Date</label>
                 <input
@@ -592,10 +695,10 @@ const FuelTab = ({ fuelHistory, onFuelAdded }) => {
                   required
                 />
               </div>
-              
+
               <div className="form-group">
                 <label htmlFor="kilometers">
-                  Kilométrage actuel 
+                  Kilométrage actuel
                   {lastEntryLoading ? (
                     <span className="hint">(Chargement...)</span>
                   ) : newRefuel.lastKilometrage ? (
@@ -608,13 +711,17 @@ const FuelTab = ({ fuelHistory, onFuelAdded }) => {
                   name="kilometers"
                   value={newRefuel.kilometers}
                   onChange={handleInputChange}
-                  placeholder={lastEntryLoading ? "Chargement..." : 
-                    newRefuel.lastKilometrage ? 
-                    `Doit être > ${newRefuel.lastKilometrage}` : "ex: 54321"}
+                  placeholder={
+                    lastEntryLoading
+                      ? "Chargement..."
+                      : newRefuel.lastKilometrage
+                      ? `Doit être > ${newRefuel.lastKilometrage}`
+                      : "ex: 54321"
+                  }
                   required
                 />
               </div>
-              
+
               <div className="form-group">
                 <label htmlFor="liters">Litres de carburant</label>
                 <input
@@ -628,7 +735,7 @@ const FuelTab = ({ fuelHistory, onFuelAdded }) => {
                   required
                 />
               </div>
-              
+
               <div className="form-row">
                 <div className="form-group half">
                   <label htmlFor="fuelPrice">Prix par litre (TND)</label>
@@ -643,7 +750,7 @@ const FuelTab = ({ fuelHistory, onFuelAdded }) => {
                     required
                   />
                 </div>
-                
+
                 <div className="form-group half">
                   <label htmlFor="cost">Coût total (TND)</label>
                   <input
@@ -658,21 +765,17 @@ const FuelTab = ({ fuelHistory, onFuelAdded }) => {
                   />
                 </div>
               </div>
-              
+
               <div className="form-actions">
-                <button 
-                  type="button" 
-                  className="cancel-btn" 
+                <button
+                  type="button"
+                  className="cancel-btn"
                   onClick={handleCloseModal}
                   disabled={loading}
                 >
                   Annuler
                 </button>
-                <button 
-                  type="submit" 
-                  className="save-btn"
-                  disabled={loading}
-                >
+                <button type="submit" className="save-btn" disabled={loading}>
                   {loading ? "Enregistrement..." : "Enregistrer"}
                 </button>
               </div>

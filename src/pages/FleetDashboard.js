@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import "./FleetDashboard.css";
 import TruckForm from "./TruckForm";
-import { supabase } from "../supabase"; // Adjust path to your supabase.js
+import { supabase } from "../supabase";
 import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
@@ -53,9 +53,9 @@ const FleetDashboard = () => {
         status: truck.status || "active",
       }));
 
-      // Fetch fuel records
+      // Fetch fuel records from fuel_history
       const { data: fuelData, error: fuelError } = await supabase
-        .from('fuel_records')
+        .from('fuel_history')
         .select('*')
         .order('created_at', { ascending: false });
 
@@ -104,7 +104,7 @@ const FleetDashboard = () => {
       const alerts = [];
       formattedTrucks.forEach(truck => {
         const fuelEntry = fuelByTruck[truck.id];
-        if (fuelEntry && fuelEntry.litersPer100km > 40) {
+        if (fuelEntry && fuelEntry.litersPer100km > 30) {
           alerts.push({
             type: "fuel",
             message: `Consommation élevée pour ${truck.immatriculation}`,

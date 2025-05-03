@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { Link, useParams, useNavigate } from "react-router-dom";
-import { supabase } from "../supabase"; // Adjust path to your supabase.js
+import { supabase } from "../supabase";
 import "./TruckDetails.css";
 import FuelTab from "./FuelTab";
 import MaintenanceTab from "./MaintenanceTab";
@@ -23,7 +23,7 @@ const TruckDetails = () => {
       console.log("Fetching fuel data for truck ID:", id);
       
       const { data: fuelData, error: fuelError } = await supabase
-        .from('fuel_records')
+        .from('fuel_history')
         .select('*')
         .eq('truck_id', id)
         .order('date', { ascending: false }); // Newest first
