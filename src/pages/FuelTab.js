@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import "./FuelTab.css";
 import { supabase } from "../supabase";
 import { useParams } from "react-router-dom";
@@ -88,7 +88,7 @@ const FuelTab = ({ onFuelAdded }) => {
   };
 
   // Fetch fuel history from Supabase
-  const fetchFuelHistory = async () => {
+  const fetchFuelHistory = useCallback(async () => {
     if (!id) return;
 
     try {
@@ -124,7 +124,7 @@ const FuelTab = ({ onFuelAdded }) => {
       console.error("Error fetching fuel history:", err);
       setFetchError(`Erreur lors du chargement de l'historique: ${err.message}`);
     }
-  };
+  }, [id]);
 
   // Fetch last fuel entry from Supabase
   useEffect(() => {
@@ -179,7 +179,7 @@ const FuelTab = ({ onFuelAdded }) => {
 
     fetchLastFuelEntry();
     fetchFuelHistory();
-  }, [id]);
+  }, [id, fetchFuelHistory]);
 
   // Process history for charts and summaries
   useEffect(() => {
