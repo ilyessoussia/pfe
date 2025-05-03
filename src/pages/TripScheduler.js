@@ -301,6 +301,9 @@ const TripScheduler = () => {
             <li>
               <Link to="/maintenance">🛠️ Maintenance</Link>
             </li>
+            <li>
+              <Link to="/incidents">🚨 Gestion des Incidents</Link>
+            </li>
           </ul>
         </nav>
         <div className="trip-scheduler-sidebar-footer">

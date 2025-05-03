@@ -2,7 +2,7 @@
   display: flex;
   min-height: 100vh;
   background: linear-gradient(180deg, #121212 0%, #0a0a0a 100%);
-  font-family: 'Inter', sans-serif;
+  font-family: 'Playfair Display', 'Times New Roman', serif
 }
 
 .sidebar {
@@ -94,17 +94,19 @@
 }
 
 .refresh-btn, .add-truck {
-  padding: 6px;
-  border: none;
-  border-radius: 4px;
+  padding: 10px 20px;
+  border-radius: 3px;
   cursor: pointer;
-  font-size: 0.9rem;
+  font-size: 18px;
+  font-weight: bold;
   display: flex;
   align-items: center;
-  transition: all 0.2s;
+  transition: all 0.3s;
+  letter-spacing: 0.5px;
   background: #1e1e1e;
   color: #d4af37;
   border: 1px solid #d4af37;
+  font-family: 'Playfair Display', 'Times New Roman', serif
 }
 
 .refresh-btn:hover, .add-truck:hover {
@@ -114,8 +116,6 @@
 .add-truck {
   background: #d4af37;
   color: #000;
-  border: none;
-  padding: 6px 10px;
 }
 
 .add-truck:hover {

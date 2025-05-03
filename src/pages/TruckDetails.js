@@ -140,32 +140,7 @@ const TruckDetails = () => {
           setMaintenanceHistory(formattedMaintenanceData);
         } catch (maintenanceError) {
           console.error("Error fetching maintenance history:", maintenanceError);
-          setMaintenanceHistory([
-            {
-              date: "12/02/2025",
-              type: "Vidange d'huile",
-              kilometrage: 51230,
-              technicien: "Pierre Dupont",
-              cout: 120.50,
-              status: "completed",
-            },
-            {
-              date: "03/01/2025",
-              type: "Changement de freins",
-              kilometrage: 49105,
-              technicien: "Michel Lambert",
-              cout: 345.75,
-              status: "completed",
-            },
-            {
-              date: "15/12/2024",
-              type: "Contrôle général",
-              kilometrage: 47890,
-              technicien: "Sophie Martin",
-              cout: 85.00,
-              status: "completed",
-            },
-          ]);
+          setMaintenanceHistory([]);
         }
       } catch (err) {
         console.error("Error fetching truck details:", err);

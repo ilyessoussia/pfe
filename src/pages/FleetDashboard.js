@@ -53,20 +53,21 @@ const FleetDashboard = () => {
         status: truck.status || "active",
       }));
 
-      // Fetch fuel records from fuel_history
+      // Fetch fuel records from fuel_history, ordered by date descending to get latest first
       const { data: fuelData, error: fuelError } = await supabase
         .from('fuel_history')
         .select('*')
-        .order('created_at', { ascending: false });
+        .order('raw_date', { ascending: false });
 
       if (fuelError) throw fuelError;
 
       const fuelByTruck = {};
       fuelData.forEach(fuel => {
-        if (!fuelByTruck[fuel.truck_id]) {
+        // Only store the most recent fuel entry for each truck
+        if (!fuelByTruck[fuel.truck_id] || new Date(fuel.raw_date) > new Date(fuelByTruck[fuel.truck_id].date)) {
           fuelByTruck[fuel.truck_id] = {
             truckId: fuel.truck_id,
-            date: new Date(fuel.date).toLocaleDateString('fr-FR'),
+            date: fuel.raw_date,
             kilometers: fuel.kilometers,
             litersPer100km: fuel.liters_per_100km,
           };
@@ -162,7 +163,9 @@ const FleetDashboard = () => {
       setTrucks(
         formattedTrucks.map(truck => ({
           ...truck,
-          lastFuel: fuelByTruck[truck.id]?.date || "N/A",
+          lastFuel: fuelByTruck[truck.id]?.date
+            ? new Date(fuelByTruck[truck.id].date).toLocaleDateString('fr-FR')
+            : "N/A",
           currentMileage: fuelByTruck[truck.id]?.kilometers
             ? `${fuelByTruck[truck.id].kilometers} km`
             : "N/A",
@@ -269,6 +272,9 @@ const FleetDashboard = () => {
             <li>
               <Link to="/maintenance">🛠️ Maintenance</Link>
             </li>
+            <li>
+              <Link to="/incidents">🚨 Gestion des Incidents</Link>
+            </li>
           </ul>
         </nav>
         <div className="sidebar-footer">
@@ -285,10 +291,10 @@ const FleetDashboard = () => {
           </div>
           <div className="header-actions">
             <button className="refresh-btn" onClick={handleRefresh} disabled={loading}>
-              {loading ? "🔄" : "🔄"}
+              {loading ? "🔄" : "Actualiser🔄"}
             </button>
             <button className="add-truck" onClick={() => setShowForm(!showForm)}>
-              Ajouter un camion
+              Ajouter un camion +
             </button>
           </div>
         </header>

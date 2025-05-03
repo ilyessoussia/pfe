@@ -112,6 +112,9 @@ const MaintenanceOverview = () => {
             <li className="active">
               <Link to="/maintenance">🛠️ Maintenance</Link>
             </li>
+            <li>
+              <Link to="/incidents">🚨 Gestion des Incidents</Link>
+            </li>
           </ul>
         </nav>
         <div className="maintenance-overview-sidebar-footer">

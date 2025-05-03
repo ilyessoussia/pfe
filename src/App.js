@@ -8,6 +8,7 @@ import Parc from "./pages/Parc";
 import StockManagement from "./pages/StockManagement";
 import TripScheduler from "./pages/TripScheduler";
 import MaintenanceOverview from "./pages/MaintenanceOverview";
+import IncidentManagement from './pages/IncidentManagement';
 import ProtectedRoute from "./ProtectedRoute";
 import { AuthProvider } from "./AuthContext";
 
@@ -62,6 +63,14 @@ const App = () => (
           element={
             <ProtectedRoute>
               <MaintenanceOverview />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/incidents"
+          element={
+            <ProtectedRoute>
+              <IncidentManagement />
             </ProtectedRoute>
           }
         />
