@@ -6,7 +6,13 @@ import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend } f
 
 const FuelTab = ({ onFuelAdded }) => {
   const { id } = useParams();
+  // Move selectedMonth to the top to ensure it's initialized before use
+  const [selectedMonth, setSelectedMonth] = useState(() => {
+    const date = new Date();
+    return `${date.getFullYear()}-${date.getMonth() + 1}`;
+  });
   const [showModal, setShowModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
   const [newRefuel, setNewRefuel] = useState({
     kilometers: "",
     liters: "",
@@ -15,6 +21,7 @@ const FuelTab = ({ onFuelAdded }) => {
     date: new Date().toISOString().split('T')[0],
     lastKilometrage: "",
   });
+  const [editRefuel, setEditRefuel] = useState(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [lastEntryLoading, setLastEntryLoading] = useState(true);
@@ -106,6 +113,7 @@ const FuelTab = ({ onFuelAdded }) => {
       console.log("Fetched fuel history:", data);
 
       const formattedHistory = data.map((entry) => ({
+        id: entry.id,
         truckId: entry.truck_id,
         kilometers: parseFloat(entry.kilometers),
         liters: parseFloat(entry.liters),
@@ -148,6 +156,7 @@ const FuelTab = ({ onFuelAdded }) => {
         if (data && data.length > 0) {
           console.log("Last fuel entry loaded:", data[0]);
           const lastEntry = {
+            id: data[0].id,
             truckId: data[0].truck_id,
             kilometers: parseFloat(data[0].kilometers),
             liters: parseFloat(data[0].liters),
@@ -185,10 +194,11 @@ const FuelTab = ({ onFuelAdded }) => {
   useEffect(() => {
     console.log("Processing history:", localHistory);
     if (localHistory && localHistory.length > 0) {
-      const last30Days = new Date();
-      last30Days.setDate(last30Days.getDate() - 30);
+      // Process and filter data for charts based on selected month
+      const [selectedYear, selectedMonthNum] = selectedMonth.split('-').map(Number);
+      const startDate = new Date(selectedYear, selectedMonthNum - 1, 1);
+      const endDate = new Date(selectedYear, selectedMonthNum, 0);
 
-      // Process and filter data for charts - UPDATED: skip entries with distanceTraveled = 0
       const chartData = localHistory
         .map((entry, index, array) => {
           if (!entry?.rawDate) {
@@ -205,6 +215,10 @@ const FuelTab = ({ onFuelAdded }) => {
           }
           
           const entryDate = parseDate(entry.rawDate);
+          if (entryDate < startDate || entryDate > endDate) {
+            return null;
+          }
+
           return {
             date: entryDate.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' }),
             consumption: parseFloat(metrics.consumption),
@@ -214,7 +228,7 @@ const FuelTab = ({ onFuelAdded }) => {
             timestamp: entryDate.getTime(),
           };
         })
-        .filter((entry) => entry && parseDate(entry.timestamp) >= last30Days)
+        .filter((entry) => entry)
         .sort((a, b) => a.timestamp - b.timestamp);
 
       console.log("Processed chart data:", chartData);
@@ -298,7 +312,7 @@ const FuelTab = ({ onFuelAdded }) => {
         currentMonthMileage: 0,
       });
     }
-  }, [localHistory]);
+  }, [localHistory, selectedMonth]);
 
   const handleOpenModal = () => {
     setShowModal(true);
@@ -317,37 +331,57 @@ const FuelTab = ({ onFuelAdded }) => {
     setShowModal(false);
   };
 
-  const handleInputChange = (e) => {
+  const handleOpenEditModal = (entry) => {
+    setEditRefuel({
+      id: entry.id,
+      kilometers: entry.kilometers.toString(),
+      liters: entry.liters.toString(),
+      fuelPrice: entry.fuelPrice.toString(),
+      cost: entry.cost.toString(),
+      date: entry.rawDate,
+    });
+    setShowEditModal(true);
+    setError("");
+  };
+
+  const handleCloseEditModal = () => {
+    setShowEditModal(false);
+    setEditRefuel(null);
+  };
+
+  const handleInputChange = (e, isEdit = false) => {
     const { name, value } = e.target;
+    const targetState = isEdit ? editRefuel : newRefuel;
+    const setTargetState = isEdit ? setEditRefuel : setNewRefuel;
 
     if (name === "liters" || name === "fuelPrice") {
-      const liters = name === "liters" ? parseFloat(value) || 0 : parseFloat(newRefuel.liters) || 0;
-      const price = name === "fuelPrice" ? parseFloat(value) || 0 : parseFloat(newRefuel.fuelPrice) || 0;
+      const liters = name === "liters" ? parseFloat(value) || 0 : parseFloat(targetState.liters) || 0;
+      const price = name === "fuelPrice" ? parseFloat(value) || 0 : parseFloat(targetState.fuelPrice) || 0;
       const calculatedCost = (liters * price).toFixed(2);
 
-      setNewRefuel({
-        ...newRefuel,
+      setTargetState({
+        ...targetState,
         [name]: value,
         cost: calculatedCost,
       });
     } else if (name === "cost") {
-      const liters = parseFloat(newRefuel.liters) || 0;
+      const liters = parseFloat(targetState.liters) || 0;
       if (liters > 0) {
         const calculatedPrice = ((parseFloat(value) || 0) / liters).toFixed(3);
-        setNewRefuel({
-          ...newRefuel,
+        setTargetState({
+          ...targetState,
           cost: value,
           fuelPrice: calculatedPrice,
         });
       } else {
-        setNewRefuel({
-          ...newRefuel,
+        setTargetState({
+          ...targetState,
           cost: value,
         });
       }
     } else {
-      setNewRefuel({
-        ...newRefuel,
+      setTargetState({
+        ...targetState,
         [name]: value,
       });
     }
@@ -431,6 +465,7 @@ const FuelTab = ({ onFuelAdded }) => {
       console.log("Insert response:", data);
 
       const newEntry = {
+        id: data[0].id,
         truckId: id,
         kilometers,
         liters,
@@ -449,11 +484,10 @@ const FuelTab = ({ onFuelAdded }) => {
       // Append to localHistory and refresh from Supabase
       setLocalHistory((prev) => [...prev, newEntry]);
       setLastFuelEntry(newEntry);
-      fetchFuelHistory(); // Refresh full history
+      fetchFuelHistory();
       setShowModal(false);
       alert("Plein ajouté avec succès !");
 
-      // Notify parent
       if (onFuelAdded && typeof onFuelAdded === 'function') {
         console.log("Calling onFuelAdded");
         onFuelAdded();
@@ -465,6 +499,133 @@ const FuelTab = ({ onFuelAdded }) => {
       setLoading(false);
     }
   };
+
+  const handleEditSubmit = async (e) => {
+    e.preventDefault();
+
+    if (!editRefuel.kilometers || !editRefuel.liters || !editRefuel.cost || !editRefuel.fuelPrice) {
+      setError("Tous les champs sont obligatoires");
+      return;
+    }
+
+    const kilometers = parseFloat(editRefuel.kilometers);
+    const liters = parseFloat(editRefuel.liters);
+    const cost = parseFloat(editRefuel.cost);
+    const fuelPrice = parseFloat(editRefuel.fuelPrice);
+    const inputDate = parseDate(editRefuel.date);
+
+    if (isNaN(kilometers) || isNaN(liters) || isNaN(cost) || isNaN(fuelPrice)) {
+      setError("Le kilométrage, les litres, le prix et le coût doivent être des nombres");
+      return;
+    }
+
+    if (kilometers <= 0 || liters <= 0 || cost <= 0 || fuelPrice <= 0) {
+      setError("Le kilométrage, les litres, le prix et le coût doivent être supérieurs à zéro");
+      return;
+    }
+
+    if (inputDate > new Date()) {
+      setError("La date ne peut pas être dans le futur");
+      return;
+    }
+
+    try {
+      setLoading(true);
+
+      // Find the previous entry for metrics calculation
+      const sortedHistory = [...localHistory].sort((a, b) => a.timestamp - b.timestamp);
+      const currentIndex = sortedHistory.findIndex((entry) => entry.id === editRefuel.id);
+      const previousEntry = currentIndex > 0 ? sortedHistory[currentIndex - 1] : null;
+
+      const metrics = calculateMetrics(
+        { kilometers, liters, cost },
+        previousEntry
+      );
+
+      const updatedRecord = {
+        truck_id: id,
+        kilometers,
+        liters,
+        fuel_price: fuelPrice,
+        cost,
+        raw_date: editRefuel.date,
+        distance_traveled: parseFloat(metrics.distanceTraveled),
+        consumption: parseFloat(metrics.consumption),
+        cost_per_km: parseFloat(metrics.costPerKm),
+        liters_per_100km: parseFloat(metrics.litersPer100km),
+        updated_at: new Date().toISOString(),
+      };
+
+      console.log("Updating fuel record:", updatedRecord);
+
+      const { data, error } = await supabase
+        .from('fuel_history')
+        .update(updatedRecord)
+        .eq('id', editRefuel.id)
+        .select();
+
+      if (error) {
+        console.error("Supabase update error:", error);
+        throw error;
+      }
+
+      console.log("Update response:", data);
+
+      const updatedEntry = {
+        id: editRefuel.id,
+        truckId: id,
+        kilometers,
+        liters,
+        fuelPrice,
+        cost,
+        rawDate: editRefuel.date,
+        timestamp: inputDate.getTime(),
+        distanceTraveled: parseFloat(metrics.distanceTraveled),
+        consumption: parseFloat(metrics.consumption),
+        costPerKm: parseFloat(metrics.costPerKm),
+        litersPer100km: parseFloat(metrics.litersPer100km),
+      };
+
+      console.log("Fuel entry updated:", updatedEntry);
+
+      // Update localHistory
+      setLocalHistory((prev) =>
+        prev.map((entry) =>
+          entry.id === editRefuel.id ? updatedEntry : entry
+        )
+      );
+      fetchFuelHistory();
+      setShowEditModal(false);
+      alert("Plein modifié avec succès !");
+
+      if (onFuelAdded && typeof onFuelAdded === 'function') {
+        console.log("Calling onFuelAdded");
+        onFuelAdded();
+      }
+    } catch (err) {
+      console.error("Error updating fuel record:", err);
+      setError(`Erreur lors de la modification: ${err.message}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Generate month options for selector
+  const monthOptions = [];
+  const currentDate = new Date();
+  const currentYear = currentDate.getFullYear();
+  for (let year = currentYear; year >= currentYear - 5; year--) {
+    for (let month = 12; month >= 1; month--) {
+      const date = new Date(year, month - 1, 1);
+      if (date <= currentDate) {
+        monthOptions.push({
+          value: `${year}-${month}`,
+          label: date.toLocaleString('fr-FR', { month: 'long', year: 'numeric' }),
+        });
+      }
+    }
+  }
+
   return (
     <div className="fuel-tab-content">
       {fetchError && <div className="error-message">{fetchError}</div>}
@@ -488,6 +649,21 @@ const FuelTab = ({ onFuelAdded }) => {
       </div>
 
       <div className="fuel-charts">
+        <div className="month-selector">
+          <label htmlFor="monthSelect">Sélectionner le mois :</label>
+          <select
+            id="monthSelect"
+            value={selectedMonth}
+            onChange={(e) => setSelectedMonth(e.target.value)}
+          >
+            {monthOptions.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        </div>
+
         <section className="fuel-combined-chart">
           <h3>⛽ Rendement et Coût par Kilomètre</h3>
           {fuelChartData.length > 0 ? (
@@ -534,7 +710,7 @@ const FuelTab = ({ onFuelAdded }) => {
             </ResponsiveContainer>
           ) : (
             <div className="no-chart-data">
-              <p>Aucune donnée disponible pour les 30 derniers jours.</p>
+              <p>Aucune donnée disponible pour le mois sélectionné.</p>
             </div>
           )}
         </section>
@@ -564,7 +740,7 @@ const FuelTab = ({ onFuelAdded }) => {
             </ResponsiveContainer>
           ) : (
             <div className="no-chart-data">
-              <p>Aucune donnée de consommation disponible pour les 30 derniers jours.</p>
+              <p>Aucune donnée de consommation disponible pour le mois sélectionné.</p>
             </div>
           )}
         </section>
@@ -591,7 +767,7 @@ const FuelTab = ({ onFuelAdded }) => {
             </ResponsiveContainer>
           ) : (
             <div className="no-chart-data">
-              <p>Aucune donnée de coût disponible pour les 30 derniers jours.</p>
+              <p>Aucune donnée de coût disponible pour le mois sélectionné.</p>
             </div>
           )}
         </section>
@@ -655,6 +831,12 @@ const FuelTab = ({ onFuelAdded }) => {
                               </p>
                               <p className="fuel-cost">{parseFloat(entry.cost)?.toFixed(2) || "N/A"} TND</p>
                             </div>
+                            <button
+                              className="modify-btn"
+                              onClick={() => handleOpenEditModal(entry)}
+                            >
+                              Modifier
+                            </button>
                           </div>
                         ))}
                       </div>
@@ -777,6 +959,106 @@ const FuelTab = ({ onFuelAdded }) => {
                 </button>
                 <button type="submit" className="save-btn" disabled={loading}>
                   {loading ? "Enregistrement..." : "Enregistrer"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {showEditModal && editRefuel && (
+        <div className="modal-overlay">
+          <div className="modal-content">
+            <div className="modal-header">
+              <h3>Modifier un Plein</h3>
+              <button className="close-modal" onClick={handleCloseEditModal}>
+                ×
+              </button>
+            </div>
+
+            <form onSubmit={handleEditSubmit} className="refuel-form">
+              {error && <div className="error-message">{error}</div>}
+
+              <div className="form-group">
+                <label htmlFor="editDate">Date</label>
+                <input
+                  type="date"
+                  id="editDate"
+                  name="date"
+                  value={editRefuel.date}
+                  onChange={(e) => handleInputChange(e, true)}
+                  required
+                />
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="editKilometers">Kilométrage actuel</label>
+                <input
+                  type="number"
+                  id="editKilometers"
+                  name="kilometers"
+                  value={editRefuel.kilometers}
+                  onChange={(e) => handleInputChange(e, true)}
+                  placeholder="ex: 54321"
+                  required
+                />
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="editLiters">Litres de carburant</label>
+                <input
+                  type="number"
+                  id="editLiters"
+                  name="liters"
+                  value={editRefuel.liters}
+                  onChange={(e) => handleInputChange(e, true)}
+                  placeholder="ex: 65.5"
+                  step="0.01"
+                  required
+                />
+              </div>
+
+              <div className="form-row">
+                <div className="form-group half">
+                  <label htmlFor="editFuelPrice">Prix par litre (TND)</label>
+                  <input
+                    type="number"
+                    id="editFuelPrice"
+                    name="fuelPrice"
+                    value={editRefuel.fuelPrice}
+                    onChange={(e) => handleInputChange(e, true)}
+                    placeholder="ex: 2.205"
+                    step="0.001"
+                    required
+                  />
+                </div>
+
+                <div className="form-group half">
+                  <label htmlFor="editCost">Coût total (TND)</label>
+                  <input
+                    type="number"
+                    id="editCost"
+                    name="cost"
+                    value={editRefuel.cost}
+                    onChange={(e) => handleInputChange(e, true)}
+                    placeholder="ex: 144.53"
+                    step="0.01"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="form-actions">
+                <button
+                  type="button"
+                  className="cancel-btn"
+                  onClick={handleCloseEditModal}
+                  disabled={loading}
+                >
+                  Annuler
+                </button>
+                <button type="submit" className="save-btn" disabled={loading}>
+                  {loading ? "Modification..." : "Modifier"}
                 </button>
               </div>
             </form>
