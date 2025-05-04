@@ -7,6 +7,7 @@ import "swiper/css/navigation";
 import "swiper/css/pagination";
 import { Navigation, FreeMode } from "swiper/modules";
 import ProductDetail from "./ProductDetail"; 
+import Chatbot from "./Chatbot";
 
 import back1 from "./pictures/back1.png";
 
@@ -39,10 +40,6 @@ const Navbar = () => (
         <li><a href="#mission">Mission</a></li>
         <li><a href="#contact">Contact</a></li>
       </ul>
-    </div>
-
-    <div className="right-section">
-      <Link to="/fleet" className="login-btn">Flotte</Link>
     </div>
   </nav>
 );
@@ -266,6 +263,9 @@ const SolutionsOffered = () => (
 const Footer = () => (
   <footer className="footer" id="contact">
     <p>Contenu du Pied de Page</p>
+    <div className="footer-links">
+      <Link to="/fleet" className="footer-btn">Flotte (Réservé aux employés)</Link>
+    </div>
     <div className="map-container">
       <iframe
         title="Localisation Google Map"
@@ -290,6 +290,7 @@ const Home = () => (
     <Values />
     <Mission />
     <Footer />
+    <Chatbot />
   </>
 );
 
