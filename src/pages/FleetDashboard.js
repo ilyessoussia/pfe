@@ -22,6 +22,8 @@ const FleetDashboard = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [showForm, setShowForm] = useState(false);
   const [trucks, setTrucks] = useState([]);
+  const [trailers, setTrailers] = useState([]);
+  const [truckTrailerAssignments, setTruckTrailerAssignments] = useState({});
   const [alerts, setAlerts] = useState([]);
   const [dismissedAlerts, setDismissedAlerts] = useState([]);
   const [recentFuelActivities, setRecentFuelActivities] = useState([]);
@@ -33,6 +35,12 @@ const FleetDashboard = () => {
   const [latestFuelByTruck, setLatestFuelByTruck] = useState({});
   const [showAlerts, setShowAlerts] = useState(true);
   const [showFuelActivities, setShowFuelActivities] = useState(true);
+  const [showTrailerModal, setShowTrailerModal] = useState(false);
+  const [selectedTruckId, setSelectedTruckId] = useState(null);
+  const [selectedTrailerId, setSelectedTrailerId] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [modalError, setModalError] = useState(null);
+  const [modalSuccess, setModalSuccess] = useState(null);
 
   const fetchData = async () => {
     try {
@@ -46,15 +54,32 @@ const FleetDashboard = () => {
 
       if (trucksError) throw trucksError;
 
-      const formattedTrucks = trucksData.map(truck => ({
-        id: truck.id,
-        immatriculation: truck.immatriculation,
-        model: truck.modele || "Unknown Model",
-        driver: truck.chauffeur || "No Driver Assigned",
-        status: truck.status || "active",
-      }));
+      // Fetch trailers
+      const { data: trailersData, error: trailersError } = await supabase
+        .from('trailers')
+        .select('id, immatriculation')
+        .order('immatriculation', { ascending: true });
 
-      // Fetch fuel records from fuel_history, ordered by date descending to get latest first
+      if (trailersError) throw trailersError;
+      setTrailers(trailersData);
+
+      // Fetch truck-trailer assignments
+      const { data: assignmentsData, error: assignmentsError } = await supabase
+        .from('truck_trailer_assignments')
+        .select('truck_id, trailer_id, trailers(immatriculation)');
+
+      if (assignmentsError) throw assignmentsError;
+
+      const assignments = {};
+      assignmentsData.forEach(assignment => {
+        assignments[assignment.truck_id] = {
+          trailer_id: assignment.trailer_id,
+          trailer_immatriculation: assignment.trailers.immatriculation,
+        };
+      });
+      setTruckTrailerAssignments(assignments);
+
+      // Fetch fuel records
       const { data: fuelData, error: fuelError } = await supabase
         .from('fuel_history')
         .select('*')
@@ -64,7 +89,6 @@ const FleetDashboard = () => {
 
       const fuelByTruck = {};
       fuelData.forEach(fuel => {
-        // Only store the most recent fuel entry for each truck
         if (!fuelByTruck[fuel.truck_id] || new Date(fuel.raw_date) > new Date(fuelByTruck[fuel.truck_id].date)) {
           fuelByTruck[fuel.truck_id] = {
             truckId: fuel.truck_id,
@@ -79,16 +103,31 @@ const FleetDashboard = () => {
       // Fetch maintenance records
       const { data: maintenanceData, error: maintenanceError } = await supabase
         .from('maintenance_records')
-        .select('*');
+        .select('truck_id, next_oil_change, date')
+        .order('date', { ascending: false });
 
       if (maintenanceError) throw maintenanceError;
 
-      // Fetch stock items
-      const { data: stockData, error: stockError } = await supabase
-        .from('stock_items')
+      const nextOilChangeByTruck = {};
+      maintenanceData.forEach(record => {
+        if (
+          record.next_oil_change &&
+          (!nextOilChangeByTruck[record.truck_id] ||
+            new Date(record.date) > new Date(nextOilChangeByTruck[record.truck_id].date))
+        ) {
+          nextOilChangeByTruck[record.truck_id] = {
+            nextOilChange: record.next_oil_change,
+            date: record.date,
+          };
+        }
+      });
+
+      // Fetch products
+      const { data: productsData, error: productsError } = await supabase
+        .from('products')
         .select('*');
 
-      if (stockError) throw stockError;
+      if (productsError) throw productsError;
 
       // Fetch spare parts
       const { data: partsData, error: partsError } = await supabase
@@ -99,12 +138,12 @@ const FleetDashboard = () => {
 
       // Compute fleet stats
       setFleetStats({
-        totalTrucks: formattedTrucks.length,
+        totalTrucks: trucksData.length,
       });
 
       // Compute alerts
       const alerts = [];
-      formattedTrucks.forEach(truck => {
+      trucksData.forEach(truck => {
         const fuelEntry = fuelByTruck[truck.id];
         if (fuelEntry && fuelEntry.litersPer100km > 30) {
           alerts.push({
@@ -125,12 +164,24 @@ const FleetDashboard = () => {
             id: `maintenance-${truck.id}`,
           });
         }
+        const nextOilChange = nextOilChangeByTruck[truck.id]?.nextOilChange;
+        if (fuelEntry && nextOilChange) {
+          const currentMileage = fuelEntry.kilometers;
+          if (nextOilChange - currentMileage <= 1000) {
+            alerts.push({
+              type: "oil_change",
+              message: `Vidange huile imminente pour ${truck.immatriculation} (${Math.round(nextOilChange - currentMileage)} km restants)`,
+              truckId: truck.id,
+              id: `oil_change-${truck.id}`,
+            });
+          }
+        }
       });
-      stockData.forEach((item, index) => {
-        if (item.quantity < 5) {
+      productsData.forEach((product, index) => {
+        if (product.quantité < 5) {
           alerts.push({
             type: "stock",
-            message: `Stock faible pour ${item.material}`,
+            message: `Stock faible pour ${product.name}`,
             id: `stock-${index}`,
           });
         }
@@ -146,7 +197,7 @@ const FleetDashboard = () => {
       });
       setAlerts(alerts);
 
-      // Compute recent fuel activities (limit to 8 items)
+      // Compute recent fuel activities
       const fuelActivities = fuelData
         .slice(0, 8)
         .map(fuel => ({
@@ -156,23 +207,30 @@ const FleetDashboard = () => {
             litersPer100km: fuel.liters_per_100km,
           },
           timestamp: new Date(fuel.created_at),
-          truck: formattedTrucks.find(t => t.id === fuel.truck_id)?.immatriculation || "Camion",
+          truck: trucksData.find(t => t.id === fuel.truck_id)?.immatriculation || "Camion",
         }));
       setRecentFuelActivities(fuelActivities);
 
-      // Update trucks with fuel data
-      setTrucks(
-        formattedTrucks.map(truck => ({
-          ...truck,
-          lastFuel: fuelByTruck[truck.id]?.date
-            ? new Date(fuelByTruck[truck.id].date).toLocaleDateString('fr-FR')
-            : "N/A",
-          currentMileage: fuelByTruck[truck.id]?.kilometers
-            ? `${fuelByTruck[truck.id].kilometers} km`
-            : "N/A",
-        }))
-      );
+      // Format trucks
+      const formattedTrucks = trucksData.map(truck => ({
+        id: truck.id,
+        immatriculation: truck.immatriculation,
+        model: truck.modele || "Unknown Model",
+        driver: truck.chauffeur || "No Driver Assigned",
+        status: truck.status || "active",
+        lastFuel: fuelByTruck[truck.id]?.date
+          ? new Date(fuelByTruck[truck.id].date).toLocaleDateString('fr-FR')
+          : "N/A",
+        currentMileage: fuelByTruck[truck.id]?.kilometers
+          ? `${fuelByTruck[truck.id].kilometers} km`
+          : "N/A",
+        nextOilChange: nextOilChangeByTruck[truck.id]?.nextOilChange
+          ? `${nextOilChangeByTruck[truck.id].nextOilChange} km`
+          : "N/A",
+        trailerImmatriculation: assignments[truck.id]?.trailer_immatriculation || null,
+      }));
 
+      setTrucks(formattedTrucks);
       setLastUpdated(new Date().toLocaleString());
     } catch (err) {
       console.error("Error fetching data:", err);
@@ -195,6 +253,66 @@ const FleetDashboard = () => {
     setDismissedAlerts([...dismissedAlerts, alertId]);
   };
 
+  const handleAssignTrailer = (truckId, e) => {
+    e.stopPropagation();
+    e.preventDefault(); // Additional safeguard to prevent any default behavior
+    console.log("Opening trailer modal for truck ID:", truckId); // Debugging
+    setSelectedTruckId(truckId);
+    setSelectedTrailerId(truckTrailerAssignments[truckId]?.trailer_id || "");
+    setShowTrailerModal(true);
+  };
+
+  const handleTrailerSubmit = async (e) => {
+    e.preventDefault();
+    setSubmitting(true);
+    setModalError(null);
+
+    if (!selectedTrailerId) {
+      setModalError("Veuillez sélectionner une remorque.");
+      setSubmitting(false);
+      return;
+    }
+
+    try {
+      const { data: existingAssignment, error: fetchError } = await supabase
+        .from('truck_trailer_assignments')
+        .select('id')
+        .eq('truck_id', selectedTruckId)
+        .single();
+
+      if (fetchError && fetchError.code !== 'PGRST116') throw fetchError;
+
+      if (existingAssignment) {
+        const { error: updateError } = await supabase
+          .from('truck_trailer_assignments')
+          .update({ trailer_id: selectedTrailerId, assigned_at: new Date().toISOString() })
+          .eq('truck_id', selectedTruckId);
+
+        if (updateError) throw updateError;
+      } else {
+        const { error: insertError } = await supabase
+          .from('truck_trailer_assignments')
+          .insert([{ truck_id: selectedTruckId, trailer_id: selectedTrailerId }]);
+
+        if (insertError) throw insertError;
+      }
+
+      setModalSuccess("Remorque assignée avec succès !");
+      setTimeout(() => {
+        setShowTrailerModal(false);
+        setSelectedTruckId(null);
+        setSelectedTrailerId("");
+        setModalSuccess(null);
+        fetchData();
+      }, 2000);
+    } catch (err) {
+      console.error("Error assigning trailer:", err);
+      setModalError("Échec de l'assignation de la remorque. Veuillez réessayer.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   const filteredTrucks = trucks
     .filter(truck => filter.status === "all" || truck.status === filter.status)
     .filter(truck => {
@@ -203,9 +321,9 @@ const FleetDashboard = () => {
       if (!fuelEntry) return false;
       const fuelLevel = fuelEntry.litersPer100km || 0;
       return (
-        (filter.fuel === "low" && fuelLevel > 15) ||
-        (filter.fuel === "medium" && fuelLevel >= 10 && fuelLevel <= 15) ||
-        (filter.fuel === "high" && fuelLevel < 10)
+        (filter.fuel === "low" && fuelLevel < 10) ||
+        (filter.fuel === "medium" && fuelLevel >= 10 && fuelLevel <= 30) ||
+        (filter.fuel === "high" && fuelLevel > 30)
       );
     })
     .filter(truck => {
@@ -255,11 +373,11 @@ const FleetDashboard = () => {
   return (
     <div className="dashboard-container">
       <aside className="sidebar">
-        <h2 className="fleet-title">Gestionnaire de flotte</h2>
+        <h2 className="fleet-title">Système de Gestion & Contrôle</h2>
         <nav>
           <ul>
             <li className="active">
-              <Link to="/fleet/dashboard">📊 Tableau de Bord</Link>
+              <Link to="/fleet/dashboard">📊 Gestion de Flotte</Link>
             </li>
             <li>
               <Link to="/parc">🔧 Gestion des Pièces</Link>
@@ -268,13 +386,19 @@ const FleetDashboard = () => {
               <Link to="/stock">📦 Gestion de Stock</Link>
             </li>
             <li>
-              <Link to="/schedule">🗓️ Planifier un Programme</Link>
+              <Link to="/schedule">🗓️ Gestion des Programmes</Link>
             </li>
             <li>
               <Link to="/maintenance">🛠️ Maintenance</Link>
             </li>
             <li>
+              <Link to="/trailers">🚛 Gestion des Remorques</Link>
+            </li>
+            <li>
               <Link to="/incidents">🚨 Gestion des Incidents</Link>
+            </li>
+            <li>
+              <Link to="/driver-payments">💰 Gestion de Paiement des Chauffeurs</Link>
             </li>
           </ul>
         </nav>
@@ -309,6 +433,68 @@ const FleetDashboard = () => {
           />
         )}
 
+        {showTrailerModal && (
+          <div className="modal-overlay">
+            <div className="modal-content">
+              <div className="modal-header">
+                <h3>
+                  {truckTrailerAssignments[selectedTruckId]
+                    ? "Modifier la Remorque Assignée"
+                    : "Assigner une Remorque"}
+                </h3>
+                <button
+                  className="close-modal-btn"
+                  onClick={() => setShowTrailerModal(false)}
+                  aria-label="Fermer la fenêtre modale"
+                >
+                  ×
+                </button>
+              </div>
+              <form onSubmit={handleTrailerSubmit}>
+                {modalError && <div className="error-message">{modalError}</div>}
+                {modalSuccess && <div className="success-message">{modalSuccess}</div>}
+                <div className="form-group">
+                  <label htmlFor="trailerId">Sélectionner une Remorque *</label>
+                  <select
+                    id="trailerId"
+                    value={selectedTrailerId}
+                    onChange={e => setSelectedTrailerId(e.target.value)}
+                    required
+                  >
+                    <option value="">Choisir une remorque</option>
+                    {trailers.map(trailer => (
+                      <option key={trailer.id} value={trailer.id}>
+                        {trailer.immatriculation}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="form-actions">
+                  <button
+                    type="button"
+                    className="cancel-btn"
+                    onClick={() => setShowTrailerModal(false)}
+                    disabled={submitting}
+                  >
+                    Annuler
+                  </button>
+                  <button
+                    type="submit"
+                    className="submit-btn"
+                    disabled={submitting}
+                  >
+                    {submitting
+                      ? "Enregistrement..."
+                      : truckTrailerAssignments[selectedTruckId]
+                        ? "Mettre à jour"
+                        : "Assigner"}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
         {error && <div className="error-message">{error}</div>}
 
         <div className="dashboard-grid">
@@ -333,7 +519,6 @@ const FleetDashboard = () => {
                   >
                     <option value="all">Statut</option>
                     <option value="active">Actif</option>
-                    <option value="maintenance">Maintenance</option>
                     <option value="inactive">Inactif</option>
                   </select>
                   <select
@@ -357,7 +542,7 @@ const FleetDashboard = () => {
 
               {mapView ? (
                 <div className="map-section">
-                  <MapContainer center={[36.8065, 10.1815]} zoom={6} style={{ height: "250px" }}>
+                  <MapContainer center={[36.8065, 10.1815]} zoom={6} style={{ height: "700px" }}>
                     <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
                     {filteredTrucks.map(truck => (
                       <Marker
@@ -366,8 +551,16 @@ const FleetDashboard = () => {
                       >
                         <Popup>
                           <strong>{truck.immatriculation}</strong>
+                          {truck.trailerImmatriculation && (
+                            <>
+                              <br />
+                              Remorque: {truck.trailerImmatriculation}
+                            </>
+                          )}
                           <br />
                           Statut: {getStatusLabel(truck.status)}
+                          <br />
+                          <Link to={`/fleet/truck/${truck.id}`}>Voir Détails</Link>
                         </Popup>
                       </Marker>
                     ))}
@@ -385,7 +578,12 @@ const FleetDashboard = () => {
                         className={`truck-card ${getStatusClass(truck.status)}`}
                       >
                         <div className="truck-header">
-                          <h2>{truck.immatriculation || truck.id}</h2>
+                          <div>
+                            <h2>{truck.immatriculation || truck.id}</h2>
+                            {truck.trailerImmatriculation && (
+                              <p className="trailer-info">Remorque: {truck.trailerImmatriculation}</p>
+                            )}
+                          </div>
                           <span className={`status-badge ${getStatusClass(truck.status)}`}>
                             {getStatusLabel(truck.status)}
                           </span>
@@ -393,25 +591,36 @@ const FleetDashboard = () => {
                         <p className="truck-model">{truck.model}</p>
                         <div className="truck-details">
                           <div className="detail-row">
-                            <span className="detail-label">👤chaffeur</span>
+                            <span className="detail-label">👤 Chauffeur</span>
                             <span className="detail-value">{truck.driver}</span>
                           </div>
                           <div className="detail-row">
-                            <span className="detail-label">⛽Dernier plein</span>
+                            <span className="detail-label">⛽ Dernier plein</span>
                             <span className="detail-value">{truck.lastFuel}</span>
                           </div>
                           <div className="detail-row">
-                            <span className="detail-label">🛣️Kilomètrage </span>
+                            <span className="detail-label">🛣️ Kilométrage</span>
                             <span className="detail-value">{truck.currentMileage}</span>
                           </div>
+                          <div className="detail-row">
+                            <span className="detail-label">🛢️ Prochaine Vidange</span>
+                            <span className="detail-value">{truck.nextOilChange}</span>
+                          </div>
                         </div>
+                        <button
+                          className="assign-trailer-btn"
+                          onClick={(e) => handleAssignTrailer(truck.id, e)}
+                          type="button" // Explicitly set to prevent form submission
+                        >
+                          {truck.trailerImmatriculation ? "Modifier Remorque" : "Ajouter Remorque"}
+                        </button>
                       </Link>
                     ))
                   ) : (
                     <div className="no-trucks">
                       {filter.status === "all" && !searchQuery
                         ? "Aucun camion."
-                        : `Aucun camion trouvé.`}
+                        : "Aucun camion trouvé."}
                     </div>
                   )}
                 </div>
@@ -434,7 +643,7 @@ const FleetDashboard = () => {
                     .map((alert, index) => (
                       <div key={alert.id} className={`alert-card alert-${alert.type}`}>
                         <span className="alert-icon">
-                          {alert.type === "fuel" ? "⛽" : alert.type === "maintenance" ? "🛠️" : "📦"}
+                          {alert.type === "fuel" ? "⛽" : alert.type === "maintenance" ? "🛠️" : alert.type === "oil_change" ? "🛢️" : "📦"}
                         </span>
                         <p>{alert.message}</p>
                         {alert.truckId && <Link to={`/fleet/truck/${alert.truckId}`}>Détails</Link>}
@@ -480,7 +689,7 @@ const FleetDashboard = () => {
           </section>
         </div>
       </main>
-      <FleetChatbot /> 
+      <FleetChatbot />
     </div>
   );
 };

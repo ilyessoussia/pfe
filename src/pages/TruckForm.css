@@ -1,18 +1,33 @@
+:root {
+  --color-background: #E5E7EB;
+  --color-primary: #6366F1;
+  --color-primary-dark: #4F46E5;
+  --color-primary-light: #C7D2FE;
+  --color-primary-muted: #A5B4FC;
+  --color-shadow: rgba(99, 102, 241, 0.2);
+  --color-input-background: #E5E7EB;
+  --color-input-hover: #D1D5DB;
+  --color-button-secondary: #9CA3AF;
+  --color-error: #EF4444;
+  --color-error-bg: #FEE2E2;
+  --color-text-dark: #1F2937;
+}
+
 .truck-form-container {
-  background-color: #111;
+  background-color: var(--color-background);
   padding: 2rem;
   max-width: 800px;
   margin: 2rem auto;
   border-radius: 12px;
-  box-shadow: 0 0 20px rgba(255, 215, 0, 0.2);
+  box-shadow: 0 0 20px var(--color-shadow);
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  color: #FFD700;
+  color: var(--color-primary);
 }
 
 .truck-form-container h2 {
   margin-bottom: 1.5rem;
   text-align: center;
-  color: #FFD700;
+  color: var(--color-primary);
 }
 
 .truck-form {
@@ -30,16 +45,16 @@
 .truck-form label {
   font-weight: bold;
   margin-bottom: 0.4rem;
-  color: #FFD700;
+  color: var(--color-primary);
 }
 
 .truck-form input,
 .truck-form select,
 .truck-form textarea {
   padding: 0.7rem;
-  background-color: #222;
-  color: #FFD700;
-  border: 1px solid #FFD700;
+  background-color: var(--color-input-background);
+  color: var(--color-primary);
+  border: 1px solid var(--color-primary);
   border-radius: 6px;
   font-size: 1rem;
   transition: border 0.2s, background-color 0.2s;
@@ -50,9 +65,9 @@
 .truck-form input:focus,
 .truck-form select:focus,
 .truck-form textarea:focus {
-  border-color: #ffcc00;
+  border-color: var(--color-primary-light);
   outline: none;
-  background-color: #333;
+  background-color: var(--color-input-hover);
 }
 
 .truck-form textarea {
@@ -67,16 +82,16 @@
 .truck-form-note {
   margin: 1rem 0;
   font-size: 0.9rem;
-  color: #c4a300;
+  color: var(--color-primary-muted);
 }
 
 .truck-input-error {
-  border: 1px solid #ff6b6b !important;
-  background-color: #221a1a !important;
+  border: 1px solid var(--color-error) !important;
+  background-color: var(--color-error-bg) !important;
 }
 
 .truck-error-message {
-  color: #ff6b6b;
+  color: var(--color-error);
   font-size: 0.8rem;
   margin-top: 0.25rem;
 }
@@ -101,21 +116,21 @@
 }
 
 button[type="submit"] {
-  background-color: #FFD700;
-  color: #111;
+  background-color: var(--color-primary);
+  color: var(--color-background);
 }
 
 button[type="submit"]:hover {
-  background-color: #e6c200;
+  background-color: var(--color-primary-dark);
 }
 
 button.cancel-btn {
-  background-color: #555;
-  color: #FFD700;
+  background-color: var(--color-button-secondary);
+  color: var(--color-primary);
 }
 
 button.cancel-btn:hover {
-  background-color: #333;
+  background-color: var(--color-input-hover);
 }
 
 button:disabled {

@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from "react-router-dom";
-import { supabase } from "../supabase"; // Adjust path to your supabase.js
+import { supabase } from "../supabase";
 import './Parc.css';
 
 const Parc = () => {
@@ -25,34 +25,84 @@ const Parc = () => {
   const [filterType, setFilterType] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [lastUpdated, setLastUpdated] = useState(new Date().toLocaleString());
+  const [showUseModal, setShowUseModal] = useState(false);
+  const [showRestockModal, setShowRestockModal] = useState(false);
+  const [selectedPart, setSelectedPart] = useState(null);
+  const [useFormData, setUseFormData] = useState({
+    truckId: '',
+    trailerId: '',
+    quantity: 1,
+  });
+  const [restockFormData, setRestockFormData] = useState({
+    quantity: 1,
+  });
+  const [trucks, setTrucks] = useState([]);
+  const [trailers, setTrailers] = useState([]);
+  const [usageHistory, setUsageHistory] = useState([]);
 
-  useEffect(() => {
-    fetchParts();
-  }, []);
-
-  const fetchParts = async () => {
+  const fetchData = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
 
-      const { data, error } = await supabase
+      // Fetch trucks
+      const { data: trucksData, error: trucksError } = await supabase
+        .from('trucks')
+        .select('id, immatriculation')
+        .order('immatriculation', { ascending: true });
+
+      if (trucksError) throw trucksError;
+      setTrucks(trucksData);
+
+      // Fetch trailers
+      const { data: trailersData, error: trailersError } = await supabase
+        .from('trailers')
+        .select('id, immatriculation')
+        .order('immatriculation', { ascending: true });
+
+      if (trailersError) throw trailersError;
+      setTrailers(trailersData);
+
+      // Fetch parts
+      const { data: partsData, error: partsError } = await supabase
         .from('spare_parts')
         .select('*')
         .order('created_at', { ascending: false });
 
-      if (error) {
-        throw error;
-      }
+      if (partsError) throw partsError;
+      setParts(partsData);
 
-      setParts(data);
+      // Fetch usage history
+      const { data: historyData, error: historyError } = await supabase
+        .from('part_usage_history')
+        .select(`
+          id,
+          part_id,
+          truck_id,
+          trailer_id,
+          quantity_used,
+          used_at,
+          spare_parts(name),
+          trucks(immatriculation),
+          trailers(immatriculation)
+        `)
+        .order('used_at', { ascending: false });
+
+      if (historyError) throw historyError;
+      setUsageHistory(historyData);
+
       setLastUpdated(new Date().toLocaleString());
     } catch (err) {
-      console.error("Erreur lors du chargement des pièces:", err);
-      setError("Échec du chargement des données d'inventaire. La table sera créée automatiquement lors de l'ajout de votre première pièce.");
+      console.error("Erreur lors du chargement des données:", err);
+      setError("Échec du chargement des données d'inventaire, des camions, des remorques ou de l'historique.");
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -67,6 +117,22 @@ const Parc = () => {
     setEditFormData({
       ...editFormData,
       [name]: name === 'quantity' || name === 'price' ? parseFloat(value) || '' : value
+    });
+  };
+
+  const handleUseInputChange = (e) => {
+    const { name, value } = e.target;
+    setUseFormData({
+      ...useFormData,
+      [name]: name === 'quantity' ? parseInt(value) || '' : value
+    });
+  };
+
+  const handleRestockInputChange = (e) => {
+    const { name, value } = e.target;
+    setRestockFormData({
+      ...restockFormData,
+      [name]: name === 'quantity' ? parseInt(value) || '' : value
     });
   };
 
@@ -93,9 +159,7 @@ const Parc = () => {
         .from('spare_parts')
         .insert([newPart]);
 
-      if (error) {
-        throw error;
-      }
+      if (error) throw error;
 
       setFormData({
         name: '',
@@ -111,7 +175,7 @@ const Parc = () => {
       setSuccessMessage('Pièce ajoutée avec succès!');
       setTimeout(() => setSuccessMessage(''), 3000);
 
-      fetchParts();
+      fetchData();
     } catch (err) {
       console.error("Erreur lors de l'ajout de la pièce:", err);
       setError("Échec de l'ajout de la pièce. Vérifiez que tous les champs sont remplis correctement.");
@@ -158,14 +222,12 @@ const Parc = () => {
         .update(updatedPart)
         .eq('id', editingPartId);
 
-      if (error) {
-        throw error;
-      }
+      if (error) throw error;
 
       setSuccessMessage('Pièce modifiée avec succès!');
       setTimeout(() => setSuccessMessage(''), 3000);
 
-      fetchParts();
+      fetchData();
 
       setEditingPartId(null);
       setEditFormData(null);
@@ -173,6 +235,123 @@ const Parc = () => {
     } catch (err) {
       console.error("Erreur lors de la modification de la pièce:", err);
       setError("Échec de la modification de la pièce. Vérifiez que tous les champs sont remplis correctement.");
+      setTimeout(() => setError(null), 5000);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleUse = (part) => {
+    setSelectedPart(part);
+    setUseFormData({
+      truckId: '',
+      trailerId: '',
+      quantity: 1,
+    });
+    setShowUseModal(true);
+  };
+
+  const handleUseSubmit = async (e) => {
+    e.preventDefault();
+    setSubmitting(true);
+    setError(null);
+
+    try {
+      const quantityUsed = parseInt(useFormData.quantity);
+      if (quantityUsed <= 0 || quantityUsed > selectedPart.quantity) {
+        throw new Error("Quantité utilisée invalide ou supérieure au stock disponible.");
+      }
+      if (!useFormData.truckId && !useFormData.trailerId) {
+        throw new Error("Veuillez sélectionner un camion ou une remorque.");
+      }
+      if (useFormData.truckId && useFormData.trailerId) {
+        throw new Error("Veuillez sélectionner soit un camion, soit une remorque, mais pas les deux.");
+      }
+
+      // Update inventory quantity
+      const newQuantity = selectedPart.quantity - quantityUsed;
+      const { error: updateError } = await supabase
+        .from('spare_parts')
+        .update({ quantity: newQuantity })
+        .eq('id', selectedPart.id);
+
+      if (updateError) throw updateError;
+
+      // Log usage in history
+      const usageLog = {
+        part_id: selectedPart.id,
+        truck_id: useFormData.truckId || null,
+        trailer_id: useFormData.trailerId || null,
+        quantity_used: quantityUsed,
+        used_at: new Date().toISOString(),
+      };
+
+      const { error: logError } = await supabase
+        .from('part_usage_history')
+        .insert([usageLog]);
+
+      if (logError) throw logError;
+
+      setSuccessMessage(`Utilisation de ${quantityUsed} pièce(s) enregistrée avec succès!`);
+      setTimeout(() => setSuccessMessage(''), 3000);
+
+      fetchData();
+      setShowUseModal(false);
+      setSelectedPart(null);
+      setUseFormData({
+        truckId: '',
+        trailerId: '',
+        quantity: 1,
+      });
+    } catch (err) {
+      console.error("Erreur lors de l'utilisation de la pièce:", err);
+      setError(err.message || "Échec de l'enregistrement de l'utilisation. Vérifiez les données saisies.");
+      setTimeout(() => setError(null), 5000);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleRestock = (part) => {
+    setSelectedPart(part);
+    setRestockFormData({
+      quantity: 1,
+    });
+    setShowRestockModal(true);
+  };
+
+  const handleRestockSubmit = async (e) => {
+    e.preventDefault();
+    setSubmitting(true);
+    setError(null);
+
+    try {
+      const quantityAdded = parseInt(restockFormData.quantity);
+      if (quantityAdded <= 0) {
+        throw new Error("La quantité à ajouter doit être supérieure à zéro.");
+      }
+
+      // Update inventory quantity
+      const newQuantity = selectedPart.quantity + quantityAdded;
+      const { error: updateError } = await supabase
+        .from('spare_parts')
+        .update({ quantity: newQuantity })
+        .eq('id', selectedPart.id);
+
+      if (updateError) throw updateError;
+
+      setSuccessMessage(`Ajout de ${quantityAdded} pièce(s) au stock enregistré avec succès!`);
+      setTimeout(() => setSuccessMessage(''), 3000);
+
+      fetchData();
+      setShowRestockModal(false);
+      setSelectedPart(null);
+      setRestockFormData({
+        quantity: 1,
+      });
+    } catch (err) {
+      console.error("Erreur lors de l'ajout au stock:", err);
+      setError(err.message || "Échec de l'enregistrement de l'ajout au stock. Vérifiez les données saisies.");
       setTimeout(() => setError(null), 5000);
     } finally {
       setSubmitting(false);
@@ -188,12 +367,12 @@ const Parc = () => {
 
   return (
     <div className="fleet-management-container">
-      <aside className="fleet-management-sidebar">
+      <aside className="sidebar">
         <h2 className="fleet-management-fleet-title">Système de Gestion & Contrôle</h2>
         <nav>
           <ul>
             <li>
-              <Link to="/fleet/dashboard">📊 Tableau de Bord</Link>
+              <Link to="/fleet/dashboard">📊 Gestion de Flotte</Link>
             </li>
             <li className="active">
               <Link to="/parc">🔧 Gestion des Pièces</Link>
@@ -202,10 +381,13 @@ const Parc = () => {
               <Link to="/stock">📦 Gestion de Stock</Link>
             </li>
             <li>
-              <Link to="/schedule">🗓️ Planifier un Programme</Link>
+              <Link to="/schedule">🗓️ Gestion des Programmes</Link>
             </li>
             <li>
               <Link to="/maintenance">🛠️ Maintenance</Link>
+            </li>
+            <li>
+              <Link to="/trailers">🚛 Gestion des Remorques</Link>
             </li>
             <li>
               <Link to="/incidents">🚨 Gestion des Incidents</Link>
@@ -227,10 +409,9 @@ const Parc = () => {
             </p>
           </div>
           <div className="fleet-management-header-actions">
-            <button className="fleet-management-refresh-btn" onClick={fetchParts} disabled={loading}>
+            <button className="fleet-management-refresh-btn" onClick={fetchData} disabled={loading}>
               {loading ? "🔄 Chargement..." : "🔄 Actualiser"}
             </button>
-            <Link to="/fleet/dashboard" className="fleet-management-back-btn">⬅ Retour au Tableau de Bord</Link>
           </div>
         </header>
 
@@ -264,6 +445,16 @@ const Parc = () => {
             }}
           >
             Ajouter des Pièces Générales
+          </button>
+          <button 
+            className={`fleet-management-tab ${activeTab === 'history' ? 'active' : ''}`}
+            onClick={() => {
+              setActiveTab('history');
+              setEditingPartId(null);
+              setEditFormData(null);
+            }}
+          >
+            Historique d'Utilisation
           </button>
         </div>
 
@@ -341,6 +532,19 @@ const Parc = () => {
                             >
                               ✏️ Modifier
                             </button>
+                            <button 
+                              className="fleet-management-use-btn"
+                              onClick={() => handleUse(part)}
+                              disabled={part.quantity === 0}
+                            >
+                              🛠️ Utiliser
+                            </button>
+                            <button 
+                              className="fleet-management-restock-btn"
+                              onClick={() => handleRestock(part)}
+                            >
+                              📦 Restocker
+                            </button>
                           </td>
                         </tr>
                       ))
@@ -353,6 +557,48 @@ const Parc = () => {
                     )}
                   </tbody>
                 </table>
+              </div>
+            )}
+          </div>
+        )}
+
+        {activeTab === 'history' && (
+          <div className="fleet-management-inventory-section">
+            <h2>Historique d'Utilisation des Pièces</h2>
+            {loading ? (
+              <div className="fleet-management-loading">Chargement de l'historique...</div>
+            ) : usageHistory.length > 0 ? (
+              <div className="fleet-management-parts-table-container">
+                <table className="fleet-management-parts-table">
+                  <thead>
+                    <tr>
+                      <th>Pièce</th>
+                      <th>Véhicule</th>
+                      <th>Quantité Utilisée</th>
+                      <th>Date d'Utilisation</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {usageHistory.map((entry) => (
+                      <tr key={entry.id}>
+                        <td>{entry.spare_parts?.name || 'Pièce inconnue'}</td>
+                        <td>
+                          {entry.trucks?.immatriculation 
+                            ? `Camion: ${entry.trucks.immatriculation}`
+                            : entry.trailers?.immatriculation
+                              ? `Remorque: ${entry.trailers.immatriculation}`
+                              : 'Véhicule inconnu'}
+                        </td>
+                        <td>{entry.quantity_used}</td>
+                        <td>{new Date(entry.used_at).toLocaleString('fr-FR')}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <div className="fleet-management-no-data">
+                Aucun historique d'utilisation trouvé.
               </div>
             )}
           </div>
@@ -592,6 +838,109 @@ const Parc = () => {
                 </button>
               </div>
             </form>
+          </div>
+        )}
+
+        {showUseModal && selectedPart && (
+          <div className="fleet-management-modal">
+            <div className="fleet-management-modal-content">
+              <h2>Utiliser la Pièce: {selectedPart.name}</h2>
+              <form onSubmit={handleUseSubmit} className="fleet-management-part-form">
+                <div className="fleet-management-form-group">
+                  <label htmlFor="truckId">Choisir un Camion</label>
+                  <select
+                    id="truckId"
+                    name="truckId"
+                    value={useFormData.truckId}
+                    onChange={handleUseInputChange}
+                  >
+                    <option value="">Aucun camion</option>
+                    {trucks.map((truck) => (
+                      <option key={truck.id} value={truck.id}>
+                        {truck.immatriculation}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="fleet-management-form-group">
+                  <label htmlFor="trailerId">Choisir une Remorque</label>
+                  <select
+                    id="trailerId"
+                    name="trailerId"
+                    value={useFormData.trailerId}
+                    onChange={handleUseInputChange}
+                  >
+                    <option value="">Aucune remorque</option>
+                    {trailers.map((trailer) => (
+                      <option key={trailer.id} value={trailer.id}>
+                        {trailer.immatriculation}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="fleet-management-form-group">
+                  <label htmlFor="quantity">Quantité à Utiliser* (Max: {selectedPart.quantity})</label>
+                  <input
+                    type="number"
+                    id="quantity"
+                    name="quantity"
+                    min="1"
+                    max={selectedPart.quantity}
+                    value={useFormData.quantity}
+                    onChange={handleUseInputChange}
+                    required
+                  />
+                </div>
+                <div className="fleet-management-form-actions">
+                  <button type="submit" className="fleet-management-btn-submit" disabled={submitting}>
+                    {submitting ? 'Enregistrement...' : 'Confirmer l\'Utilisation'}
+                  </button>
+                  <button
+                    type="button"
+                    className="fleet-management-btn-cancel"
+                    onClick={() => setShowUseModal(false)}
+                    disabled={submitting}
+                  >
+                    Annuler
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {showRestockModal && selectedPart && (
+          <div className="fleet-management-modal">
+            <div className="fleet-management-modal-content">
+              <h2>Restocker la Pièce: {selectedPart.name}</h2>
+              <form onSubmit={handleRestockSubmit} className="fleet-management-part-form">
+                <div className="fleet-management-form-group">
+                  <label htmlFor="quantity">Quantité à Ajouter*</label>
+                  <input
+                    type="number"
+                    id="quantity"
+                    name="quantity"
+                    min="1"
+                    value={restockFormData.quantity}
+                    onChange={handleRestockInputChange}
+                    required
+                  />
+                </div>
+                <div className="fleet-management-form-actions">
+                  <button type="submit" className="fleet-management-btn-submit" disabled={submitting}>
+                    {submitting ? 'Enregistrement...' : 'Confirmer le Restockage'}
+                  </button>
+                  <button
+                    type="button"
+                    className="fleet-management-btn-cancel"
+                    onClick={() => setShowRestockModal(false)}
+                    disabled={submitting}
+                  >
+                    Annuler
+                  </button>
+                </div>
+              </form>
+            </div>
           </div>
         )}
       </main>

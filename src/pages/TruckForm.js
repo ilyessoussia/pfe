@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { supabase } from "../supabase"; // Adjust path to your supabase.js
+import { supabase } from "../supabase";
 import './TruckForm.css';
 
 const TruckForm = ({ onClose }) => {
@@ -8,7 +8,6 @@ const TruckForm = ({ onClose }) => {
     immatriculation: "",
     modele: "",
     anneeFabrication: "",
-    dateAcquisition: "",
     typeCarburant: "diesel",
     status: "active",
     equipements: "",
@@ -16,6 +15,10 @@ const TruckForm = ({ onClose }) => {
     chauffeur: "",
     telephoneChauffeur: "",
     residenceChauffeur: "",
+    lastInsuranceDate: "",
+    insuranceExpirationDate: "",
+    lastTechnicalInspectionDate: "",
+    nextTechnicalInspectionDate: "",
   });
 
   const [errors, setErrors] = useState({});
@@ -37,9 +40,7 @@ const TruckForm = ({ onClose }) => {
     const newErrors = {};
     const currentYear = new Date().getFullYear();
 
-    if (!formData.numeroSerie.trim()) {
-      newErrors.numeroSerie = "Le numéro de série est requis";
-    } else if (!/^[A-Z0-9]{5,17}$/i.test(formData.numeroSerie)) {
+    if (formData.numeroSerie && !/^[A-Z0-9]{5,17}$/i.test(formData.numeroSerie)) {
       newErrors.numeroSerie = "Le numéro de série doit contenir entre 5 et 17 caractères alphanumériques";
     }
 
@@ -53,17 +54,11 @@ const TruckForm = ({ onClose }) => {
       newErrors.modele = "Le modèle est requis";
     }
 
-    if (!formData.anneeFabrication) {
-      newErrors.anneeFabrication = "L'année de fabrication est requise";
-    } else {
+    if (formData.anneeFabrication) {
       const year = parseInt(formData.anneeFabrication);
       if (isNaN(year) || year < 1900 || year > currentYear) {
         newErrors.anneeFabrication = `L'année doit être entre 1900 et ${currentYear}`;
       }
-    }
-
-    if (!formData.dateAcquisition) {
-      newErrors.dateAcquisition = "La date d'acquisition est requise";
     }
 
     if (!formData.typeCarburant) {
@@ -98,14 +93,13 @@ const TruckForm = ({ onClose }) => {
       setIsSubmitting(true);
       try {
         console.log("Attempting to add truck with data:", formData);
-        const {  error } = await supabase
+        const { error } = await supabase
           .from('trucks')
           .insert([{
-            numero_serie: formData.numeroSerie,
+            numero_serie: formData.numeroSerie || null,
             immatriculation: formData.immatriculation,
             modele: formData.modele,
-            annee_fabrication: parseInt(formData.anneeFabrication),
-            date_acquisition: formData.dateAcquisition,
+            annee_fabrication: formData.anneeFabrication ? parseInt(formData.anneeFabrication) : null,
             type_carburant: formData.typeCarburant,
             status: formData.status,
             equipements: formData.equipements || null,
@@ -113,6 +107,10 @@ const TruckForm = ({ onClose }) => {
             chauffeur: formData.chauffeur || null,
             telephone_chauffeur: formData.telephoneChauffeur || null,
             residence_chauffeur: formData.residenceChauffeur || null,
+            last_insurance_date: formData.lastInsuranceDate || null,
+            insurance_expiration_date: formData.insuranceExpirationDate || null,
+            last_technical_inspection_date: formData.lastTechnicalInspectionDate || null,
+            next_technical_inspection_date: formData.nextTechnicalInspectionDate || null,
           }]);
 
         if (error) {
@@ -155,7 +153,7 @@ const TruckForm = ({ onClose }) => {
       <h2>Ajouter un Nouveau Camion</h2>
       <form className="truck-form" onSubmit={handleSubmit}>
         <div className="truck-field-group">
-          <label>Numéro de Série du Véhicule*</label>
+          <label>Numéro de Série du Véhicule</label>
           <input 
             name="numeroSerie" 
             value={formData.numeroSerie}
@@ -188,7 +186,7 @@ const TruckForm = ({ onClose }) => {
         </div>
 
         <div className="truck-field-group">
-          <label>Année de Fabrication du Véhicule*</label>
+          <label>Année de Fabrication du Véhicule</label>
           <input 
             type="number" 
             name="anneeFabrication" 
@@ -199,18 +197,6 @@ const TruckForm = ({ onClose }) => {
             className={errors.anneeFabrication ? "truck-input-error" : ""}
           />
           {errors.anneeFabrication && <div className="truck-error-message">{errors.anneeFabrication}</div>}
-        </div>
-
-        <div className="truck-field-group">
-          <label>Date d'Acquisition du Véhicule*</label>
-          <input 
-            type="date" 
-            name="dateAcquisition" 
-            value={formData.dateAcquisition}
-            onChange={handleChange} 
-            className={errors.dateAcquisition ? "truck-input-error" : ""}
-          />
-          {errors.dateAcquisition && <div className="truck-error-message">{errors.dateAcquisition}</div>}
         </div>
 
         <div className="truck-field-group">
@@ -247,6 +233,54 @@ const TruckForm = ({ onClose }) => {
             ))}
           </select>
           {errors.status && <div className="truck-error-message">{errors.status}</div>}
+        </div>
+
+        <div className="truck-field-group">
+          <label>Dernière Date d'Assurance</label>
+          <input 
+            type="date" 
+            name="lastInsuranceDate" 
+            value={formData.lastInsuranceDate}
+            onChange={handleChange} 
+            className={errors.lastInsuranceDate ? "truck-input-error" : ""}
+          />
+          {errors.lastInsuranceDate && <div className="truck-error-message">{errors.lastInsuranceDate}</div>}
+        </div>
+
+        <div className="truck-field-group">
+          <label>Date d'Expiration de l'Assurance</label>
+          <input 
+            type="date" 
+            name="insuranceExpirationDate" 
+            value={formData.insuranceExpirationDate}
+            onChange={handleChange} 
+            className={errors.insuranceExpirationDate ? "truck-input-error" : ""}
+          />
+          {errors.insuranceExpirationDate && <div className="truck-error-message">{errors.insuranceExpirationDate}</div>}
+        </div>
+
+        <div className="truck-field-group">
+          <label>Dernière Date de Contrôle Technique</label>
+          <input 
+            type="date" 
+            name="lastTechnicalInspectionDate" 
+            value={formData.lastTechnicalInspectionDate}
+            onChange={handleChange} 
+            className={errors.lastTechnicalInspectionDate ? "truck-input-error" : ""}
+          />
+          {errors.lastTechnicalInspectionDate && <div className="truck-error-message">{errors.lastTechnicalInspectionDate}</div>}
+        </div>
+
+        <div className="truck-field-group">
+          <label>Prochaine Date de Contrôle Technique</label>
+          <input 
+            type="date" 
+            name="nextTechnicalInspectionDate" 
+            value={formData.nextTechnicalInspectionDate}
+            onChange={handleChange} 
+            className={errors.nextTechnicalInspectionDate ? "truck-input-error" : ""}
+          />
+          {errors.nextTechnicalInspectionDate && <div className="truck-error-message">{errors.nextTechnicalInspectionDate}</div>}
         </div>
 
         <div className="truck-field-group">

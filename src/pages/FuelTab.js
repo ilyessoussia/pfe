@@ -6,13 +6,8 @@ import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend } f
 
 const FuelTab = ({ onFuelAdded }) => {
   const { id } = useParams();
-  // Move selectedMonth to the top to ensure it's initialized before use
-  const [selectedMonth, setSelectedMonth] = useState(() => {
-    const date = new Date();
-    return `${date.getFullYear()}-${date.getMonth() + 1}`;
-  });
+  const [selectedMonth, setSelectedMonth] = useState("2025-5");
   const [showModal, setShowModal] = useState(false);
-  const [showEditModal, setShowEditModal] = useState(false);
   const [newRefuel, setNewRefuel] = useState({
     kilometers: "",
     liters: "",
@@ -21,7 +16,6 @@ const FuelTab = ({ onFuelAdded }) => {
     date: new Date().toISOString().split('T')[0],
     lastKilometrage: "",
   });
-  const [editRefuel, setEditRefuel] = useState(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [lastEntryLoading, setLastEntryLoading] = useState(true);
@@ -32,32 +26,8 @@ const FuelTab = ({ onFuelAdded }) => {
     currentMonthCost: 0,
     currentMonthMileage: 0,
   });
-  const [groupedHistory, setGroupedHistory] = useState({});
-  const [expandedMonths, setExpandedMonths] = useState({});
   const [localHistory, setLocalHistory] = useState([]);
 
-  // Format date as DD/MM/YYYY for display
-  const formatDate = (dateInput) => {
-    let date;
-    if (typeof dateInput === 'string') {
-      date = new Date(dateInput);
-    } else if (dateInput instanceof Date) {
-      date = dateInput;
-    } else {
-      date = new Date();
-    }
-    if (isNaN(date.getTime())) {
-      console.warn(`Invalid date input: ${dateInput}`);
-      return "Invalid Date";
-    }
-    return date.toLocaleDateString('fr-FR', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-    });
-  };
-
-  // Parse date to Date object, handling YYYY-MM-DD
   const parseDate = (dateInput) => {
     if (dateInput instanceof Date) {
       return dateInput;
@@ -75,17 +45,24 @@ const FuelTab = ({ onFuelAdded }) => {
     return new Date(dateInput);
   };
 
-  // Calculate metrics (distance, consumption, cost per km, liters per 100km)
   const calculateMetrics = (currentEntry, previousEntry) => {
     const kilometers = parseFloat(currentEntry.kilometers) || 0;
     const liters = parseFloat(currentEntry.liters) || 0;
     const cost = parseFloat(currentEntry.cost) || 0;
-    const distanceTraveled = previousEntry
-      ? kilometers - parseFloat(previousEntry.kilometers)
-      : 0;
-    const consumption = distanceTraveled > 0 ? distanceTraveled / liters : 0;
-    const litersPer100km = distanceTraveled > 0 ? (liters * 100) / distanceTraveled : 0;
-    const costPerKm = distanceTraveled > 0 ? cost / distanceTraveled : 0;
+    let distanceTraveled = 0;
+    if (previousEntry) {
+      const prevKilometers = parseFloat(previousEntry.kilometers) || 0;
+      distanceTraveled = kilometers - prevKilometers;
+      if (distanceTraveled < 0) {
+        console.warn(
+          `Negative distance detected: current=${kilometers}, previous=${prevKilometers}`
+        );
+        distanceTraveled = 0;
+      }
+    }
+    const consumption = distanceTraveled > 0 && liters > 0 ? distanceTraveled / liters : 0;
+    const litersPer100km = distanceTraveled > 0 && liters > 0 ? (liters * 100) / distanceTraveled : 0;
+    const costPerKm = distanceTraveled > 0 && cost > 0 ? cost / distanceTraveled : 0;
     return {
       distanceTraveled: distanceTraveled.toFixed(2),
       consumption: consumption.toFixed(2),
@@ -94,39 +71,59 @@ const FuelTab = ({ onFuelAdded }) => {
     };
   };
 
-  // Fetch fuel history from Supabase
   const fetchFuelHistory = useCallback(async () => {
-    if (!id) return;
-
+    if (!id) {
+      console.warn("No truck_id provided");
+      return;
+    }
     try {
       const { data, error } = await supabase
         .from('fuel_history')
         .select('*')
         .eq('truck_id', id)
         .order('raw_date', { ascending: true });
-
       if (error) {
         console.error("Supabase fetch history error:", error);
         throw error;
       }
-
-      console.log("Fetched fuel history:", data);
-
-      const formattedHistory = data.map((entry) => ({
-        id: entry.id,
-        truckId: entry.truck_id,
-        kilometers: parseFloat(entry.kilometers),
-        liters: parseFloat(entry.liters),
-        fuelPrice: parseFloat(entry.fuel_price),
-        cost: parseFloat(entry.cost),
-        rawDate: entry.raw_date,
-        timestamp: parseDate(entry.raw_date).getTime(),
-        distanceTraveled: parseFloat(entry.distance_traveled) || 0,
-        consumption: parseFloat(entry.consumption) || 0,
-        costPerKm: parseFloat(entry.cost_per_km) || 0,
-        litersPer100km: parseFloat(entry.liters_per_100km) || 0,
-      }));
-
+      console.log("Fetched fuel_history data:", data);
+      const formattedHistory = data
+        .filter((entry) => {
+          const isValid =
+            entry.kilometers != null &&
+            entry.liters != null &&
+            entry.fuel_price != null &&
+            entry.cost != null &&
+            entry.raw_date;
+          if (!isValid) {
+            console.warn("Filtering out invalid database entry:", {
+              entry,
+              missingFields: {
+                kilometers: entry.kilometers != null,
+                liters: entry.liters != null,
+                fuel_price: entry.fuel_price != null,
+                cost: entry.cost != null,
+                raw_date: !!entry.raw_date,
+              },
+            });
+          }
+          return isValid;
+        })
+        .map((entry) => ({
+          id: entry.id,
+          truck_id: entry.truck_id,
+          kilometers: parseFloat(entry.kilometers),
+          liters: parseFloat(entry.liters),
+          fuel_price: parseFloat(entry.fuel_price),
+          cost: parseFloat(entry.cost),
+          raw_date: entry.raw_date,
+          timestamp: parseDate(entry.raw_date).getTime(),
+          distance_traveled: parseFloat(entry.distance_traveled) || 0,
+          consumption: parseFloat(entry.consumption) || 0,
+          cost_per_km: parseFloat(entry.cost_per_km) || 0,
+          liters_per_100km: parseFloat(entry.liters_per_100km) || 0,
+        }));
+      console.log("Formatted fuel history:", formattedHistory);
       setLocalHistory(formattedHistory);
     } catch (err) {
       console.error("Error fetching fuel history:", err);
@@ -134,11 +131,9 @@ const FuelTab = ({ onFuelAdded }) => {
     }
   }, [id]);
 
-  // Fetch last fuel entry from Supabase
   useEffect(() => {
     async function fetchLastFuelEntry() {
       if (!id) return;
-
       try {
         setLastEntryLoading(true);
         const { data, error } = await supabase
@@ -147,27 +142,24 @@ const FuelTab = ({ onFuelAdded }) => {
           .eq('truck_id', id)
           .order('raw_date', { ascending: false })
           .limit(1);
-
         if (error) {
           console.error("Supabase query error:", error);
           throw error;
         }
-
         if (data && data.length > 0) {
-          console.log("Last fuel entry loaded:", data[0]);
           const lastEntry = {
             id: data[0].id,
-            truckId: data[0].truck_id,
+            truck_id: data[0].truck_id,
             kilometers: parseFloat(data[0].kilometers),
             liters: parseFloat(data[0].liters),
-            fuelPrice: parseFloat(data[0].fuel_price),
+            fuel_price: parseFloat(data[0].fuel_price),
             cost: parseFloat(data[0].cost),
-            rawDate: data[0].raw_date,
+            raw_date: data[0].raw_date,
             timestamp: parseDate(data[0].raw_date).getTime(),
-            distanceTraveled: parseFloat(data[0].distance_traveled) || 0,
+            distance_traveled: parseFloat(data[0].distance_traveled) || 0,
             consumption: parseFloat(data[0].consumption) || 0,
-            costPerKm: parseFloat(data[0].cost_per_km) || 0,
-            litersPer100km: parseFloat(data[0].liters_per_100km) || 0,
+            cost_per_km: parseFloat(data[0].cost_per_km) || 0,
+            liters_per_100km: parseFloat(data[0].liters_per_100km) || 0,
           };
           setLastFuelEntry(lastEntry);
           setNewRefuel((prev) => ({
@@ -175,7 +167,6 @@ const FuelTab = ({ onFuelAdded }) => {
             lastKilometrage: lastEntry.kilometers.toString(),
           }));
         } else {
-          console.log("No previous fuel entries found");
           setLastFuelEntry(null);
         }
       } catch (err) {
@@ -185,128 +176,84 @@ const FuelTab = ({ onFuelAdded }) => {
         setLastEntryLoading(false);
       }
     }
-
     fetchLastFuelEntry();
     fetchFuelHistory();
   }, [id, fetchFuelHistory]);
 
-  // Process history for charts and summaries
   useEffect(() => {
-    console.log("Processing history:", localHistory);
     if (localHistory && localHistory.length > 0) {
-      // Process and filter data for charts based on selected month
       const [selectedYear, selectedMonthNum] = selectedMonth.split('-').map(Number);
       const startDate = new Date(selectedYear, selectedMonthNum - 1, 1);
       const endDate = new Date(selectedYear, selectedMonthNum, 0);
-
       const chartData = localHistory
         .map((entry, index, array) => {
-          if (!entry?.rawDate) {
-            console.log("Skipping entry, missing rawDate:", entry);
+          if (!entry?.raw_date) {
+            console.warn("Skipping chart entry, missing raw_date:", entry);
             return null;
           }
           const previousEntry = index > 0 ? array[index - 1] : null;
           const metrics = calculateMetrics(entry, previousEntry);
-          
-          // Skip entries with distanceTraveled = 0 (no previous entry)
           if (parseFloat(metrics.distanceTraveled) <= 0) {
-            console.log("Skipping first entry from chart data (no distanceTraveled):", entry);
+            console.log("Skipping entry from chart data (no distanceTraveled):", entry);
             return null;
           }
-          
-          const entryDate = parseDate(entry.rawDate);
+          const entryDate = parseDate(entry.raw_date);
           if (entryDate < startDate || entryDate > endDate) {
             return null;
           }
-
+          const consumption = parseFloat(metrics.consumption);
+          const costPerKm = parseFloat(metrics.costPerKm);
+          const litersPer100km = parseFloat(metrics.litersPer100km);
+          const cost = parseFloat(entry.cost) || 0;
+          if (
+            isNaN(consumption) ||
+            isNaN(costPerKm) ||
+            isNaN(litersPer100km) ||
+            isNaN(cost)
+          ) {
+            console.warn("Invalid chart data values:", {
+              entry,
+              consumption,
+              costPerKm,
+              litersPer100km,
+              cost,
+            });
+            return null;
+          }
           return {
             date: entryDate.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' }),
-            consumption: parseFloat(metrics.consumption),
-            costPerKm: parseFloat(metrics.costPerKm),
-            cost: parseFloat(entry.cost) || 0,
-            litersPer100km: parseFloat(metrics.litersPer100km),
+            consumption,
+            costPerKm,
+            cost,
+            litersPer100km,
             timestamp: entryDate.getTime(),
           };
         })
         .filter((entry) => entry)
         .sort((a, b) => a.timestamp - b.timestamp);
-
-      console.log("Processed chart data:", chartData);
+      console.log("Generated chart data:", chartData);
       setFuelChartData(chartData);
 
-      // Process monthly summaries and group history by month
-      const grouped = {};
-      let currentMonthCost = 0;
-      let currentMonthMileage = 0;
-      const currentDate = new Date();
-      const currentMonth = currentDate.getMonth();
-      const currentYear = currentDate.getFullYear();
-
+      let selectedMonthCost = 0;
+      let selectedMonthMileage = 0;
       localHistory.forEach((entry, index, array) => {
-        if (!entry?.rawDate) {
-          console.log("Skipping invalid entry, missing rawDate:", entry);
-          return;
-        }
-        const entryDate = parseDate(entry.rawDate);
-        const month = entryDate.getMonth() + 1;
-        const year = entryDate.getFullYear();
-        const monthYearKey = `${month}/${year}`;
+        if (!entry?.raw_date) return;
+        const entryDate = parseDate(entry.raw_date);
         const metrics = calculateMetrics(entry, index > 0 ? array[index - 1] : null);
-
-        if (entryDate.getMonth() === currentMonth && entryDate.getFullYear() === currentYear) {
-          currentMonthCost += parseFloat(entry.cost) || 0;
-          currentMonthMileage += parseFloat(metrics.distanceTraveled) || 0;
+        if (
+          entryDate.getMonth() + 1 === selectedMonthNum &&
+          entryDate.getFullYear() === selectedYear
+        ) {
+          selectedMonthCost += parseFloat(entry.cost) || 0;
+          selectedMonthMileage += parseFloat(metrics.distanceTraveled) || 0;
         }
-
-        if (!grouped[monthYearKey]) {
-          grouped[monthYearKey] = {
-            entries: [],
-            month,
-            year,
-            monthName: new Date(year, month - 1, 1).toLocaleString('fr-FR', { month: 'long' }),
-            totalCost: 0,
-            totalMileage: 0,
-          };
-          if (entryDate.getMonth() === currentMonth && entryDate.getFullYear() === currentYear) {
-            setExpandedMonths((prev) => ({
-              ...prev,
-              [monthYearKey]: true,
-            }));
-          }
-        }
-
-        grouped[monthYearKey].entries.push({
-          ...entry,
-          date: formatDate(entry.rawDate),
-          distanceTraveled: metrics.distanceTraveled,
-          consumption: metrics.consumption,
-          costPerKm: metrics.costPerKm,
-          litersPer100km: metrics.litersPer100km,
-        });
-        grouped[monthYearKey].totalCost += parseFloat(entry.cost) || 0;
-        grouped[monthYearKey].totalMileage += parseFloat(metrics.distanceTraveled) || 0;
       });
-
-      Object.keys(grouped).forEach((monthYear) => {
-        grouped[monthYear].entries.sort((a, b) => {
-          const dateA = parseDate(a.rawDate);
-          const dateB = parseDate(b.rawDate);
-          return dateB - dateA;
-        });
-      });
-
-      console.log("Grouped history:", grouped);
-      console.log("Monthly summary:", { currentMonthCost, currentMonthMileage });
-
-      setGroupedHistory(grouped);
       setMonthlySummary({
-        currentMonthCost: currentMonthCost.toFixed(2),
-        currentMonthMileage: currentMonthMileage.toFixed(0),
+        currentMonthCost: selectedMonthCost.toFixed(2),
+        currentMonthMileage: selectedMonthMileage.toFixed(0),
       });
     } else {
-      console.log("No history data available");
       setFuelChartData([]);
-      setGroupedHistory({});
       setMonthlySummary({
         currentMonthCost: 0,
         currentMonthMileage: 0,
@@ -331,111 +278,73 @@ const FuelTab = ({ onFuelAdded }) => {
     setShowModal(false);
   };
 
-  const handleOpenEditModal = (entry) => {
-    setEditRefuel({
-      id: entry.id,
-      kilometers: entry.kilometers.toString(),
-      liters: entry.liters.toString(),
-      fuelPrice: entry.fuelPrice.toString(),
-      cost: entry.cost.toString(),
-      date: entry.rawDate,
-    });
-    setShowEditModal(true);
-    setError("");
-  };
-
-  const handleCloseEditModal = () => {
-    setShowEditModal(false);
-    setEditRefuel(null);
-  };
-
-  const handleInputChange = (e, isEdit = false) => {
+  const handleInputChange = (e) => {
     const { name, value } = e.target;
-    const targetState = isEdit ? editRefuel : newRefuel;
-    const setTargetState = isEdit ? setEditRefuel : setNewRefuel;
-
     if (name === "liters" || name === "fuelPrice") {
-      const liters = name === "liters" ? parseFloat(value) || 0 : parseFloat(targetState.liters) || 0;
-      const price = name === "fuelPrice" ? parseFloat(value) || 0 : parseFloat(targetState.fuelPrice) || 0;
+      const liters = name === "liters" ? parseFloat(value) || 0 : parseFloat(newRefuel.liters) || 0;
+      const price = name === "fuelPrice" ? parseFloat(value) || 0 : parseFloat(newRefuel.fuelPrice) || 0;
       const calculatedCost = (liters * price).toFixed(2);
-
-      setTargetState({
-        ...targetState,
+      setNewRefuel({
+        ...newRefuel,
         [name]: value,
         cost: calculatedCost,
       });
     } else if (name === "cost") {
-      const liters = parseFloat(targetState.liters) || 0;
+      const liters = parseFloat(newRefuel.liters) || 0;
       if (liters > 0) {
         const calculatedPrice = ((parseFloat(value) || 0) / liters).toFixed(3);
-        setTargetState({
-          ...targetState,
+        setNewRefuel({
+          ...newRefuel,
           cost: value,
           fuelPrice: calculatedPrice,
         });
       } else {
-        setTargetState({
-          ...targetState,
+        setNewRefuel({
+          ...newRefuel,
           cost: value,
         });
       }
     } else {
-      setTargetState({
-        ...targetState,
+      setNewRefuel({
+        ...newRefuel,
         [name]: value,
       });
     }
   };
 
-  const toggleMonthExpand = (monthYear) => {
-    setExpandedMonths((prev) => ({
-      ...prev,
-      [monthYear]: !prev[monthYear],
-    }));
-  };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
-
     if (!newRefuel.kilometers || !newRefuel.liters || !newRefuel.cost || !newRefuel.fuelPrice) {
       setError("Tous les champs sont obligatoires");
       return;
     }
-
     const kilometers = parseFloat(newRefuel.kilometers);
     const liters = parseFloat(newRefuel.liters);
     const cost = parseFloat(newRefuel.cost);
     const fuelPrice = parseFloat(newRefuel.fuelPrice);
     const inputDate = parseDate(newRefuel.date);
-
     if (isNaN(kilometers) || isNaN(liters) || isNaN(cost) || isNaN(fuelPrice)) {
       setError("Le kilométrage, les litres, le prix et le coût doivent être des nombres");
       return;
     }
-
     if (kilometers <= 0 || liters <= 0 || cost <= 0 || fuelPrice <= 0) {
       setError("Le kilométrage, les litres, le prix et le coût doivent être supérieurs à zéro");
       return;
     }
-
     if (inputDate > new Date()) {
       setError("La date ne peut pas être dans le futur");
       return;
     }
-
     if (!lastEntryLoading && lastFuelEntry && kilometers <= lastFuelEntry.kilometers) {
       setError(`Le kilométrage doit être supérieur à ${lastFuelEntry.kilometers} km (dernier enregistrement)`);
       return;
     }
-
     try {
       setLoading(true);
-
       const metrics = calculateMetrics(
         { kilometers, liters, cost },
         lastFuelEntry
       );
-
       const newRecord = {
         truck_id: id,
         kilometers,
@@ -449,49 +358,36 @@ const FuelTab = ({ onFuelAdded }) => {
         liters_per_100km: parseFloat(metrics.litersPer100km),
         created_at: new Date().toISOString(),
       };
-
-      console.log("Inserting fuel record:", newRecord);
-
       const { data, error } = await supabase
         .from('fuel_history')
         .insert([newRecord])
         .select();
-
       if (error) {
         console.error("Supabase insert error:", error);
         throw error;
       }
-
-      console.log("Insert response:", data);
-
       const newEntry = {
         id: data[0].id,
-        truckId: id,
+        truck_id: id,
         kilometers,
         liters,
-        fuelPrice,
+        fuel_price: fuelPrice,
         cost,
-        rawDate: newRefuel.date,
+        raw_date: newRefuel.date,
         timestamp: inputDate.getTime(),
-        distanceTraveled: parseFloat(metrics.distanceTraveled),
+        distance_traveled: parseFloat(metrics.distanceTraveled),
         consumption: parseFloat(metrics.consumption),
-        costPerKm: parseFloat(metrics.costPerKm),
-        litersPer100km: parseFloat(metrics.litersPer100km),
+        cost_per_km: parseFloat(metrics.costPerKm),
+        liters_per_100km: parseFloat(metrics.litersPer100km),
       };
-
-      console.log("New fuel entry added:", newEntry);
-
-      // Append to localHistory and refresh from Supabase
-      setLocalHistory((prev) => [...prev, newEntry]);
+      setLocalHistory((prev) => [...prev, newEntry].sort((a, b) => parseDate(a.raw_date) - parseDate(b.raw_date)));
       setLastFuelEntry(newEntry);
-      fetchFuelHistory();
       setShowModal(false);
       alert("Plein ajouté avec succès !");
-
       if (onFuelAdded && typeof onFuelAdded === 'function') {
-        console.log("Calling onFuelAdded");
         onFuelAdded();
       }
+      await fetchFuelHistory();
     } catch (err) {
       console.error("Error adding fuel record:", err);
       setError(`Erreur lors de l'enregistrement: ${err.message}`);
@@ -500,131 +396,12 @@ const FuelTab = ({ onFuelAdded }) => {
     }
   };
 
-  const handleEditSubmit = async (e) => {
-    e.preventDefault();
-
-    if (!editRefuel.kilometers || !editRefuel.liters || !editRefuel.cost || !editRefuel.fuelPrice) {
-      setError("Tous les champs sont obligatoires");
-      return;
-    }
-
-    const kilometers = parseFloat(editRefuel.kilometers);
-    const liters = parseFloat(editRefuel.liters);
-    const cost = parseFloat(editRefuel.cost);
-    const fuelPrice = parseFloat(editRefuel.fuelPrice);
-    const inputDate = parseDate(editRefuel.date);
-
-    if (isNaN(kilometers) || isNaN(liters) || isNaN(cost) || isNaN(fuelPrice)) {
-      setError("Le kilométrage, les litres, le prix et le coût doivent être des nombres");
-      return;
-    }
-
-    if (kilometers <= 0 || liters <= 0 || cost <= 0 || fuelPrice <= 0) {
-      setError("Le kilométrage, les litres, le prix et le coût doivent être supérieurs à zéro");
-      return;
-    }
-
-    if (inputDate > new Date()) {
-      setError("La date ne peut pas être dans le futur");
-      return;
-    }
-
-    try {
-      setLoading(true);
-
-      // Find the previous entry for metrics calculation
-      const sortedHistory = [...localHistory].sort((a, b) => a.timestamp - b.timestamp);
-      const currentIndex = sortedHistory.findIndex((entry) => entry.id === editRefuel.id);
-      const previousEntry = currentIndex > 0 ? sortedHistory[currentIndex - 1] : null;
-
-      const metrics = calculateMetrics(
-        { kilometers, liters, cost },
-        previousEntry
-      );
-
-      const updatedRecord = {
-        truck_id: id,
-        kilometers,
-        liters,
-        fuel_price: fuelPrice,
-        cost,
-        raw_date: editRefuel.date,
-        distance_traveled: parseFloat(metrics.distanceTraveled),
-        consumption: parseFloat(metrics.consumption),
-        cost_per_km: parseFloat(metrics.costPerKm),
-        liters_per_100km: parseFloat(metrics.litersPer100km),
-        updated_at: new Date().toISOString(),
-      };
-
-      console.log("Updating fuel record:", updatedRecord);
-
-      const { data, error } = await supabase
-        .from('fuel_history')
-        .update(updatedRecord)
-        .eq('id', editRefuel.id)
-        .select();
-
-      if (error) {
-        console.error("Supabase update error:", error);
-        throw error;
-      }
-
-      console.log("Update response:", data);
-
-      const updatedEntry = {
-        id: editRefuel.id,
-        truckId: id,
-        kilometers,
-        liters,
-        fuelPrice,
-        cost,
-        rawDate: editRefuel.date,
-        timestamp: inputDate.getTime(),
-        distanceTraveled: parseFloat(metrics.distanceTraveled),
-        consumption: parseFloat(metrics.consumption),
-        costPerKm: parseFloat(metrics.costPerKm),
-        litersPer100km: parseFloat(metrics.litersPer100km),
-      };
-
-      console.log("Fuel entry updated:", updatedEntry);
-
-      // Update localHistory
-      setLocalHistory((prev) =>
-        prev.map((entry) =>
-          entry.id === editRefuel.id ? updatedEntry : entry
-        )
-      );
-      fetchFuelHistory();
-      setShowEditModal(false);
-      alert("Plein modifié avec succès !");
-
-      if (onFuelAdded && typeof onFuelAdded === 'function') {
-        console.log("Calling onFuelAdded");
-        onFuelAdded();
-      }
-    } catch (err) {
-      console.error("Error updating fuel record:", err);
-      setError(`Erreur lors de la modification: ${err.message}`);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Generate month options for selector
-  const monthOptions = [];
-  const currentDate = new Date();
-  const currentYear = currentDate.getFullYear();
-  for (let year = currentYear; year >= currentYear - 5; year--) {
-    for (let month = 12; month >= 1; month--) {
-      const date = new Date(year, month - 1, 1);
-      if (date <= currentDate) {
-        monthOptions.push({
-          value: `${year}-${month}`,
-          label: date.toLocaleString('fr-FR', { month: 'long', year: 'numeric' }),
-        });
-      }
-    }
-  }
+  const monthOptions = [
+    { value: "2025-2", label: "février 2025" },
+    { value: "2025-3", label: "mars 2025" },
+    { value: "2025-4", label: "avril 2025" },
+    { value: "2025-5", label: "mai 2025" },
+  ];
 
   return (
     <div className="fuel-tab-content">
@@ -636,7 +413,6 @@ const FuelTab = ({ onFuelAdded }) => {
           <span className="plus-icon">+</span> Ajouter un Plein
         </button>
       </div>
-
       <div className="monthly-summary-box">
         <div className="summary-item">
           <span className="summary-label">Coût total du mois:</span>
@@ -647,7 +423,6 @@ const FuelTab = ({ onFuelAdded }) => {
           <span className="summary-value">{monthlySummary.currentMonthMileage} km</span>
         </div>
       </div>
-
       <div className="fuel-charts">
         <div className="month-selector">
           <label htmlFor="monthSelect">Sélectionner le mois :</label>
@@ -663,7 +438,6 @@ const FuelTab = ({ onFuelAdded }) => {
             ))}
           </select>
         </div>
-
         <section className="fuel-combined-chart">
           <h3>⛽ Rendement et Coût par Kilomètre</h3>
           {fuelChartData.length > 0 ? (
@@ -700,7 +474,7 @@ const FuelTab = ({ onFuelAdded }) => {
                 <Area
                   type="monotone"
                   dataKey="costPerKm"
-                  name="Coût/km (TND)"
+                  name="Coût/km"
                   yAxisId="right"
                   stroke="#FF5722"
                   fill="#FFCCBC"
@@ -714,7 +488,6 @@ const FuelTab = ({ onFuelAdded }) => {
             </div>
           )}
         </section>
-
         <section className="fuel-consumption-chart">
           <h3>🚗 Consommation (L/100km)</h3>
           {fuelChartData.length > 0 ? (
@@ -744,7 +517,6 @@ const FuelTab = ({ onFuelAdded }) => {
             </div>
           )}
         </section>
-
         <section className="fuel-cost-chart">
           <h3>💰 Coût Total des Pleins</h3>
           {fuelChartData.length > 0 ? (
@@ -772,87 +544,6 @@ const FuelTab = ({ onFuelAdded }) => {
           )}
         </section>
       </div>
-
-      <div className="fuel-history">
-        <div className="fuel-header">
-          <h3>Historique des Pleins</h3>
-        </div>
-
-        <div className="fuel-entries-by-month">
-          {Object.keys(groupedHistory).length > 0 ? (
-            Object.keys(groupedHistory)
-              .sort((a, b) => {
-                const [monthA, yearA] = a.split('/').map(Number);
-                const [monthB, yearB] = b.split('/').map(Number);
-                if (yearA !== yearB) return yearB - yearA;
-                return monthB - monthA;
-              })
-              .map((monthYear) => {
-                const monthData = groupedHistory[monthYear];
-                return (
-                  <div key={monthYear} className="month-group">
-                    <div
-                      className="month-header"
-                      onClick={() => toggleMonthExpand(monthYear)}
-                    >
-                      <h4>
-                        <span className={`expand-icon ${expandedMonths[monthYear] ? 'expanded' : ''}`}>
-                          {expandedMonths[monthYear] ? '▼' : '►'}
-                        </span>
-                        {monthData.monthName} {monthData.year}
-                      </h4>
-                      <div className="month-summary">
-                        <span>{monthData.entries.length} pleins</span>
-                        <span>{monthData.totalCost.toFixed(2)} TND</span>
-                        <span>{monthData.totalMileage.toFixed(0)} km</span>
-                      </div>
-                    </div>
-
-                    {expandedMonths[monthYear] && (
-                      <div className="month-entries">
-                        {monthData.entries.map((entry, index) => (
-                          <div key={`${entry.rawDate}-${entry.timestamp}-${index}`} className="fuel-entry">
-                            <div className="fuel-date">
-                              <h4>{entry.date}</h4>
-                              <p>{entry.liters} L · {entry.kilometers} km</p>
-                              {parseFloat(entry.distanceTraveled) > 0 && (
-                                <p className="distance-traveled">
-                                  Distance: +{parseFloat(entry.distanceTraveled).toFixed(0)} km
-                                </p>
-                              )}
-                            </div>
-                            <div className="fuel-consumption">
-                              <h4>{parseFloat(entry.consumption)?.toFixed(2) || "N/A"} km/L</h4>
-                              <p className="liters-per-100km">
-                                {parseFloat(entry.litersPer100km)?.toFixed(2) || "N/A"} L/100km
-                              </p>
-                              <p className="cost-per-km">
-                                {parseFloat(entry.costPerKm)?.toFixed(3) || "N/A"} TND/km
-                              </p>
-                              <p className="fuel-cost">{parseFloat(entry.cost)?.toFixed(2) || "N/A"} TND</p>
-                            </div>
-                            <button
-                              className="modify-btn"
-                              onClick={() => handleOpenEditModal(entry)}
-                            >
-                              Modifier
-                            </button>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                );
-              })
-          ) : (
-            <div className="no-data">
-              <p>Aucun enregistrement de carburant trouvé pour ce camion.</p>
-              <p className="note">Ajoutez un plein pour commencer le suivi.</p>
-            </div>
-          )}
-        </div>
-      </div>
-
       {showModal && (
         <div className="modal-overlay">
           <div className="modal-content">
@@ -862,10 +553,8 @@ const FuelTab = ({ onFuelAdded }) => {
                 ×
               </button>
             </div>
-
             <form onSubmit={handleSubmit} className="refuel-form">
               {error && <div className="error-message">{error}</div>}
-
               <div className="form-group">
                 <label htmlFor="date">Date</label>
                 <input
@@ -877,7 +566,6 @@ const FuelTab = ({ onFuelAdded }) => {
                   required
                 />
               </div>
-
               <div className="form-group">
                 <label htmlFor="kilometers">
                   Kilométrage actuel
@@ -903,7 +591,6 @@ const FuelTab = ({ onFuelAdded }) => {
                   required
                 />
               </div>
-
               <div className="form-group">
                 <label htmlFor="liters">Litres de carburant</label>
                 <input
@@ -917,7 +604,6 @@ const FuelTab = ({ onFuelAdded }) => {
                   required
                 />
               </div>
-
               <div className="form-row">
                 <div className="form-group half">
                   <label htmlFor="fuelPrice">Prix par litre (TND)</label>
@@ -932,7 +618,6 @@ const FuelTab = ({ onFuelAdded }) => {
                     required
                   />
                 </div>
-
                 <div className="form-group half">
                   <label htmlFor="cost">Coût total (TND)</label>
                   <input
@@ -947,7 +632,6 @@ const FuelTab = ({ onFuelAdded }) => {
                   />
                 </div>
               </div>
-
               <div className="form-actions">
                 <button
                   type="button"
@@ -959,106 +643,6 @@ const FuelTab = ({ onFuelAdded }) => {
                 </button>
                 <button type="submit" className="save-btn" disabled={loading}>
                   {loading ? "Enregistrement..." : "Enregistrer"}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {showEditModal && editRefuel && (
-        <div className="modal-overlay">
-          <div className="modal-content">
-            <div className="modal-header">
-              <h3>Modifier un Plein</h3>
-              <button className="close-modal" onClick={handleCloseEditModal}>
-                ×
-              </button>
-            </div>
-
-            <form onSubmit={handleEditSubmit} className="refuel-form">
-              {error && <div className="error-message">{error}</div>}
-
-              <div className="form-group">
-                <label htmlFor="editDate">Date</label>
-                <input
-                  type="date"
-                  id="editDate"
-                  name="date"
-                  value={editRefuel.date}
-                  onChange={(e) => handleInputChange(e, true)}
-                  required
-                />
-              </div>
-
-              <div className="form-group">
-                <label htmlFor="editKilometers">Kilométrage actuel</label>
-                <input
-                  type="number"
-                  id="editKilometers"
-                  name="kilometers"
-                  value={editRefuel.kilometers}
-                  onChange={(e) => handleInputChange(e, true)}
-                  placeholder="ex: 54321"
-                  required
-                />
-              </div>
-
-              <div className="form-group">
-                <label htmlFor="editLiters">Litres de carburant</label>
-                <input
-                  type="number"
-                  id="editLiters"
-                  name="liters"
-                  value={editRefuel.liters}
-                  onChange={(e) => handleInputChange(e, true)}
-                  placeholder="ex: 65.5"
-                  step="0.01"
-                  required
-                />
-              </div>
-
-              <div className="form-row">
-                <div className="form-group half">
-                  <label htmlFor="editFuelPrice">Prix par litre (TND)</label>
-                  <input
-                    type="number"
-                    id="editFuelPrice"
-                    name="fuelPrice"
-                    value={editRefuel.fuelPrice}
-                    onChange={(e) => handleInputChange(e, true)}
-                    placeholder="ex: 2.205"
-                    step="0.001"
-                    required
-                  />
-                </div>
-
-                <div className="form-group half">
-                  <label htmlFor="editCost">Coût total (TND)</label>
-                  <input
-                    type="number"
-                    id="editCost"
-                    name="cost"
-                    value={editRefuel.cost}
-                    onChange={(e) => handleInputChange(e, true)}
-                    placeholder="ex: 144.53"
-                    step="0.01"
-                    required
-                  />
-                </div>
-              </div>
-
-              <div className="form-actions">
-                <button
-                  type="button"
-                  className="cancel-btn"
-                  onClick={handleCloseEditModal}
-                  disabled={loading}
-                >
-                  Annuler
-                </button>
-                <button type="submit" className="save-btn" disabled={loading}>
-                  {loading ? "Modification..." : "Modifier"}
                 </button>
               </div>
             </form>

@@ -1,76 +1,76 @@
-/* StockManagement.css */
+:root {
+  --color-background: #E5E7EB;
+  --color-sidebar-background: #F3F4F6;
+  --color-primary: #6366F1;
+  --color-primary-light: rgba(99, 102, 241, 0.3);
+  --color-primary-lighter: rgba(99, 102, 241, 0.15);
+  --color-primary-lightest: rgba(99, 102, 241, 0.1);
+  --color-primary-muted: rgba(99, 102, 241, 0.7);
+  --color-primary-dark: #4F46E5;
+  --color-shadow: rgba(0, 0, 0, 0.1);
+  --color-shadow-light: rgba(0, 0, 0, 0.05);
+  --color-shadow-dark: rgba(0, 0, 0, 0.15);
+  --color-content-background: #F3F4F6;
+  --color-text-light: #1F2937;
+  --color-text-muted: #6B7280;
+  --color-black: #000000;
+  --color-button-background: #E0E7FF;
+  --color-button-hover: #C7D2FE;
+  --color-border-dark: #9CA3AF;
+  --color-section-background: #F3F4F6;
+  --color-input-background: #E5E7EB;
+  --color-input-hover: #D1D5DB;
+  --color-error-bg: rgba(239, 68, 68, 0.2);
+  --color-error: #EF4444;
+  --color-error-dark: #DC2626;
+  --color-success-bg: rgba(16, 185, 129, 0.2);
+  --color-success: #10B981;
+  --color-success-dark: #059669;
+  --color-success-border: rgba(16, 185, 129, 0.3);
+  --color-table-border: #9CA3AF;
+  --color-table-header: #E0E7FF;
+  --color-table-text: #1F2937;
+  --color-status-active: #10B981;
+  --color-status-active-bg: rgba(16, 185, 129, 0.2);
+  --color-status-active-border: rgba(16, 185, 129, 0.3);
+  --color-status-active-dark: #059669;
+  --color-status-in-progress: rgba(96, 165, 250, 0.1);
+  --color-status-canceled: rgba(107, 114, 128, 0.1);
+  --color-disabled: #9CA3AF;
+  --color-chart-bg: #F3F4F6;
+  --color-chart-border: #9CA3AF;
+}
+
 .stock-management-container {
   display: flex;
   min-height: 100vh;
-  background-color: #0f0f0f;
-  font-family: 'Playfair Display', 'Times New Roman', serif;
-}
-
-.stock-management-sidebar {
-  width: 240px;
-  background-color: #000000;
-  color: #d4af37;
-  padding: 20px;
-  box-shadow: 2px 0 10px rgba(0, 0, 0, 0.4);
-  display: flex;
-  flex-direction: column;
+  background-color: var(--color-background);
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
 .stock-management-fleet-title {
   font-size: 1.5rem;
   margin-bottom: 30px;
   padding-bottom: 15px;
-  border-bottom: 1px solid rgba(212, 175, 55, 0.3);
+  border-bottom: 1px solid var(--color-primary-light);
   letter-spacing: 1px;
   font-weight: 400;
-  color: #d4af37;
-}
-
-.stock-management-sidebar nav {
-  flex: 1;
-}
-
-.stock-management-sidebar nav ul {
-  list-style: none;
-  padding: 0;
-}
-
-.stock-management-sidebar nav ul li {
-  margin-bottom: 10px;
-}
-
-.stock-management-sidebar nav ul li.active a {
-  background-color: rgba(212, 175, 55, 0.15);
-  border-left: 3px solid #d4af37;
-}
-
-.stock-management-sidebar nav ul li a {
-  color: #d4af37;
-  text-decoration: none;
-  display: block;
-  padding: 12px 10px;
-  border-radius: 3px;
-  transition: all 0.3s;
-  border-left: 3px solid transparent;
-}
-
-.stock-management-sidebar nav ul li a:hover {
-  background-color: rgba(212, 175, 55, 0.1);
+  color: var(--color-primary);
 }
 
 .stock-management-sidebar-footer {
   margin-top: auto;
   padding-top: 20px;
-  border-top: 1px solid rgba(212, 175, 55, 0.2);
+  border-top: 1px solid var(--color-primary-light);
   font-size: 0.8rem;
-  color: rgba(212, 175, 55, 0.7);
+  color: var(--color-primary-muted);
 }
 
 .stock-management-content {
   flex: 1;
   padding: 25px;
-  background-color: #121212;
-  color: #e5e5e5;
+  background-color: var(--color-content-background);
+  color: var(--color-text-light);
 }
 
 .stock-management-header {
@@ -83,7 +83,7 @@
 .stock-management-header h1 {
   margin: 0;
   font-size: 2rem;
-  color: #d4af37;
+  color: var(--color-primary);
   font-weight: 400;
   letter-spacing: 1px;
 }
@@ -108,21 +108,21 @@
 }
 
 .stock-management-toggle-form-btn {
-  background-color: #d4af37;
-  color: #000000;
+  background-color: var(--color-primary);
+  color: var(--color-background);
 }
 
 .stock-management-toggle-form-btn:hover {
-  background-color: #c4a030;
+  background-color: var(--color-primary-dark);
 }
 
 .stock-management-back-btn {
-  background-color: #d4af37;
-  color: #000000;
+  background-color: var(--color-primary);
+  color: var(--color-black);
 }
 
 .stock-management-back-btn:hover {
-  background-color: #c4a030;
+  background-color: var(--color-primary-dark);
 }
 
 .stock-management-tabs {
@@ -133,10 +133,10 @@
 
 .stock-management-tab {
   padding: 8px 18px;
-  border: 1px solid #333333;
+  border: 1px solid var(--color-border-dark);
   border-radius: 3px;
-  background-color: #1e1e1e;
-  color: #a9a9a9;
+  background-color: var(--color-button-background);
+  color: var(--color-text-muted);
   cursor: pointer;
   transition: all 0.3s;
   letter-spacing: 0.5px;
@@ -144,34 +144,34 @@
 }
 
 .stock-management-tab:hover {
-  background-color: #252525;
-  border-color: #d4af37;
-  color: #d4af37;
+  background-color: var(--color-button-hover);
+  border-color: var(--color-primary);
+  color: var(--color-primary);
 }
 
 .stock-management-tab.active {
-  background-color: #d4af37;
-  color: #000000;
-  border-color: #d4af37;
+  background-color: var(--color-primary);
+  color: var(--color-background);
+  border-color: var(--color-primary);
 }
 
 .stock-management-error-message {
-  color: #ff6b6b;
+  color: var(--color-error);
   font-size: 0.85rem;
   padding: 10px;
-  background-color: rgba(255, 107, 107, 0.2);
+  background-color: var(--color-error-bg);
   border-radius: 3px;
   margin-bottom: 25px;
-  border: 1px solid #ff6b6b;
+  border: 1px solid var(--color-error);
 }
 
 .stock-management-inventory-section {
-  background-color: #1a1a1a;
+  background-color: var(--color-section-background);
   border-radius: 5px;
   padding: 25px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 4px 6px var(--color-shadow-light);
   margin-bottom: 30px;
-  border: 1px solid #333333;
+  border: 1px solid var(--color-border-dark);
 }
 
 .stock-management-filter-controls {
@@ -184,7 +184,7 @@
 .stock-management-filter-controls h2 {
   margin: 0;
   font-size: 1.5rem;
-  color: #d4af37;
+  color: var(--color-primary);
   font-weight: 400;
   letter-spacing: 0.5px;
 }
@@ -196,28 +196,28 @@
 }
 
 .stock-management-label {
-  color: #e5e5e5;
+  color: var(--color-text-light);
   font-size: 0.95rem;
 }
 
 .stock-management-search-bar {
   padding: 8px;
-  background-color: #2a2a2a;
-  color: #e5e5e5;
-  border: 1px solid #d4af37;
+  background-color: var(--color-input-background);
+  color: var(--color-text-light);
+  border: 1px solid var(--color-primary);
   border-radius: 3px;
   font-size: 0.95rem;
   transition: all 0.3s;
 }
 
 .stock-management-search-bar::placeholder {
-  color: #a9a9a9;
+  color: var(--color-text-muted);
 }
 
 .stock-management-search-bar:focus {
-  border-color: #c4a030;
+  border-color: var(--color-primary-dark);
   outline: none;
-  background-color: #333333;
+  background-color: var(--color-input-hover);
 }
 
 .stock-management-table-container {
@@ -227,14 +227,14 @@
 .stock-management-table {
   width: 100%;
   border-collapse: collapse;
-  background-color: #1a1a1a;
-  color: #e5e5e5;
-  border: 1px solid #333333;
+  background-color: var(--color-section-background);
+  color: var(--color-table-text);
+  border: 1px solid var(--color-border-dark);
 }
 
 .stock-management-table thead {
-  background-color: #000000;
-  color: #d4af37;
+  background-color: var(--color-sidebar-background);
+  color: var(--color-primary);
 }
 
 .stock-management-table th {
@@ -243,7 +243,7 @@
   font-weight: 500;
   font-size: 1rem;
   letter-spacing: 0.5px;
-  border: 1px solid #333333;
+  border: 1px solid var(--color-border-dark);
 }
 
 .stock-management-table th.sortable {
@@ -251,22 +251,22 @@
 }
 
 .stock-management-table th.sortable:hover {
-  background-color: #252525;
+  background-color: var(--color-button-hover);
 }
 
 .stock-management-table td {
   padding: 12px;
-  color: #d0d0d0;
+  color: var(--color-table-text);
   font-weight: 400;
   font-size: 1rem;
-  border: 1px solid #333333;
+  border: 1px solid var(--color-border-dark);
 }
 
 .stock-management-table tr:hover {
-  background-color: rgba(212, 175, 55, 0.1);
+  background-color: var(--color-primary-lightest);
 }
 
-.stock-management-edit-btn,
+.stock-management-restock-btn,
 .stock-management-sell-btn {
   padding: 8px 15px;
   border: none;
@@ -278,46 +278,47 @@
   margin-right: 5px;
 }
 
-.stock-management-edit-btn {
-  background-color: #d4af37;
-  color: #000000;
+.stock-management-restock-btn {
+  background-color: #F59E0B;
+  color: var(--color-black);
 }
 
-.stock-management-edit-btn:hover {
-  background-color: #c4a030;
+.stock-management-restock-btn:hover {
+  background-color: #D97706;
 }
 
 .stock-management-sell-btn {
-  background-color: #6dd17a;
-  color: #000000;
+  background-color: var(--color-success);
+  color: var(--color-black);
 }
 
 .stock-management-sell-btn:hover {
-  background-color: #5cbf6a;
+  background-color: var(--color-success-dark);
 }
 
 .stock-management-no-items,
 .stock-management-loading {
   text-align: center;
   padding: 25px;
-  color: #a9a9a9;
+  color: var(--color-text-muted);
   font-size: 0.95rem;
-  background-color: #1a1a1a;
+  background-color: var(--color-section-background);
   border-radius: 5px;
 }
 
 .stock-management-chart-container {
-  max-width: 100%;
+  max-width: 80%;
   margin: 0 auto;
+  background-color: var(--color-black);
 }
 
-.stock-management-modal {
+.stock-management-modal-overlay {
   position: fixed;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
-  background-color: rgba(0, 0, 0, 0.7);
+  background-color: rgba(0, 0, 0, 0.5);
   display: flex;
   justify-content: center;
   align-items: center;
@@ -325,14 +326,14 @@
 }
 
 .stock-management-modal-content {
-  background-color: #1a1a1a;
+  background-color: var(--color-section-background);
   border-radius: 5px;
   padding: 25px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
-  border: 1px solid #333333;
+  box-shadow: 0 4px 6px var(--color-shadow-light);
+  border: 1px solid var(--color-border-dark);
   position: relative;
   width: 90%;
-  max-width: 500px;
+  max-width: 600px;
 }
 
 .stock-management-modal-close {
@@ -341,7 +342,7 @@
   right: 10px;
   background: none;
   border: none;
-  color: #d4af37;
+  color: var(--color-primary);
   font-size: 1.2rem;
   cursor: pointer;
 }
@@ -356,7 +357,7 @@
 .stock-management-form-section h2 {
   margin: 0 0 20px 0;
   font-size: 1.5rem;
-  color: #d4af37;
+  color: var(--color-primary);
   font-weight: 400;
   letter-spacing: 0.5px;
 }
@@ -374,7 +375,7 @@
 }
 
 .stock-management-form-group label {
-  color: #d4af37;
+  color: var(--color-primary);
   font-weight: 400;
   font-size: 0.95rem;
 }
@@ -382,23 +383,32 @@
 .stock-management-form-group input,
 .stock-management-form-group select {
   padding: 10px;
-  background-color: #2a2a2a;
-  color: #e5e5e5;
-  border: 1px solid #d4af37;
+  background-color: var(--color-input-background);
+  color: var(--color-text-light);
+  border: 1px solid var(--color-primary);
   border-radius: 3px;
   font-size: 0.95rem;
   transition: all 0.3s;
 }
 
+.stock-management-form-group input[type="file"] {
+  padding: 5px;
+}
+
 .stock-management-form-group input:focus,
 .stock-management-form-group select:focus {
-  border-color: #c4a030;
+  border-color: var(--color-primary-dark);
   outline: none;
-  background-color: #333333;
+  background-color: var(--color-input-hover);
 }
 
 .stock-management-form-group input::placeholder {
-  color: #a9a9a9;
+  color: var(--color-text-muted);
+}
+
+.stock-management-form-group small {
+  color: var(--color-text-muted);
+  font-size: 0.85rem;
 }
 
 .stock-management-form-actions {
@@ -409,8 +419,8 @@
 
 .stock-management-save-btn {
   padding: 10px 20px;
-  background-color: #d4af37;
-  color: #000000;
+  background-color: var(--color-primary);
+  color: var(--color-black);
   border: none;
   border-radius: 3px;
   cursor: pointer;
@@ -420,14 +430,14 @@
 }
 
 .stock-management-save-btn:hover {
-  background-color: #c4a030;
+  background-color: var(--color-primary-dark);
 }
 
 .stock-management-cancel-btn {
   padding: 10px 20px;
-  background-color: #1e1e1e;
-  color: #d4af37;
-  border: 1px solid #d4af37;
+  background-color: var(--color-button-background);
+  color: var(--color-primary);
+  border: 1px solid var(--color-primary);
   border-radius: 3px;
   cursor: pointer;
   font-weight: 500;
@@ -436,50 +446,50 @@
 }
 
 .stock-management-cancel-btn:hover {
-  background-color: #252525;
+  background-color: var(--color-button-hover);
 }
 
 /* Responsive adjustments */
 @media (max-width: 768px) {
   .stock-management-container {
-      flex-direction: column;
+    flex-direction: column;
   }
 
   .stock-management-sidebar {
-      width: 100%;
-      padding: 15px;
+    width: 100%;
+    padding: 15px;
   }
 
   .stock-management-content {
-      padding: 15px;
+    padding: 15px;
   }
 
   .stock-management-header {
-      flex-direction: column;
-      align-items: flex-start;
-      gap: 15px;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 15px;
   }
 
   .stock-management-header-actions {
-      width: 100%;
+    width: 100%;
   }
 
   .stock-management-tabs {
-      flex-direction: column;
-      gap: 10px;
+    flex-direction: column;
+    gap: 10px;
   }
 
   .stock-management-tab {
-      width: 100%;
+    width: 100%;
   }
 
   .stock-management-filter-controls {
-      flex-direction: column;
-      align-items: flex-start;
-      gap: 10px;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
   }
 
   .stock-management-search-bar {
-      width: 100%;
+    width: 100%;
   }
 }

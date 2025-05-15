@@ -282,12 +282,12 @@ const TripScheduler = () => {
 
   return (
     <div className="trip-scheduler-container">
-      <aside className="trip-scheduler-sidebar">
+      <aside className="sidebar">
         <h2 className="trip-scheduler-fleet-title">Système de Gestion & Contrôle</h2>
         <nav>
-          <ul>
+          <ul>  
             <li>
-              <Link to="/fleet/dashboard">📊 Tableau de Bord</Link>
+              <Link to="/fleet/dashboard">📊 Gestion de Flotte</Link>
             </li>
             <li>
               <Link to="/parc">🔧 Gestion des Pièces</Link>
@@ -296,11 +296,14 @@ const TripScheduler = () => {
               <Link to="/stock">📦 Gestion de Stock</Link>
             </li>
             <li className="active">
-              <Link to="/schedule">🗓️ Planifier un Programme</Link>
+              <Link to="/schedule">🗓️ Gestion des Programmes</Link>
             </li>
             <li>
               <Link to="/maintenance">🛠️ Maintenance</Link>
             </li>
+            <li>
+                          <Link to="/trailers">🚛 Gestion des Remorques</Link>
+                        </li>
             <li>
               <Link to="/incidents">🚨 Gestion des Incidents</Link>
             </li>
@@ -324,9 +327,6 @@ const TripScheduler = () => {
             >
               ➕ Planifier un Voyage
             </button>
-            <Link to="/fleet/dashboard" className="trip-scheduler-back-btn">
-              ⬅ Retour au Tableau de Bord
-            </Link>
           </div>
         </header>
 
@@ -516,7 +516,7 @@ const TripScheduler = () => {
         </section>
 
         {showAddTripModal && (
-          <div className="trip-scheduler-modal">
+          <div className="modal-overlay">
             <div className="trip-scheduler-modal-content">
               <button
                 className="trip-scheduler-modal-close"

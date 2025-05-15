@@ -1,256 +1,261 @@
+:root {
+  --color-background: #E5E7EB;
+  --color-sidebar-background: #F3F4F6;
+  --color-primary: #6366F1;
+  --color-primary-light: rgba(99, 102, 241, 0.3);
+  --color-primary-lighter: rgba(99, 102, 241, 0.15);
+  --color-primary-lightest: rgba(99, 102, 241, 0.1);
+  --color-primary-muted: rgba(99, 102, 241, 0.7);
+  --color-primary-dark: #4F46E5;
+  --color-shadow: rgba(0, 0, 0, 0.1);
+  --color-shadow-light: rgba(0, 0, 0, 0.05);
+  --color-shadow-dark: rgba(0, 0, 0, 0.15);
+  --color-content-background: #F3F4F6;
+  --color-text-light: #1F2937;
+  --color-text-muted: #6B7280;
+  --color-black: #000000;
+  --color-button-background: #E0E7FF;
+  --color-button-hover: #C7D2FE;
+  --color-border-dark: #9CA3AF;
+  --color-section-background: #F3F4F6;
+  --color-input-background: #E5E7EB;
+  --color-input-hover: #D1D5DB;
+  --color-error-bg: rgba(239, 68, 68, 0.2);
+  --color-error: #EF4444;
+  --color-error-dark: #DC2626;
+  --color-success-bg: rgba(16, 185, 129, 0.2);
+  --color-success: #10B981;
+  --color-success-dark: #059669;
+  --color-success-border: rgba(16, 185, 129, 0.3);
+  --color-table-border: #9CA3AF;
+  --color-table-header: #E0E7FF;
+  --color-table-text: #1F2937;
+  --color-status-active: #10B981;
+  --color-status-active-bg: rgba(16, 185, 129, 0.2);
+  --color-status-active-border: rgba(16, 185, 129, 0.3);
+  --color-status-active-dark: #059669;
+  --color-status-in-progress: rgba(96, 165, 250, 0.1);
+  --color-status-canceled: rgba(107, 114, 128, 0.1);
+  --color-disabled: #9CA3AF;
+  --color-chart-bg: #F3F4F6;
+  --color-chart-border: #9CA3AF;
+}
+
 /* MaintenanceOverview.css */
 .maintenance-overview-container {
     display: flex;
     min-height: 100vh;
-    background-color: #0f0f0f;
-    font-family: 'Playfair Display', 'Times New Roman', serif;
-  }
-  
-  .maintenance-overview-sidebar {
-    width: 240px;
-    background-color: #000000;
-    color: #d4af37;
-    padding: 20px;
-    box-shadow: 2px 0 10px rgba(0, 0, 0, 0.4);
-    display: flex;
-    flex-direction: column;
-  }
-  
-  .maintenance-overview-fleet-title {
+    background-color: var(--color-background);
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+
+
+.maintenance-overview-fleet-title {
     font-size: 1.5rem;
     margin-bottom: 30px;
     padding-bottom: 15px;
-    border-bottom: 1px solid rgba(212, 175, 55, 0.3);
+    border-bottom: 1px solid var(--color-primary-light);
     letter-spacing: 1px;
     font-weight: 400;
-    color: #d4af37;
-  }
-  
-  .maintenance-overview-sidebar nav {
-    flex: 1;
-  }
-  
-  .maintenance-overview-sidebar nav ul {
-    list-style: none;
-    padding: 0;
-  }
-  
-  .maintenance-overview-sidebar nav ul li {
-    margin-bottom: 10px;
-  }
-  
-  .maintenance-overview-sidebar nav ul li.active a {
-    background-color: rgba(212, 175, 55, 0.15);
-    border-left: 3px solid #d4af37;
-  }
-  
-  .maintenance-overview-sidebar nav ul li a {
-    color: #d4af37;
-    text-decoration: none;
-    display: block;
-    padding: 12px 10px;
-    border-radius: 3px;
-    transition: all 0.3s;
-    border-left: 3px solid transparent;
-  }
-  
-  .maintenance-overview-sidebar nav ul li a:hover {
-    background-color: rgba(212, 175, 55, 0.1);
-  }
-  
-  .maintenance-overview-sidebar-footer {
+    color: var(--color-primary);
+}
+
+
+
+.maintenance-overview-sidebar-footer {
     margin-top: auto;
     padding-top: 20px;
-    border-top: 1px solid rgba(212, 175, 55, 0.2);
+    border-top: 1px solid var(--color-primary-light);
     font-size: 0.8rem;
-    color: rgba(212, 175, 55, 0.7);
-  }
-  
-  .maintenance-overview-content {
+    color: var(--color-primary-muted);
+}
+
+.maintenance-overview-content {
     flex: 1;
     padding: 25px;
-    background-color: #121212;
-    color: #e5e5e5;
-  }
-  
-  .maintenance-overview-header {
+    background-color: var(--color-content-background);
+    color: var(--color-text-light);
+}
+
+.maintenance-overview-header {
     margin-bottom: 25px;
-  }
-  
-  .maintenance-overview-header h1 {
+}
+
+.maintenance-overview-header h1 {
     margin: 0;
     font-size: 2rem;
-    color: #d4af37;
+    color: var(--color-primary);
     font-weight: 400;
     letter-spacing: 1px;
-  }
-  
-  .maintenance-overview-error-message {
-    color: #ff6b6b;
+}
+
+.maintenance-overview-error-message {
+    color: var(--color-error);
     font-size: 0.85rem;
     padding: 10px;
-    background-color: rgba(255, 107, 107, 0.2);
+    background-color: var(--color-error-bg);
     border-radius: 3px;
     margin-bottom: 25px;
-    border: 1px solid #ff6b6b;
-  }
-  
-  .maintenance-overview-filter-section {
-    background-color: #1a1a1a;
+    border: 1px solid var(--color-error);
+}
+
+.maintenance-overview-filter-section {
+    background-color: var(--color-section-background);
     border-radius: 5px;
     padding: 25px;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 4px 6px var(--color-shadow-light);
     margin-bottom: 30px;
-    border: 1px solid #333333;
-  }
-  
-  .maintenance-overview-filter-section h2 {
+    border: 1px solid var(--color-border-dark);
+}
+
+.maintenance-overview-filter-section h2 {
     margin: 0 0 20px 0;
     font-size: 1.5rem;
-    color: #d4af37;
+    color: var(--color-primary);
     font-weight: 400;
     letter-spacing: 0.5px;
-  }
-  
-  .maintenance-overview-filter-buttons {
+}
+
+.maintenance-overview-filter-buttons {
     display: flex;
     gap: 10px;
-  }
-  
-  .maintenance-overview-filter-buttons button {
+}
+
+.maintenance-overview-filter-buttons button {
     padding: 8px 18px;
-    border: 1px solid #333333;
+    border: 1px solid var(--color-border-dark);
     border-radius: 3px;
-    background-color: #1e1e1e;
-    color: #a9a9a9;
+    background-color: var(--color-button-background);
+    color: var(--color-text-muted);
     cursor: pointer;
     transition: all 0.3s;
     letter-spacing: 0.5px;
     font-size: 0.95rem;
-  }
-  
-  .maintenance-overview-filter-buttons button:hover {
-    background-color: #252525;
-    border-color: #d4af37;
-    color: #d4af37;
-  }
-  
-  .maintenance-overview-filter-buttons button.active {
-    background-color: #d4af37;
-    color: #000000;
-    border-color: #d4af37;
-  }
-  
-  .maintenance-overview-list-section {
-    background-color: #1a1a1a;
+}
+
+.maintenance-overview-filter-buttons button:hover {
+    background-color: var(--color-button-hover);
+    border-color: var(--color-primary);
+    color: var(--color-primary);
+}
+
+.maintenance-overview-filter-buttons button.active {
+    background-color: var(--color-primary);
+    color: var(--color-background);
+    border-color: var(--color-primary);
+}
+
+.maintenance-overview-list-section {
+    background-color: var(--color-section-background);
     border-radius: 5px;
     padding: 25px;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
-    border: 1px solid #333333;
-  }
-  
-  .maintenance-overview-list-section h2 {
+    box-shadow: 0 4px 6px var(--color-shadow-light);
+    border: 1px solid var(--color-border-dark);
+}
+
+.maintenance-overview-list-section h2 {
     margin: 0 0 20px 0;
     font-size: 1.5rem;
-    color: #d4af37;
+    color: var(--color-primary);
     font-weight: 400;
     letter-spacing: 0.5px;
-  }
-  
-  .maintenance-overview-items {
+}
+
+.maintenance-overview-items {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
     gap: 25px;
-  }
-  
-  .maintenance-overview-item {
-    background-color: #1a1a1a;
+}
+
+.maintenance-overview-item {
+    background-color: var(--color-section-background);
     border-radius: 5px;
     padding: 22px;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 4px 6px var(--color-shadow-light);
     transition: transform 0.3s, box-shadow 0.3s;
-    border: 1px solid #333333;
-  }
-  
-  .maintenance-overview-item.status-scheduled {
-    border-top: 3px solid #d4af37;
-  }
-  
-  .maintenance-overview-item.status-completed {
-    border-top: 3px solid #4d9242;
-  }
-  
-  .maintenance-overview-item:hover {
+    border: 1px solid var(--color-border-dark);
+}
+
+.maintenance-overview-item.status-scheduled {
+    border-top: 3px solid var(--color-primary);
+}
+
+.maintenance-overview-item.status-completed {
+    border-top: 3px solid var(--color-status-completed);
+}
+
+.maintenance-overview-item:hover {
     transform: translateY(-5px);
-    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
-    border-color: #d4af37;
-  }
-  
-  .maintenance-overview-item h3 {
+    box-shadow: 0 8px 20px var(--color-shadow-dark);
+    border-color: var(--color-primary);
+}
+
+.maintenance-overview-item h3 {
     margin: 0 0 15px 0;
     font-size: 1.4rem;
-    color: #d4af37;
+    color: var(--color-primary);
     font-weight: 400;
     letter-spacing: 0.5px;
-  }
-  
-  .maintenance-overview-item p {
+}
+
+.maintenance-overview-item p {
     margin: 0 0 10px 0;
     font-size: 0.95rem;
-    color: #a9a9a9;
-  }
-  
-  .maintenance-overview-complete-btn {
+    color: var(--color-text-muted);
+}
+
+.maintenance-overview-complete-btn {
     padding: 8px 15px;
-    background-color:  #6dd17a;
-    color: #000000;
+    background-color: var(--color-status-active);
+    color: var(--color-black);
     border: none;
     border-radius: 3px;
     cursor: pointer;
     font-weight: 500;
     transition: all 0.3s;
     letter-spacing: 0.5px;
-  }
-  
-  .maintenance-overview-complete-btn:hover {
-    background-color: #c4a030;
-  }
-  
-  .maintenance-overview-no-maintenances,
-  .maintenance-overview-loading {
+}
+
+.maintenance-overview-complete-btn:hover {
+    background-color: var(--color-primary-dark);
+}
+
+.maintenance-overview-no-maintenances,
+.maintenance-overview-loading {
     text-align: center;
     padding: 25px;
-    color: #a9a9a9;
+    color: var(--color-text-muted);
     font-size: 0.95rem;
-    background-color: #1a1a1a;
+    background-color: var(--color-section-background);
     border-radius: 5px;
-  }
-  
-  /* Responsive adjustments */
-  @media (max-width: 768px) {
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
     .maintenance-overview-container {
-      flex-direction: column;
+        flex-direction: column;
     }
-  
+
     .maintenance-overview-sidebar {
-      width: 100%;
-      padding: 15px;
+        width: 100%;
+        padding: 15px;
     }
-  
+
     .maintenance-overview-content {
-      padding: 15px;
+        padding: 15px;
     }
-  
+
     .maintenance-overview-filter-buttons {
-      flex-direction: column;
-      gap: 10px;
+        flex-direction: column;
+        gap: 10px;
     }
-  
+
     .maintenance-overview-filter-buttons button {
-      width: 100%;
+        width: 100%;
     }
-  
+
     .maintenance-overview-items {
-      grid-template-columns: 1fr;
+        grid-template-columns: 1fr;
     }
-  }
+}

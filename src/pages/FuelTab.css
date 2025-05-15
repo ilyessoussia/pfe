@@ -1,3 +1,48 @@
+:root {
+  --color-background: #E5E7EB;
+  --color-sidebar-background: #F3F4F6;
+  --color-primary: #6366F1;
+  --color-primary-light: rgba(99, 102, 241, 0.3);
+  --color-primary-lighter: rgba(99, 102, 241, 0.15);
+  --color-primary-lightest: rgba(99, 102, 241, 0.1);
+  --color-primary-muted: rgba(99, 102, 241, 0.7);
+  --color-primary-dark: #4F46E5;
+  --color-shadow: rgba(0, 0, 0, 0.1);
+  --color-shadow-light: rgba(0, 0, 0, 0.05);
+  --color-shadow-dark: rgba(0, 0, 0, 0.15);
+  --color-content-background: #F3F4F6;
+  --color-text-light: #1F2937;
+  --color-text-muted: #6B7280;
+  --color-black: #000000;
+  --color-button-background: #E0E7FF;
+  --color-button-hover: #C7D2FE;
+  --color-border-dark: #6B7280;
+  --color-section-background: #F3F4F6;
+  --color-input-background: #E5E7EB;
+  --color-input-hover: #D1D5DB;
+  --color-error-bg: rgba(239, 68, 68, 0.2);
+  --color-error: #EF4444;
+  --color-error-dark: #DC2626;
+  --color-success-bg: rgba(16, 185, 129, 0.2);
+  --color-success: #10B981;
+  --color-success-dark: #059669;
+  --color-success-border: rgba(16, 185, 129, 0.3);
+  --color-table-border: #9CA3AF;
+  --color-table-header: #E0E7FF;
+  --color-table-text: #1F2937;
+  --color-status-active: #10B981;
+  --color-status-active-bg: rgba(16, 185, 129, 0.3);
+  --color-status-active-border: rgba(16, 185, 129, 0.3);
+  --color-status-active-dark: #059669;
+  --color-status-in-progress: rgba(96, 165, 250, 0.2);
+  --color-status-canceled: rgba(107, 114, 128, 0.2);
+  --color-disabled: #9CA3AF;
+  --color-chart-bg: #F3F4F6;
+  --color-chart-border: #9CA3AF;
+  --color-card-background: #FFFFFF;
+  --color-modal-background: #FFFFFF;
+}
+
 /* Fuel consumption chart */
 .fuel-consumption {
   margin-bottom: 35px;
@@ -5,27 +50,63 @@
 
 .fuel-consumption h3 {
   margin-bottom: 20px;
-  color: #d4af37;
+  color: var(--color-primary);
   font-size: 1.3rem;
-  font-weight: 400;
+  font-weight: 500;
   letter-spacing: 0.5px;
 }
 
-.fuel-combined-chart h3 {
-  color: #d4af37;
+.fuel-combined-chart, .fuel-consumption-chart, .fuel-cost-chart {
+  background: var(--color-card-background);
+  border: 1px solid var(--color-border-dark);
+  border-radius: 5px;
+  padding: 15px;
+  margin-bottom: 25px;
+  box-shadow: 0 2px 5px var(--color-shadow);
 }
 
-.fuel-consumption-chart h3 {
-  color: #d4af37;
+.fuel-combined-chart h3, .fuel-consumption-chart h3, .fuel-cost-chart h3 {
+  color: var(--color-primary);
+  font-weight: 500;
 }
 
-.fuel-cost-chart h3 {
-  color: #d4af37;
+/* Month selector */
+.month-selector {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 20px;
 }
 
+.month-selector label {
+  font-size: 0.95rem;
+  color: var(--color-primary);
+  font-weight: 500;
+}
 
+.month-selector select {
+  padding: 8px 12px;
+  border: 1px solid var(--color-border-dark);
+  border-radius: 5px;
+  background: var(--color-input-background);
+  color: var(--color-text-light);
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
 
-/* Fuel history tab */
+.month-selector select:hover {
+  border-color: var(--color-primary);
+  background: var(--color-input-hover);
+}
+
+.month-selector select:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px var(--color-primary-light);
+}
+
+/* Fuel header */
 .fuel-header {
   display: flex;
   justify-content: space-between;
@@ -37,19 +118,19 @@
 .fuel-header h3 {
   margin: 0;
   font-size: 1.3rem;
-  color: #d4af37;
-  font-weight: 400;
+  color: var(--color-primary);
+  font-weight: 500;
   letter-spacing: 0.5px;
 }
 
 .fuel-header p {
   margin: 0;
-  color: #a9a9a9;
+  color: var(--color-text-muted);
 }
 
 .add-fuel-btn {
-  background-color: #d4af37;
-  color: #000000;
+  background-color: var(--color-primary);
+  color: var(--color-background);
   border: none;
   border-radius: 3px;
   padding: 10px 20px;
@@ -62,14 +143,14 @@
 }
 
 .add-fuel-btn:hover {
-  background-color: #c4a030;
+  background-color: var(--color-primary-dark);
   transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 4px 8px var(--color-shadow-dark);
 }
 
 .add-fuel-btn:active {
   transform: translateY(0);
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 2px 4px var(--color-shadow);
 }
 
 .plus-icon {
@@ -77,56 +158,16 @@
   font-size: 1.2rem;
 }
 
-.fuel-entries {
-  display: flex;
-  flex-direction: column;
-  gap: 15px;
-}
-
-.fuel-entry {
-  display: flex;
-  justify-content: space-between;
-  background-color: #222222;
-  padding: 20px;
-  border-radius: 5px;
-  transition: all 0.3s;
-  border: 1px solid #333333;
-}
-
-.fuel-entry:hover {
-  background-color: #2a2a2a;
-  border-color: #d4af37;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
-}
-
-.fuel-date h4, .fuel-consumption h4 {
-  margin: 0 0 8px 0;
-  font-size: 1rem;
-  color: #d4af37;
-  font-weight: 400;
-}
-
-.fuel-date p {
-  margin: 0;
-  color: #a9a9a9;
-}
-
-.fuel-cost {
-  margin: 0;
-  color: #d4af37;
-  font-weight: 500;
-}
-
 .monthly-summary-box {
-  background-color: #1e1e1e;
-  border: 1px solid #333;
+  background-color: var(--color-card-background);
+  border: 1px solid var(--color-border-dark);
   border-radius: 5px;
   padding: 15px;
   margin-bottom: 25px;
   display: flex;
   justify-content: space-between;
   flex-wrap: wrap;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 2px 5px var(--color-shadow-dark);
 }
 
 .summary-item {
@@ -138,81 +179,17 @@
 
 .summary-label {
   font-size: 0.9rem;
-  color: #ffffff;
+  color: var(--color-text-light);
   margin-bottom: 5px;
 }
 
 .summary-value {
-  font-size: 1.4rem;
-  color: #d4af37;
-  font-weight: 500;
+  font-size: 1.5rem;
+  color: var(--color-primary);
+  font-weight: 600;
 }
 
-
-/* New styles for fuel entries by month */
-.fuel-entries-by-month {
-  margin-top: 20px;
-}
-
-.month-group {
-  margin-bottom: 15px;
-  border: 1px solid #333;
-  border-radius: 5px;
-  overflow: hidden;
-  transition: all 0.3s;
-}
-
-.month-group:hover {
-  border-color: #d4af37;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-}
-
-.month-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 15px;
-  background-color: #222;
-  cursor: pointer;
-  transition: background-color 0.2s;
-}
-
-.month-header:hover {
-  background-color: #2a2a2a;
-}
-
-.month-header h4 {
-  margin: 0;
-  font-size: 1.1rem;
-  color: #d4af37;
-  font-weight: 400;
-  display: flex;
-  align-items: center;
-}
-
-.expand-icon {
-  margin-right: 10px;
-  font-size: 12px;
-  transition: transform 0.2s;
-}
-
-.expand-icon.expanded {
-  transform: rotate(0deg);
-}
-
-.month-summary {
-  display: flex;
-  gap: 15px;
-  color: #ffffff;
-  font-size: 0.9rem;
-}
-
-.month-entries {
-  background-color: #1a1a1a;
-  border-top: 1px solid #333;
-}
-
-/* Modal styles - Enhanced! */
+/* Modal styles */
 .modal-overlay {
   position: fixed;
   top: 0;
@@ -234,14 +211,14 @@
 }
 
 .modal-content {
-  background-color: #1a1a1a;
+  background-color: var(--color-modal-background);
   border-radius: 8px;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.6);
+  box-shadow: 0 10px 25px var(--color-shadow-dark);
   width: 90%;
   max-width: 500px;
   max-height: 90vh;
   overflow-y: auto;
-  border: 1px solid #333333;
+  border: 1px solid var(--color-border-dark);
   animation: slideUp 0.3s ease-out;
 }
 
@@ -255,8 +232,8 @@
   justify-content: space-between;
   align-items: center;
   padding: 22px 25px;
-  border-bottom: 1px solid #333333;
-  background-color: #222222;
+  border-bottom: 1px solid var(--color-border-dark);
+  background-color: var(--color-card-background);
   border-top-left-radius: 8px;
   border-top-right-radius: 8px;
 }
@@ -264,8 +241,8 @@
 .modal-header h3 {
   margin: 0;
   font-size: 1.4rem;
-  color: #d4af37;
-  font-weight: 400;
+  color: var(--color-primary);
+  font-weight: 500;
   letter-spacing: 0.5px;
 }
 
@@ -274,7 +251,7 @@
   border: none;
   font-size: 28px;
   cursor: pointer;
-  color: #a9a9a9;
+  color: var(--color-text-muted);
   transition: all 0.3s;
   padding: 0;
   display: flex;
@@ -286,11 +263,11 @@
 }
 
 .close-modal:hover {
-  color: #d4af37;
-  background-color: rgba(212, 175, 55, 0.1);
+  color: var(--color-primary);
+  background-color: var(--color-primary-lighter);
 }
 
-/* Form styles - Enhanced! */
+/* Form styles */
 .refuel-form {
   padding: 25px 30px;
 }
@@ -303,8 +280,8 @@
 .form-group label {
   display: block;
   margin-bottom: 10px;
-  font-weight: 400;
-  color: #d4af37;
+  font-weight: 500;
+  color: var(--color-primary);
   letter-spacing: 0.5px;
   font-size: 0.95rem;
 }
@@ -312,38 +289,38 @@
 .form-group input {
   width: 100%;
   padding: 12px 16px;
-  background-color: #222222;
-  border: 1px solid #333333;
+  background-color: var(--color-card-background);
+  border: 1px solid var(--color-border-dark);
   border-radius: 5px;
   font-size: 1rem;
-  color: #e5e5e5;
+  color: var(--color-text-light);
   transition: all 0.3s;
   box-sizing: border-box;
 }
 
 .form-group input:focus {
   outline: none;
-  border-color: #d4af37;
-  box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.2);
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px var(--color-primary-light);
 }
 
 .form-group input::placeholder {
-  color: #666666;
+  color: var(--color-text-muted);
   opacity: 0.8;
 }
 
 .form-group input:hover {
-  border-color: #444444;
+  border-color: var(--color-primary);
 }
 
 .form-group .hint {
   margin-left: 8px;
   font-size: 0.85rem;
-  color: #888888;
+  color: var(--color-text-muted);
   font-style: italic;
 }
 
-/* Form row layout for side-by-side fields */
+/* Form row layout */
 .form-row {
   display: flex;
   gap: 20px;
@@ -377,33 +354,32 @@
 }
 
 .cancel-btn {
-  background-color: #2a2a2a;
-  border: 1px solid #333333;
-  color: #e0e0e0;
+  background-color: var(--color-button-background);
+  border: 1px solid var(--color-border-dark);
+  color: var(--color-primary);
 }
 
 .cancel-btn:hover {
-  background-color: #333333;
-  border-color: #444444;
-  color: #ffffff;
+  background-color: var(--color-button-hover);
+  border-color: var(--color-primary);
 }
 
 .save-btn {
-  background-color: #d4af37;
+  background-color: var(--color-primary);
   border: none;
-  color: #000000;
+  color: var(--color-black);
   font-weight: 600;
 }
 
 .save-btn:hover {
-  background-color: #e0bb40;
+  background-color: var(--color-primary-dark);
   transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 4px 8px var(--color-shadow-dark);
 }
 
 .save-btn:active {
   transform: translateY(0);
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 2px 4px var(--color-shadow);
 }
 
 /* Disabled button states */
@@ -414,13 +390,13 @@
 }
 
 .error-message {
-  background-color: rgba(211, 47, 47, 0.15);
-  color: #ff5252;
+  background-color: var(--color-error-bg);
+  color: var(--color-error);
   padding: 16px;
   border-radius: 5px;
   margin-bottom: 24px;
   font-size: 0.95rem;
-  border: 1px solid rgba(211, 47, 47, 0.25);
+  border: 1px solid var(--color-error);
   display: flex;
   align-items: center;
 }
@@ -432,54 +408,18 @@
 }
 
 /* No data messages */
-.no-data {
-  text-align: center;
-  padding: 40px 20px;
-  color: #888888;
-}
-
-.no-data .note {
-  font-style: italic;
-  font-size: 0.9rem;
-  margin-top: 10px;
-}
-
 .no-chart-data {
   display: flex;
   justify-content: center;
   align-items: center;
   height: 150px;
-  color: #888888;
-  border: 1px dashed #333333;
+  color: var(--color-text-muted);
+  border: 1px dashed var(--color-border-dark);
   border-radius: 5px;
   margin: 10px 0;
 }
 
-/* Distance traveled styling */
-.distance-traveled {
-  font-size: 0.9rem;
-  color: #78909c;
-  font-style: italic;
-}
-
-/* Input focus and hover states */
-input:hover {
-  border-color: #444444;
-}
-
-input:focus-visible {
-  outline: none;
-  border-color: #d4af37;
-}
-
-/* Added styles for liters per 100km and cost per km */
-.liters-per-100km, .cost-per-km {
-  font-size: 0.9rem;
-  color: #a9a9a9;
-  margin: 4px 0;
-}
-
-/* Loading animation for form fields when data is loading */
+/* Loading animation */
 @keyframes pulse {
   0% { opacity: 0.6; }
   50% { opacity: 0.8; }
@@ -487,7 +427,7 @@ input:focus-visible {
 }
 
 input:disabled {
-  background-color: #2a2a2a;
+  background-color: var(--color-button-background);
   animation: pulse 1.5s infinite;
 }
 
@@ -504,8 +444,8 @@ input:disabled {
   left: 50%;
   transform: translateX(-50%);
   padding: 8px 12px;
-  background-color: #444;
-  color: #fff;
+  background-color: var(--color-primary-dark);
+  color: var(--color-black);
   border-radius: 4px;
   font-size: 12px;
   white-space: nowrap;

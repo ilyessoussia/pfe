@@ -1,6 +1,8 @@
 import React from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import Home from "./Home";
+import ProductDetail from "./ProductDetail";
+import Solutions from "./Solutions";
 import Login from "./pages/Login";
 import Fleet from "./pages/FleetDashboard";
 import TruckDetails from "./pages/TruckDetails";
@@ -11,12 +13,17 @@ import MaintenanceOverview from "./pages/MaintenanceOverview";
 import IncidentManagement from './pages/IncidentManagement';
 import ProtectedRoute from "./ProtectedRoute";
 import { AuthProvider } from "./AuthContext";
+import TrailerDashboard from "./pages/TrailerDashboard";
+import DriverPaymentDashboard from "./pages/DriverPaymentDashboard";
 
 const App = () => (
   <AuthProvider>
     <Router>
       <Routes>
         <Route path="/" element={<Home />} />
+        <Route path="/products" element={<ProductDetail />} />
+        <Route path="/product/:id" element={<ProductDetail />} />
+        <Route path="/solutions" element={<Solutions />} />
         <Route path="/fleet" element={<Login />} />
         <Route
           path="/fleet/dashboard"
@@ -71,6 +78,22 @@ const App = () => (
           element={
             <ProtectedRoute>
               <IncidentManagement />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/trailers"
+          element={
+            <ProtectedRoute>
+              <TrailerDashboard />
+            </ProtectedRoute>
+          }
+        />
+          <Route
+          path="/driver-payments"
+          element={
+            <ProtectedRoute>
+              <DriverPaymentDashboard />
             </ProtectedRoute>
           }
         />

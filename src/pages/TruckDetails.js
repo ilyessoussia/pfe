@@ -3,6 +3,7 @@ import { Link, useParams, useNavigate } from "react-router-dom";
 import { supabase } from "../supabase";
 import "./TruckDetails.css";
 import FuelTab from "./FuelTab";
+import FuelHistoryTab from "./FuelHistoryTab";
 import MaintenanceTab from "./MaintenanceTab";
 
 const TruckDetails = () => {
@@ -26,7 +27,7 @@ const TruckDetails = () => {
         .from('fuel_history')
         .select('*')
         .eq('truck_id', id)
-        .order('date', { ascending: false }); // Newest first
+        .order('raw_date', { ascending: false });
       
       if (fuelError) {
         throw fuelError;
@@ -43,12 +44,16 @@ const TruckDetails = () => {
       const formattedFuelData = fuelData.map(record => ({
         id: record.id,
         truckId: record.truck_id,
-        date: new Date(record.date).toLocaleDateString('fr-FR'),
         kilometers: parseFloat(record.kilometers) || 0,
         liters: parseFloat(record.liters) || 0,
-        consumption: parseFloat(record.consumption) || 0,
-        cost: parseFloat(record.cost) || 0,
         fuelPrice: parseFloat(record.fuel_price) || 0,
+        cost: parseFloat(record.cost) || 0,
+        rawDate: record.raw_date,
+        timestamp: new Date(record.raw_date).getTime(),
+        distanceTraveled: parseFloat(record.distance_traveled) || 0,
+        consumption: parseFloat(record.consumption) || 0,
+        costPerKm: parseFloat(record.cost_per_km) || 0,
+        litersPer100km: parseFloat(record.liters_per_100km) || 0,
       }));
       
       console.log("Processed fuel data:", formattedFuelData);
@@ -85,7 +90,6 @@ const TruckDetails = () => {
           immatriculation: truckData.immatriculation,
           modele: truckData.modele,
           anneeFabrication: truckData.annee_fabrication,
-          dateAcquisition: truckData.date_acquisition,
           typeCarburant: truckData.type_carburant,
           status: truckData.status,
           equipements: truckData.equipements,
@@ -94,6 +98,10 @@ const TruckDetails = () => {
           telephoneChauffeur: truckData.telephone_chauffeur,
           residenceChauffeur: truckData.residence_chauffeur,
           kilometrage: truckData.kilometrage,
+          lastInsuranceDate: truckData.last_insurance_date,
+          insuranceExpirationDate: truckData.insurance_expiration_date,
+          lastTechnicalInspectionDate: truckData.last_technical_inspection_date,
+          nextTechnicalInspectionDate: truckData.next_technical_inspection_date,
         });
         
         setEditedTruck({
@@ -102,7 +110,6 @@ const TruckDetails = () => {
           immatriculation: truckData.immatriculation,
           modele: truckData.modele,
           anneeFabrication: truckData.annee_fabrication,
-          dateAcquisition: truckData.date_acquisition,
           typeCarburant: truckData.type_carburant,
           status: truckData.status,
           equipements: truckData.equipements,
@@ -111,6 +118,10 @@ const TruckDetails = () => {
           telephoneChauffeur: truckData.telephone_chauffeur,
           residenceChauffeur: truckData.residence_chauffeur,
           kilometrage: truckData.kilometrage,
+          lastInsuranceDate: truckData.last_insurance_date,
+          insuranceExpirationDate: truckData.insurance_expiration_date,
+          lastTechnicalInspectionDate: truckData.last_technical_inspection_date,
+          nextTechnicalInspectionDate: truckData.next_technical_inspection_date,
         });
         
         await fetchFuelData();
@@ -120,7 +131,7 @@ const TruckDetails = () => {
             .from('maintenance_records')
             .select('*')
             .eq('truck_id', id)
-            .order('date', { ascending: false });
+            .order('raw_date', { ascending: false });
           
           if (maintenanceError) {
             throw maintenanceError;
@@ -129,7 +140,7 @@ const TruckDetails = () => {
           const formattedMaintenanceData = maintenanceData.map(record => ({
             id: record.id,
             truckId: record.truck_id,
-            date: new Date(record.date).toLocaleDateString('fr-FR'),
+            date: new Date(record.raw_date).toLocaleDateString('fr-FR'),
             type: record.type,
             kilometrage: record.kilometrage,
             technicien: record.technicien,
@@ -176,11 +187,10 @@ const TruckDetails = () => {
       const { error } = await supabase
         .from('trucks')
         .update({
-          numero_serie: editedTruck.numeroSerie,
+          numero_serie: editedTruck.numeroSerie || null,
           immatriculation: editedTruck.immatriculation,
           modele: editedTruck.modele,
-          annee_fabrication: parseInt(editedTruck.anneeFabrication),
-          date_acquisition: editedTruck.dateAcquisition,
+          annee_fabrication: editedTruck.anneeFabrication ? parseInt(editedTruck.anneeFabrication) : null,
           type_carburant: editedTruck.typeCarburant,
           status: editedTruck.status,
           equipements: editedTruck.equipements || null,
@@ -189,6 +199,10 @@ const TruckDetails = () => {
           telephone_chauffeur: editedTruck.telephoneChauffeur || null,
           residence_chauffeur: editedTruck.residenceChauffeur || null,
           kilometrage: parseFloat(editedTruck.kilometrage) || null,
+          last_insurance_date: editedTruck.lastInsuranceDate || null,
+          insurance_expiration_date: editedTruck.insuranceExpirationDate || null,
+          last_technical_inspection_date: editedTruck.lastTechnicalInspectionDate || null,
+          next_technical_inspection_date: editedTruck.nextTechnicalInspectionDate || null,
         })
         .eq('id', id);
       
@@ -220,7 +234,7 @@ const TruckDetails = () => {
           <h2>Système de Gestion & Contrôle</h2>
           <nav>
             <ul>
-              <li><Link to="/fleet/dashboard">📊 Tableau de Bord</Link></li>
+              <li><Link to="/fleet/dashboard">📊 Gestion de Flotte</Link></li>
             </ul>
           </nav>
         </aside>
@@ -238,7 +252,7 @@ const TruckDetails = () => {
           <h2>Système de Gestion & Contrôle</h2>
           <nav>
             <ul>
-              <li><Link to="/fleet/dashboard">📊 Tableau de Bord</Link></li>
+              <li><Link to="/fleet/dashboard">📊 Gestion de Flotte</Link></li>
             </ul>
           </nav>
         </aside>
@@ -257,7 +271,7 @@ const TruckDetails = () => {
         <h2 className="fleet-title">Système de Gestion & Contrôle</h2>
         <nav>
           <ul>
-            <li><Link to="/fleet/dashboard">📊 Tableau de Bord</Link></li>
+            <li><Link to="/fleet/dashboard">📊 Gestion de Flotte</Link></li>
           </ul>
         </nav>
       </aside>
@@ -280,6 +294,12 @@ const TruckDetails = () => {
             onClick={() => setActiveTab("carburant")}
           >
             Carburant
+          </button>
+          <button 
+            className={`tab ${activeTab === "historique" ? "active" : ""}`}
+            onClick={() => setActiveTab("historique")}
+          >
+            Historique des pleins
           </button>
           <button 
             className={`tab ${activeTab === "maintenance" ? "active" : ""}`}
@@ -420,16 +440,42 @@ const TruckDetails = () => {
                         onChange={handleInputChange}
                       >
                         <option value="active">Actif</option>
-                        <option value="maintenance">En Maintenance</option>
                         <option value="inactive">Inactif</option>
                       </select>
                     </div>
                     <div className="forme-group">
-                      <label>Date d'Acquisition:</label>
+                      <label>Dernière Date d'Assurance:</label>
                       <input 
                         type="date" 
-                        name="dateAcquisition" 
-                        value={editedTruck?.dateAcquisition || ""} 
+                        name="lastInsuranceDate" 
+                        value={editedTruck?.lastInsuranceDate || ""} 
+                        onChange={handleInputChange}
+                      />
+                    </div>
+                    <div className="forme-group">
+                      <label>Date d'Expiration de l'Assurance:</label>
+                      <input 
+                        type="date" 
+                        name="insuranceExpirationDate" 
+                        value={editedTruck?.insuranceExpirationDate || ""} 
+                        onChange={handleInputChange}
+                      />
+                    </div>
+                    <div className="forme-group">
+                      <label>Dernière Date de Contrôle Technique:</label>
+                      <input 
+                        type="date" 
+                        name="lastTechnicalInspectionDate" 
+                        value={editedTruck?.lastTechnicalInspectionDate || ""} 
+                        onChange={handleInputChange}
+                      />
+                    </div>
+                    <div className="forme-group">
+                      <label>Prochaine Date de Contrôle Technique:</label>
+                      <input 
+                        type="date" 
+                        name="nextTechnicalInspectionDate" 
+                        value={editedTruck?.nextTechnicalInspectionDate || ""} 
                         onChange={handleInputChange}
                       />
                     </div>
@@ -472,7 +518,10 @@ const TruckDetails = () => {
                       truck.status === "maintenance" ? "En Maintenance" :
                       truck.status === "inactive" ? "Inactif" : truck.status || "Non spécifié"
                     }</p>
-                    <p><strong>Date d'Acquisition:</strong> {truck.dateAcquisition || "Non spécifiée"}</p>
+                    <p><strong>Dernière Date d'Assurance:</strong> {truck.lastInsuranceDate || "Non spécifiée"}</p>
+                    <p><strong>Date d'Expiration de l'Assurance:</strong> {truck.insuranceExpirationDate || "Non spécifiée"}</p>
+                    <p><strong>Dernière Date de Contrôle Technique:</strong> {truck.lastTechnicalInspectionDate || "Non spécifiée"}</p>
+                    <p><strong>Prochaine Date de Contrôle Technique:</strong> {truck.nextTechnicalInspectionDate || "Non spécifiée"}</p>
                     <p><strong>Équipements:</strong> {truck.equipements || "Non spécifiés"}</p>
                     <p><strong>Accessoires:</strong> {truck.accessoires || "Non spécifiés"}</p>
                   </>
@@ -484,6 +533,10 @@ const TruckDetails = () => {
 
         {activeTab === "carburant" && (
           <FuelTab fuelHistory={fuelHistory} onFuelAdded={refreshFuelData} />
+        )}
+
+        {activeTab === "historique" && (
+          <FuelHistoryTab fuelHistory={fuelHistory} onFuelAdded={refreshFuelData} />
         )}
 
         {activeTab === "maintenance" && (

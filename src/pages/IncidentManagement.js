@@ -195,12 +195,12 @@ const IncidentManagement = () => {
 
   return (
     <div className="incident-management-container">
-      <aside className="incident-management-sidebar">
+      <aside className="sidebar">
         <h2 className="incident-management-fleet-title">Système de Gestion & Contrôle</h2>
         <nav>
           <ul>
             <li>
-              <Link to="/fleet/dashboard">📊 Tableau de Bord</Link>
+              <Link to="/fleet/dashboard">📊 Gestion de Flotte</Link>
             </li>
             <li>
               <Link to="/parc">🔧 Gestion des Pièces</Link>
@@ -209,11 +209,14 @@ const IncidentManagement = () => {
               <Link to="/stock">📦 Gestion de Stock</Link>
             </li>
             <li>
-              <Link to="/schedule">🗓️ Planifier un Programme</Link>
+              <Link to="/schedule">🗓️ Gestion des Programmes</Link>
             </li>
             <li>
               <Link to="/maintenance">🛠️ Maintenance</Link>
             </li>
+            <li>
+              <Link to="/trailers">🚛 Gestion des Remorques</Link>
+              </li>
             <li className="active">
               <Link to="/fleet/incidents">🚨 Gestion des Incidents</Link>
             </li>
