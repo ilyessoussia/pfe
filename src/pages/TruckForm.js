@@ -44,11 +44,7 @@ const TruckForm = ({ onClose }) => {
       newErrors.numeroSerie = "Le numéro de série doit contenir entre 5 et 17 caractères alphanumériques";
     }
 
-    if (!formData.immatriculation.trim()) {
-      newErrors.immatriculation = "L'immatriculation est requise";
-    } else if (!/^\d{1,3}\s[A-Z]{2}\s\d{4}$/.test(formData.immatriculation.trim())) {
-      newErrors.immatriculation = "Format d'immatriculation invalide (ex: 150 TU 4444)";
-    }
+   
 
     if (!formData.modele.trim()) {
       newErrors.modele = "Le modèle est requis";

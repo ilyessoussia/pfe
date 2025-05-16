@@ -17,6 +17,7 @@
   --color-input-hover: #D1D5DB;
   --color-error-bg: rgba(239, 68, 68, 0.15);
   --color-error: #EF4444;
+  --color-error-dark: #DC2626;
   --color-success-bg: rgba(16, 185, 129, 0.15);
   --color-success: #10B981;
   --color-success-dark: #059669;
@@ -112,7 +113,7 @@
   text-align: left;
   font-size: 0.9rem;
   border-bottom: 1px solid var(--color-border-dark);
-  min-width: 100px; /* Ensure columns don't collapse too small */
+  min-width: 100px;
 }
 
 .payment-table th {
@@ -126,16 +127,15 @@
 
 .payment-table th:nth-child(2),
 .payment-table td:nth-child(2) {
-  min-width: 200px; /* Wider column for RIB Bancaire */
+  min-width: 200px;
 }
 
 .payment-table tbody tr {
   transition: background 0.2s ease;
 }
 
-
 .payment-table tbody tr:hover {
-  background: var(--color-primary-lightest);
+  background: var(--color-primary-light);
 }
 
 .payment-table tr.status-unpaid {
@@ -199,8 +199,60 @@
   transform: translateY(-1px);
 }
 
-.add-driver,
-.export-btn {
+.edit-btn {
+  background: var(--color-primary);
+  color: var(--color-card-background);
+}
+
+.edit-btn:hover {
+  background: var(--color-primary-dark);
+  transform: translateY(-1px);
+}
+
+.delete-btn {
+  background: var(--color-error);
+  color: var(--color-card-background);
+}
+
+.delete-btn:hover {
+  background: var(--color-error-dark);
+  transform: translateY(-1px);
+}
+
+.history-edit-btn {
+  background: var(--color-primary);
+  color: var(--color-card-background);
+  padding: 6px 12px;
+  margin-right: 4px;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.history-edit-btn:hover {
+  background: var(--color-primary-dark);
+  transform: translateY(-1px);
+}
+
+.history-delete-btn {
+  background: var(--color-error);
+  color: var(--color-card-background);
+  padding: 6px 12px;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.history-delete-btn:hover {
+  background: var(--color-error-dark);
+  transform: translateY(-1px);
+}
+
+.add-driver {
   padding: 12px 24px;
   border-radius: 6px;
   cursor: pointer;
@@ -210,9 +262,6 @@
   align-items: center;
   transition: all 0.3s ease;
   letter-spacing: 0.5px;
-}
-
-.add-driver {
   background: var(--color-primary);
   color: var(--color-card-background);
   border: none;
@@ -223,16 +272,10 @@
   transform: translateY(-1px);
 }
 
-.export-btn {
-  background: var(--color-success);
-  color: var(--color-card-background);
-  text-decoration: none;
-  border: none;
-}
-
-.export-btn:hover {
-  background: var(--color-success-dark);
-  transform: translateY(-1px);
+.header-actions {
+  display: flex;
+  gap: 12px;
+  align-items: center;
 }
 
 .advance-history {
@@ -265,7 +308,7 @@
 }
 
 .advance-history tbody tr:hover {
-  background: var(--color-primary-lightest);
+  background: var(--color-primary-light);
 }
 
 @media (max-width: 768px) {
@@ -287,5 +330,16 @@
   .action-btn {
     padding: 6px 12px;
     font-size: 0.8rem;
+  }
+
+  .header-actions {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .history-edit-btn,
+  .history-delete-btn {
+    padding: 4px 8px;
+    font-size: 0.75rem;
   }
 }

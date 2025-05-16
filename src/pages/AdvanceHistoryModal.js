@@ -1,7 +1,7 @@
 import React from "react";
 import "./PaymentAdvanceHistoryModal.css";
 
-const PaymentAdvanceHistoryModal = ({ driver, advances, payments, month, onClose }) => {
+const PaymentAdvanceHistoryModal = ({ driver, advances, payments, month, onEditAdvance, onDeleteAdvance, onEditPayment, onDeletePayment, onClose }) => {
   // Filter advances and payments by the selected month
   const filteredAdvances = advances.filter(
     (a) => a.advance_date && new Date(a.advance_date).toISOString().slice(0, 7) === month
@@ -13,6 +13,7 @@ const PaymentAdvanceHistoryModal = ({ driver, advances, payments, month, onClose
   // Combine advances and payments into a single history array (all months for display)
   const history = [
     ...advances.map((advance) => ({
+      id: advance.id,
       type: "Avance",
       date: advance.advance_date
         ? new Date(advance.advance_date).toLocaleDateString("fr-FR")
@@ -27,8 +28,10 @@ const PaymentAdvanceHistoryModal = ({ driver, advances, payments, month, onClose
           : "N/A",
       numero_de_virement: advance.numero_de_virement || "N/A",
       status: null,
+      original: advance,
     })),
     ...payments.map((payment) => ({
+      id: payment.id,
       type: "Paiement",
       date: payment.payment_date
         ? new Date(payment.payment_date).toLocaleDateString("fr-FR")
@@ -43,6 +46,7 @@ const PaymentAdvanceHistoryModal = ({ driver, advances, payments, month, onClose
           : "N/A",
       numero_de_virement: payment.numero_de_virement || "N/A",
       status: payment.status || "N/A",
+      original: payment,
     })),
   ];
 
@@ -70,7 +74,7 @@ const PaymentAdvanceHistoryModal = ({ driver, advances, payments, month, onClose
     <div className="modal-overlay">
       <div className="modal-content">
         <div className="modal-header">
-          <h3>Historique pour {driver.name} ({month})</h3>
+          <h3>Fiche de paie pour {driver.name} ({month})</h3>
           <button className="close-modal-btn" onClick={onClose}>
             ×
           </button>
@@ -82,11 +86,11 @@ const PaymentAdvanceHistoryModal = ({ driver, advances, payments, month, onClose
             <div className="summary-value">{baseSalary.toFixed(2)} TND</div>
           </div>
           <div className="summary-item">
-            <div className="summary-label">Total Paiements:</div>
+            <div className="summary-label">Règlement salaire</div>
             <div className="summary-value">{totalPayments.toFixed(2)} TND</div>
           </div>
           <div className="summary-item">
-            <div className="summary-label">Total Avances:</div>
+            <div className="summary-label">A compte:</div>
             <div className="summary-value">{totalAdvances.toFixed(2)} TND</div>
           </div>
           <div className="summary-item">
@@ -113,21 +117,35 @@ const PaymentAdvanceHistoryModal = ({ driver, advances, payments, month, onClose
                   <th>Méthode de Paiement</th>
                   <th>Numéro de Virement</th>
                   <th>Statut</th>
+                  <th>Actions</th>
                 </tr>
               </thead>
               <tbody>
-                {history.map((item, index) => (
+                {history.map((item) => (
                   <tr
-                    key={`${item.type}-${index}`}
+                    key={`${item.type}-${item.id}`}
                     className={item.type === "Avance" ? "advance-row" : "payment-row"}
                   >
                     <td>{item.date}</td>
                     <td>{item.type}</td>
                     <td>{item.amount}</td>
-                    <td>{item.description || "N/A"}</td>
+                    <td>{item.description}</td>
                     <td>{item.payment_method}</td>
                     <td>{item.numero_de_virement}</td>
-                    <td>{item.status || "N/A"}</td>
+                    <td>{item.status}</td>
+                    <td>
+                    
+                      <button
+                        className="history-delete-btn"
+                        onClick={() =>
+                          item.type === "Avance"
+                            ? onDeleteAdvance(item.id)
+                            : onDeletePayment(item.id)
+                        }
+                      >
+                        Supprimer
+                      </button>
+                    </td>
                   </tr>
                 ))}
               </tbody>

@@ -6,7 +6,6 @@ import PaymentForm from "./PaymentForm";
 import AdvanceForm from "./AdvanceForm";
 import PaymentAdvanceHistoryModal from "./AdvanceHistoryModal";
 import { supabase } from "../supabase";
-import { CSVLink } from "react-csv";
 
 const DriverPaymentDashboard = () => {
   const [drivers, setDrivers] = useState([]);
@@ -20,6 +19,8 @@ const DriverPaymentDashboard = () => {
   const [showAdvanceForm, setShowAdvanceForm] = useState(false);
   const [showHistoryModal, setShowHistoryModal] = useState(false);
   const [selectedDriver, setSelectedDriver] = useState(null);
+  const [selectedAdvance, setSelectedAdvance] = useState(null);
+  const [selectedPayment, setSelectedPayment] = useState(null);
   const [filterMonth, setFilterMonth] = useState(new Date().toISOString().slice(0, 7)); // YYYY-MM
   const [filterDriver, setFilterDriver] = useState("all");
   const [lastUpdated, setLastUpdated] = useState(new Date().toLocaleString());
@@ -29,73 +30,39 @@ const DriverPaymentDashboard = () => {
       setLoading(true);
       setError(null);
 
-      console.log("Fetching data for month:", filterMonth);
-
       // Fetch drivers
-      console.log("Fetching drivers...");
       const { data: driversData, error: driversError } = await supabase
         .from("drivers")
         .select("*, trucks(immatriculation)")
         .order("name", { ascending: true });
-      if (driversError) {
-        console.error("Drivers error:", driversError);
-        throw new Error(`Échec du chargement des chauffeurs: ${driversError.message}`);
-      }
-      if (!Array.isArray(driversData)) {
-        console.error("Invalid drivers data:", driversData);
-        throw new Error("Données des chauffeurs invalides.");
-      }
-      console.log("Drivers fetched:", driversData);
+      if (driversError) throw new Error(`Échec du chargement des chauffeurs: ${driversError.message}`);
+      if (!Array.isArray(driversData)) throw new Error("Données des chauffeurs invalides.");
 
       // Fetch trucks
-      console.log("Fetching trucks...");
       const { data: trucksData, error: trucksError } = await supabase
         .from("trucks")
         .select("id, immatriculation")
         .order("immatriculation", { ascending: true });
-      if (trucksError) {
-        console.error("Trucks error:", trucksError);
-        throw new Error(`Échec du chargement des camions: ${trucksError.message}`);
-      }
-      if (!Array.isArray(trucksData)) {
-        console.error("Invalid trucks data:", trucksData);
-        throw new Error("Données des camions invalides.");
-      }
-      console.log("Trucks fetched:", trucksData);
+      if (trucksError) throw new Error(`Échec du chargement des camions: ${trucksError.message}`);
+      if (!Array.isArray(trucksData)) throw new Error("Données des camions invalides.");
       setTrucks(trucksData);
 
-      // Fetch payments (all months for history)
-      console.log("Fetching payments...");
+      // Fetch payments
       const { data: paymentsData, error: paymentsError } = await supabase
         .from("driver_payments")
         .select("*")
         .order("payment_date", { ascending: false });
-      if (paymentsError) {
-        console.error("Payments error:", paymentsError);
-        throw new Error(`Échec du chargement des paiements: ${paymentsError.message}`);
-      }
-      if (!Array.isArray(paymentsData)) {
-        console.error("Invalid payments data:", paymentsData);
-        throw new Error("Données des paiements invalides.");
-      }
-      console.log("Payments fetched:", paymentsData);
+      if (paymentsError) throw new Error(`Échec du chargement des paiements: ${paymentsError.message}`);
+      if (!Array.isArray(paymentsData)) throw new Error("Données des paiements invalides.");
       setPayments(paymentsData);
 
       // Fetch advances
-      console.log("Fetching advances...");
       const { data: advancesData, error: advancesError } = await supabase
         .from("driver_advances")
         .select("*")
         .order("advance_date", { ascending: false });
-      if (advancesError) {
-        console.error("Advances error:", advancesError);
-        throw new Error(`Échec du chargement des avances: ${advancesError.message}`);
-      }
-      if (!Array.isArray(advancesData)) {
-        console.error("Invalid advances data:", advancesData);
-        throw new Error("Données des avances invalides.");
-      }
-      console.log("Advances fetched:", advancesData);
+      if (advancesError) throw new Error(`Échec du chargement des avances: ${advancesError.message}`);
+      if (!Array.isArray(advancesData)) throw new Error("Données des avances invalides.");
 
       // Format drivers with payment status for current month
       const formattedDrivers = driversData.map((driver) => {
@@ -138,7 +105,6 @@ const DriverPaymentDashboard = () => {
         };
       });
 
-      console.log("Formatted drivers:", formattedDrivers);
       setDrivers(formattedDrivers);
       setAdvances(advancesData);
       setLastUpdated(new Date().toLocaleString());
@@ -147,7 +113,6 @@ const DriverPaymentDashboard = () => {
       setError(err.message || "Échec du chargement des données. Veuillez réessayer.");
     } finally {
       setLoading(false);
-      console.log("Fetch data complete, loading set to false");
     }
   }, [filterMonth]);
 
@@ -161,44 +126,111 @@ const DriverPaymentDashboard = () => {
 
   const handleAddPayment = (driver) => {
     setSelectedDriver(driver);
+    setSelectedPayment(null);
     setShowPaymentForm(true);
   };
 
   const handleAddAdvance = (driver) => {
     setSelectedDriver(driver);
+    setSelectedAdvance(null);
     setShowAdvanceForm(true);
+  };
+
+  const handleEditDriver = (driver) => {
+    setSelectedDriver(driver);
+    setShowDriverForm(true);
+  };
+
+  const handleDeleteDriver = async (driverId) => {
+    if (!window.confirm("Voulez-vous vraiment supprimer ce chauffeur et toutes ses données associées (paiements et avances) ? Cette action est irréversible.")) return;
+    try {
+      setLoading(true);
+      setError(null);
+
+      // Delete associated payments
+      const { error: paymentsError } = await supabase
+        .from("driver_payments")
+        .delete()
+        .eq("driver_id", driverId);
+      if (paymentsError) throw new Error(`Échec de la suppression des paiements: ${paymentsError.message}`);
+
+      // Delete associated advances
+      const { error: advancesError } = await supabase
+        .from("driver_advances")
+        .delete()
+        .eq("driver_id", driverId);
+      if (advancesError) throw new Error(`Échec de la suppression des avances: ${advancesError.message}`);
+
+      // Delete the driver
+      const { error: driverError } = await supabase
+        .from("drivers")
+        .delete()
+        .eq("id", driverId);
+      if (driverError) throw new Error(`Échec de la suppression du chauffeur: ${driverError.message}`);
+
+      // Refresh data to ensure consistency
+      await fetchData();
+      setLastUpdated(new Date().toLocaleString());
+    } catch (err) {
+      console.error("Error deleting driver:", err);
+      setError(err.message || "Échec de la suppression du chauffeur et de ses données associées. Veuillez réessayer.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleEditAdvance = (advance) => {
+    const driver = drivers.find((d) => d.id === advance.driver_id);
+    setSelectedDriver(driver);
+    setSelectedAdvance(advance);
+    setShowAdvanceForm(true);
+  };
+
+  const handleDeleteAdvance = async (advanceId) => {
+    if (!window.confirm("Voulez-vous vraiment supprimer cette avance ?")) return;
+    try {
+      const { error } = await supabase
+        .from("driver_advances")
+        .delete()
+        .eq("id", advanceId);
+      if (error) throw error;
+      setAdvances((prev) => prev.filter((a) => a.id !== advanceId));
+      setLastUpdated(new Date().toLocaleString());
+      fetchData(); // Refresh to update payment status
+    } catch (err) {
+      console.error("Error deleting advance:", err);
+      setError("Échec de la suppression de l'avance. Veuillez réessayer.");
+    }
+  };
+
+  const handleEditPayment = (payment) => {
+    const driver = drivers.find((d) => d.id === payment.driver_id);
+    setSelectedDriver(driver);
+    setSelectedPayment(payment);
+    setShowPaymentForm(true);
+  };
+
+  const handleDeletePayment = async (paymentId) => {
+    if (!window.confirm("Voulez-vous vraiment supprimer ce paiement ?")) return;
+    try {
+      const { error } = await supabase
+        .from("driver_payments")
+        .delete()
+        .eq("id", paymentId);
+      if (error) throw error;
+      setPayments((prev) => prev.filter((p) => p.id !== paymentId));
+      setLastUpdated(new Date().toLocaleString());
+      fetchData(); // Refresh to update payment status
+    } catch (err) {
+      console.error("Error deleting payment:", err);
+      setError("Échec de la suppression du paiement. Veuillez réessayer.");
+    }
   };
 
   const handleViewHistory = (driver) => {
     setSelectedDriver(driver);
     setShowHistoryModal(true);
   };
-
-  // Prepare CSV data
-  const csvData = drivers.map((driver) => ({
-    Chauffeur: driver.name,
-    "RIB Bancaire": driver.rib_bancaire,
-    Camion: driver.truck,
-    "Salaire de Base": driver.base_salary,
-    "Date de Début": driver.start_date,
-    "Mois": filterMonth,
-    "Salaire Payé": driver.salary_paid,
-    "Avances": driver.total_advances,
-    "Salaire Restant": driver.remaining_salary,
-    "Méthode de Paiement":
-      driver.payment_method === "espèce"
-        ? "Espèce"
-        : driver.payment_method === "virement_bancaire"
-        ? "Par virement bancaire"
-        : "N/A",
-    Statut:
-      driver.payment_status === "unpaid"
-        ? "Non payé"
-        : driver.payment_status === "partial"
-        ? "Partiel"
-        : "Payé",
-    "Statut Paiement": driver.status,
-  }));
 
   const filteredDrivers = drivers.filter((driver) =>
     filterDriver === "all" ||
@@ -218,9 +250,9 @@ const DriverPaymentDashboard = () => {
             <li>
               <Link to="/parc">🔧 Gestion des Pièces</Link>
             </li>
-                        <li>
+            <li>
               <Link to="/fleet/stock-carburant">⛽ Stock Carburant</Link>
-           </li>
+            </li>
             <li>
               <Link to="/stock">📦 Gestion de Stock</Link>
             </li>
@@ -260,21 +292,16 @@ const DriverPaymentDashboard = () => {
             <button className="add-driver" onClick={() => setShowDriverForm(true)}>
               Ajouter un chauffeur +
             </button>
-            <CSVLink
-              data={csvData}
-              filename={`paiements_chauffeurs_${filterMonth}.csv`}
-              className="export-btn"
-            >
-              Exporter CSV
-            </CSVLink>
           </div>
         </header>
 
         {showDriverForm && (
           <DriverForm
             trucks={trucks}
+            driver={selectedDriver}
             onClose={() => {
               setShowDriverForm(false);
+              setSelectedDriver(null);
               handleRefresh();
             }}
           />
@@ -283,10 +310,12 @@ const DriverPaymentDashboard = () => {
         {showPaymentForm && (
           <PaymentForm
             driver={selectedDriver}
+            payment={selectedPayment}
             month={filterMonth}
             onClose={() => {
               setShowPaymentForm(false);
               setSelectedDriver(null);
+              setSelectedPayment(null);
               handleRefresh();
             }}
           />
@@ -295,9 +324,11 @@ const DriverPaymentDashboard = () => {
         {showAdvanceForm && (
           <AdvanceForm
             driver={selectedDriver}
+            advance={selectedAdvance}
             onClose={() => {
               setShowAdvanceForm(false);
               setSelectedDriver(null);
+              setSelectedAdvance(null);
               handleRefresh();
             }}
           />
@@ -309,6 +340,10 @@ const DriverPaymentDashboard = () => {
             advances={advances.filter((a) => a.driver_id === selectedDriver?.id)}
             payments={payments.filter((p) => p.driver_id === selectedDriver?.id)}
             month={filterMonth}
+            onEditAdvance={handleEditAdvance}
+            onDeleteAdvance={handleDeleteAdvance}
+            onEditPayment={handleEditPayment}
+            onDeletePayment={handleDeletePayment}
             onClose={() => {
               setShowHistoryModal(false);
               setSelectedDriver(null);
@@ -403,6 +438,18 @@ const DriverPaymentDashboard = () => {
                           onClick={() => handleViewHistory(driver)}
                         >
                           Historique
+                        </button>
+                        <button
+                          className="action-btn edit-btn"
+                          onClick={() => handleEditDriver(driver)}
+                        >
+                          Modifier
+                        </button>
+                        <button
+                          className="action-btn delete-btn"
+                          onClick={() => handleDeleteDriver(driver.id)}
+                        >
+                          Supprimer
                         </button>
                       </td>
                     </tr>
