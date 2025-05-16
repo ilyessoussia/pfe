@@ -15,8 +15,9 @@ const TripScheduler = () => {
     destination: "",
     date: "",
     cargo: "",
+    description: "",
     status: "scheduled",
-    color: "#E5E7EB", // Default color
+    color: "#E5E7EB",
   });
   const [assignFormData, setAssignFormData] = useState({
     tripId: "",
@@ -28,17 +29,19 @@ const TripScheduler = () => {
     destination: "",
     date: "",
     cargo: "",
+    description: "",
     status: "scheduled",
-    color: "#E5E7EB", // Default color
+    color: "#E5E7EB",
   });
   const [truckSearch, setTruckSearch] = useState("");
   const [showAddTripModal, setShowAddTripModal] = useState(false);
   const [showAssignTruckModal, setShowAssignTruckModal] = useState(false);
   const [showEditTripModal, setShowEditTripModal] = useState(false);
-  const [filterStatus, setFilterStatus] = useState("all");
-  const [showPendingOnly, setShowPendingOnly] = useState(false);
   const [selectedTruck, setSelectedTruck] = useState(null);
   const [showTruckList, setShowTruckList] = useState(false);
+  const [currentStartDate, setCurrentStartDate] = useState(null);
+  const [minDate, setMinDate] = useState(null);
+  const [maxDate, setMaxDate] = useState(null);
   const truckListRef = useRef(null);
 
   // Predefined colors for selection
@@ -69,17 +72,37 @@ const TripScheduler = () => {
           .from('trips')
           .select('*');
         if (tripsError) throw tripsError;
-        setTrips(tripsData.map(trip => ({
+        const formattedTrips = tripsData.map(trip => ({
           id: trip.id,
           truckId: trip.truck_id,
           destination: trip.destination,
           date: new Date(trip.date).toLocaleDateString('fr-FR'),
           rawDate: trip.date,
           cargo: trip.cargo,
+          description: trip.description || "",
           status: trip.status,
-          color: trip.color || "#E5E7EB", // Default color if not set
+          color: trip.color || "#E5E7EB",
           createdAt: new Date(trip.created_at),
-        })));
+        }));
+        setTrips(formattedTrips);
+
+        // Set date boundaries
+        if (formattedTrips.length > 0) {
+          const dates = formattedTrips.map(trip => new Date(trip.rawDate));
+          const minTripDate = new Date(Math.min(...dates));
+          const maxTripDate = new Date(Math.max(...dates));
+          minTripDate.setHours(0, 0, 0, 0);
+          maxTripDate.setHours(0, 0, 0, 0);
+          setMinDate(minTripDate);
+          setMaxDate(maxTripDate);
+          setCurrentStartDate(minTripDate);
+        } else {
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
+          setMinDate(today);
+          setMaxDate(today);
+          setCurrentStartDate(today);
+        }
       } catch (err) {
         console.error("Error fetching data:", err);
         setError("Échec du chargement des données.");
@@ -173,26 +196,31 @@ const TripScheduler = () => {
           destination: formData.destination,
           date: formData.date,
           cargo: formData.cargo,
+          description: formData.description,
           status: formData.status,
           color: formData.color,
         }])
         .select();
       if (error) throw error;
-      setTrips((prev) => [
-        {
-          id: data[0].id,
-          truckId: data[0].truck_id,
-          destination: data[0].destination,
-          date: formattedDate,
-          rawDate: data[0].date,
-          cargo: data[0].cargo,
-          status: data[0].status,
-          color: data[0].color,
-          createdAt: new Date(data[0].created_at),
-        },
-        ...prev,
-      ]);
-      setFormData({ truckId: "", destination: "", date: "", cargo: "", status: "scheduled", color: "#E5E7EB" });
+      const newTrip = {
+        id: data[0].id,
+        truckId: data[0].truck_id,
+        destination: data[0].destination,
+        date: formattedDate,
+        rawDate: data[0].date,
+        cargo: data[0].cargo,
+        description: data[0].description,
+        status: data[0].status,
+        color: data[0].color,
+        createdAt: new Date(data[0].created_at),
+      };
+      setTrips((prev) => [...prev, newTrip]);
+      // Update date boundaries
+      const newTripDate = new Date(newTrip.rawDate);
+      newTripDate.setHours(0, 0, 0, 0);
+      if (!minDate || newTripDate < minDate) setMinDate(newTripDate);
+      if (!maxDate || newTripDate > maxDate) setMaxDate(newTripDate);
+      setFormData({ truckId: "", destination: "", date: "", cargo: "", description: "", status: "scheduled", color: "#E5E7EB" });
       setTruckSearch("");
       setSelectedTruck(null);
       setShowAddTripModal(false);
@@ -237,6 +265,7 @@ const TripScheduler = () => {
           destination: editFormData.destination,
           date: editFormData.date,
           cargo: editFormData.cargo,
+          description: editFormData.description,
           status: editFormData.status,
           color: editFormData.color,
         })
@@ -252,13 +281,27 @@ const TripScheduler = () => {
                 date: formattedDate,
                 rawDate: editFormData.date,
                 cargo: editFormData.cargo,
+                description: editFormData.description,
                 status: editFormData.status,
                 color: editFormData.color,
               }
             : t
         )
       );
-      setEditFormData({ id: "", truckId: "", destination: "", date: "", cargo: "", status: "scheduled", color: "#E5E7EB" });
+      // Update date boundaries
+      const updatedTrips = trips.map(t =>
+        t.id === editFormData.id
+          ? { ...t, rawDate: editFormData.date }
+          : t
+      );
+      const dates = updatedTrips.map(trip => new Date(trip.rawDate));
+      const newMinDate = new Date(Math.min(...dates));
+      const newMaxDate = new Date(Math.max(...dates));
+      newMinDate.setHours(0, 0, 0, 0);
+      newMaxDate.setHours(0, 0, 0, 0);
+      setMinDate(newMinDate);
+      setMaxDate(newMaxDate);
+      setEditFormData({ id: "", truckId: "", destination: "", date: "", cargo: "", description: "", status: "scheduled", color: "#E5E7EB" });
       setTruckSearch("");
       setSelectedTruck(null);
       setShowEditTripModal(false);
@@ -310,6 +353,29 @@ const TripScheduler = () => {
           .eq('id', tripId);
         if (error) throw error;
         setTrips((prev) => prev.filter((t) => t.id !== tripId));
+        // Update date boundaries
+        if (trips.length > 1) {
+          const remainingTrips = trips.filter(t => t.id !== tripId);
+          const dates = remainingTrips.map(trip => new Date(trip.rawDate));
+          const newMinDate = new Date(Math.min(...dates));
+          const newMaxDate = new Date(Math.max(...dates));
+          newMinDate.setHours(0, 0, 0, 0);
+          newMaxDate.setHours(0, 0, 0, 0);
+          setMinDate(newMinDate);
+          setMaxDate(newMaxDate);
+          // Adjust currentStartDate if necessary
+          const currentEndDate = new Date(currentStartDate);
+          currentEndDate.setDate(currentEndDate.getDate() + 3);
+          if (currentEndDate < newMinDate) {
+            setCurrentStartDate(newMinDate);
+          }
+        } else {
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
+          setMinDate(today);
+          setMaxDate(today);
+          setCurrentStartDate(today);
+        }
         setSuccessMessage("Voyage annulé et supprimé avec succès !");
         setTimeout(() => setSuccessMessage(""), 3000);
       } catch (err) {
@@ -328,6 +394,29 @@ const TripScheduler = () => {
           .eq('id', tripId);
         if (error) throw error;
         setTrips((prev) => prev.filter((t) => t.id !== tripId));
+        // Update date boundaries
+        if (trips.length > 1) {
+          const remainingTrips = trips.filter(t => t.id !== tripId);
+          const dates = remainingTrips.map(trip => new Date(trip.rawDate));
+          const newMinDate = new Date(Math.min(...dates));
+          const newMaxDate = new Date(Math.max(...dates));
+          newMinDate.setHours(0, 0, 0, 0);
+          newMaxDate.setHours(0, 0, 0, 0);
+          setMinDate(newMinDate);
+          setMaxDate(newMaxDate);
+          // Adjust currentStartDate if necessary
+          const currentEndDate = new Date(currentStartDate);
+          currentEndDate.setDate(currentEndDate.getDate() + 3);
+          if (currentEndDate < newMinDate) {
+            setCurrentStartDate(newMinDate);
+          }
+        } else {
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
+          setMinDate(today);
+          setMaxDate(today);
+          setCurrentStartDate(today);
+        }
         setSuccessMessage("Voyage terminé et supprimé avec succès !");
         setTimeout(() => setSuccessMessage(""), 3000);
       } catch (err) {
@@ -341,7 +430,7 @@ const TripScheduler = () => {
     const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
     const tomorrowFormatted = tomorrow.toISOString().split('T')[0];
-    setFormData({ truckId: "", destination: "", date: tomorrowFormatted, cargo: "", status: "scheduled", color: "#E5E7EB" });
+    setFormData({ truckId: "", destination: "", date: tomorrowFormatted, cargo: "", description: "", status: "scheduled", color: "#E5E7EB" });
     setTruckSearch("");
     setSelectedTruck(null);
     setError(null);
@@ -363,6 +452,7 @@ const TripScheduler = () => {
       destination: trip.destination,
       date: trip.rawDate.split('T')[0],
       cargo: trip.cargo,
+      description: trip.description || "",
       status: trip.status,
       color: trip.color || "#E5E7EB",
     });
@@ -373,19 +463,50 @@ const TripScheduler = () => {
     setShowEditTripModal(true);
   };
 
-  const sortedTrips = [...trips].sort((a, b) => new Date(a.rawDate) - new Date(b.rawDate));
-  const filteredTrips = sortedTrips.filter((trip) => {
-    if (showPendingOnly && trip.truckId) return false;
-    if (filterStatus !== "all" && trip.status !== filterStatus) return false;
-    return true;
-  });
+  // Navigation for 4-day window
+  const handlePrevDays = () => {
+    if (!currentStartDate || !minDate) return;
+    const newStartDate = new Date(currentStartDate);
+    newStartDate.setDate(newStartDate.getDate() - 4);
+    if (newStartDate >= minDate) {
+      setCurrentStartDate(newStartDate);
+    }
+  };
 
-  const groupedTrips = filteredTrips.reduce((acc, trip) => {
-    const date = trip.rawDate.split('T')[0];
-    if (!acc[date]) acc[date] = [];
-    acc[date].push(trip);
-    return acc;
-  }, {});
+  const handleNextDays = () => {
+    if (!currentStartDate || !maxDate) return;
+    const newStartDate = new Date(currentStartDate);
+    newStartDate.setDate(newStartDate.getDate() + 4);
+    const newEndDate = new Date(newStartDate);
+    newEndDate.setDate(newEndDate.getDate() + 3);
+    if (newStartDate <= maxDate) {
+      setCurrentStartDate(newStartDate);
+    }
+  };
+
+  // Get trips for the current 4-day window
+  const getDisplayedTrips = () => {
+    if (!currentStartDate) return {};
+    const endDate = new Date(currentStartDate);
+    endDate.setDate(endDate.getDate() + 3); // 4 days total
+    const sortedTrips = [...trips].sort((a, b) => new Date(a.rawDate) - new Date(b.rawDate));
+    const filteredTrips = sortedTrips.filter((trip) => {
+      const tripDate = new Date(trip.rawDate);
+      tripDate.setHours(0, 0, 0, 0);
+      return tripDate >= currentStartDate && tripDate <= endDate;
+    });
+
+    return filteredTrips.reduce((acc, trip) => {
+      const date = trip.rawDate.split('T')[0];
+      if (!acc[date]) acc[date] = [];
+      acc[date].push(trip);
+      return acc;
+    }, {});
+  };
+
+  const groupedTrips = getDisplayedTrips();
+  const canGoPrev = currentStartDate && minDate && currentStartDate > minDate;
+  const canGoNext = currentStartDate && maxDate && new Date(currentStartDate).setDate(currentStartDate.getDate() + 3) < maxDate;
 
   return (
     <div className="trip-scheduler-container">
@@ -429,29 +550,23 @@ const TripScheduler = () => {
         {error && <div className="trip-scheduler-error-message">{error}</div>}
 
         <section className="trip-scheduler-list-section">
-          <div className="trip-scheduler-filter-controls">
+          <div className="trip-scheduler-nav-controls">
             <h2>Voyages Planifiés</h2>
-            <div className="trip-scheduler-filter-options">
-              <div className="trip-scheduler-filter-status">
-                <label className="trip-scheduler-label">Filtrer par statut: </label>
-                <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}>
-                  <option value="all">Tous</option>
-                  <option value="scheduled">Planifié</option>
-                  <option value="in_progress">En cours</option>
-                  <option value="completed">Terminé</option>
-                  <option value="canceled">Annulé</option>
-                </select>
-              </div>
-              <div className="trip-scheduler-filter-status">
-                <label className="trip-scheduler-label">
-                  <input
-                    type="checkbox"
-                    checked={showPendingOnly}
-                    onChange={(e) => setShowPendingOnly(e.target.checked)}
-                  />
-                  Afficher uniquement les voyages sans camion
-                </label>
-              </div>
+            <div className="trip-scheduler-nav-arrows">
+              <button
+                className="trip-scheduler-nav-btn"
+                onClick={handlePrevDays}
+                disabled={!canGoPrev}
+              >
+                ← Précédent
+              </button>
+              <button
+                className="trip-scheduler-nav-btn"
+                onClick={handleNextDays}
+                disabled={!canGoNext}
+              >
+                Suivant →
+              </button>
             </div>
           </div>
 
@@ -478,6 +593,7 @@ const TripScheduler = () => {
                             <p><strong>Camion:</strong> {truck?.immatriculation || "Non assigné"}</p>
                             <p><strong>Destination:</strong> {trip.destination}</p>
                             <p><strong>Date:</strong> {trip.date}</p>
+                            <p><strong>Description:</strong> {trip.description || "Aucune description"}</p>
                             <p>
                               <strong>Statut:</strong>{" "}
                               {trip.status === "scheduled"
@@ -530,7 +646,7 @@ const TripScheduler = () => {
             </div>
           ) : (
             <div className="trip-scheduler-no-trips">
-              Aucun voyage trouvé pour les critères sélectionnés.
+              Aucun voyage trouvé pour les dates sélectionnées.
             </div>
           )}
         </section>
@@ -542,7 +658,7 @@ const TripScheduler = () => {
                 className="trip-scheduler-modal-close"
                 onClick={() => {
                   setShowAddTripModal(false);
-                  setFormData({ truckId: "", destination: "", date: "", cargo: "", status: "scheduled", color: "#E5E7EB" });
+                  setFormData({ truckId: "", destination: "", date: "", cargo: "", description: "", status: "scheduled", color: "#E5E7EB" });
                   setTruckSearch("");
                   setSelectedTruck(null);
                   setError(null);
@@ -660,6 +776,17 @@ const TripScheduler = () => {
                     />
                   </div>
                   <div className="trip-scheduler-form-group">
+                    <label htmlFor="description">Description</label>
+                    <textarea
+                      id="description"
+                      name="description"
+                      value={formData.description}
+                      onChange={handleInputChange}
+                      placeholder="ex: Détails sur la cargaison ou instructions"
+                      rows="4"
+                    />
+                  </div>
+                  <div className="trip-scheduler-form-group">
                     <label htmlFor="status">Statut</label>
                     <select
                       id="status"
@@ -695,7 +822,7 @@ const TripScheduler = () => {
                       type="button"
                       className="trip-scheduler-cancel-btn"
                       onClick={() => {
-                        setFormData({ truckId: "", destination: "", date: "", cargo: "", status: "scheduled", color: "#E5E7EB" });
+                        setFormData({ truckId: "", destination: "", date: "", cargo: "", description: "", status: "scheduled", color: "#E5E7EB" });
                         setTruckSearch("");
                         setSelectedTruck(null);
                       }}
@@ -828,7 +955,7 @@ const TripScheduler = () => {
                 className="trip-scheduler-modal-close"
                 onClick={() => {
                   setShowEditTripModal(false);
-                  setEditFormData({ id: "", truckId: "", destination: "", date: "", cargo: "", status: "scheduled", color: "#E5E7EB" });
+                  setEditFormData({ id: "", truckId: "", destination: "", date: "", cargo: "", description: "", status: "scheduled", color: "#E5E7EB" });
                   setTruckSearch("");
                   setSelectedTruck(null);
                   setError(null);
@@ -946,6 +1073,17 @@ const TripScheduler = () => {
                     />
                   </div>
                   <div className="trip-scheduler-form-group">
+                    <label htmlFor="editDescription">Description</label>
+                    <textarea
+                      id="editDescription"
+                      name="description"
+                      value={editFormData.description}
+                      onChange={handleEditInputChange}
+                      placeholder="ex: Détails sur la cargaison ou instructions"
+                      rows="4"
+                    />
+                  </div>
+                  <div className="trip-scheduler-form-group">
                     <label htmlFor="editStatus">Statut</label>
                     <select
                       id="editStatus"
@@ -982,7 +1120,7 @@ const TripScheduler = () => {
                       className="trip-scheduler-cancel-btn"
                       onClick={() => {
                         setShowEditTripModal(false);
-                        setEditFormData({ id: "", truckId: "", destination: "", date: "", cargo: "", status: "scheduled", color: "#E5E7EB" });
+                        setEditFormData({ id: "", truckId: "", destination: "", date: "", cargo: "", description: "", status: "scheduled", color: "#E5E7EB" });
                         setTruckSearch("");
                         setSelectedTruck(null);
                       }}

@@ -179,14 +179,14 @@
   border: 1px solid var(--color-border-dark);
 }
 
-.trip-scheduler-filter-controls {
+.trip-scheduler-nav-controls {
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-bottom: 20px;
 }
 
-.trip-scheduler-filter-controls h2 {
+.trip-scheduler-nav-controls h2 {
   margin: 0;
   font-size: 1.5rem;
   color: var(--color-primary);
@@ -194,37 +194,32 @@
   letter-spacing: 0.5px;
 }
 
-.trip-scheduler-filter-options {
+.trip-scheduler-nav-arrows {
   display: flex;
-  align-items: center;
-  gap: 20px;
-}
-
-.trip-scheduler-filter-status {
-  display: flex;
-  align-items: center;
   gap: 10px;
 }
 
-.trip-scheduler-label {
-  color: var(--color-text-light);
-  font-size: 0.95rem;
-}
-
-.trip-scheduler-filter-status select {
-  padding: 8px;
-  background-color: var(--color-input-background);
-  color: var(--color-text-light);
+.trip-scheduler-nav-btn {
+  padding: 8px 15px;
+  background-color: var(--color-button-background);
+  color: var(--color-primary);
   border: 1px solid var(--color-primary);
   border-radius: 3px;
-  font-size: 0.95rem;
+  cursor: pointer;
+  font-weight: 500;
   transition: all 0.3s;
+  font-size: 0.95rem;
 }
 
-.trip-scheduler-filter-status select:focus {
-  border-color: var(--color-primary-dark);
-  outline: none;
-  background-color: var(--color-input-hover);
+.trip-scheduler-nav-btn:hover {
+  background-color: var(--color-button-hover);
+}
+
+.trip-scheduler-nav-btn:disabled {
+  background-color: var(--color-disabled);
+  color: var(--color-text-muted);
+  border-color: var(--color-disabled);
+  cursor: not-allowed;
 }
 
 .trip-scheduler-agenda {
@@ -266,18 +261,6 @@
   border: 1px solid var(--color-border-dark);
 }
 
-.trip-scheduler-item-scheduled {
-  /* Removed to use custom color */
-}
-
-.trip-scheduler-item-in_progress {
-  /* Removed to use custom color */
-}
-
-.trip-scheduler-item-completed {
-  /* Removed to use custom color */
-}
-
 .trip-scheduler-item-canceled {
   opacity: 0.7;
 }
@@ -290,16 +273,16 @@
 
 .trip-scheduler-item h3 {
   margin: 0 0 10px 0;
-  font-size: 1.4rem; /* Increased from 1.2rem */
+  font-size: 1.4rem;
   color: var(--color-primary);
-  font-weight: 500; /* Slightly bolder for prominence */
+  font-weight: 500;
   letter-spacing: 0.5px;
 }
 
 .trip-scheduler-item p {
   margin: 0 0 8px 0;
   font-size: 0.9rem;
-  color: var(--color-black); /* Changed to black for readability */
+  color: var(--color-black);
 }
 
 .trip-scheduler-item-actions {
@@ -440,7 +423,8 @@
 }
 
 .trip-scheduler-form-group input,
-.trip-scheduler-form-group select {
+.trip-scheduler-form-group select,
+.trip-scheduler-form-group textarea {
   padding: 10px;
   background-color: var(--color-input-background);
   color: var(--color-text-light);
@@ -450,14 +434,21 @@
   transition: all 0.3s;
 }
 
+.trip-scheduler-form-group textarea {
+  resize: vertical;
+  min-height: 80px;
+}
+
 .trip-scheduler-form-group input:focus,
-.trip-scheduler-form-group select:focus {
+.trip-scheduler-form-group select:focus,
+.trip-scheduler-form-group textarea:focus {
   border-color: var(--color-primary-dark);
   outline: none;
   background-color: var(--color-input-hover);
 }
 
-.trip-scheduler-form-group input::placeholder {
+.trip-scheduler-form-group input::placeholder,
+.trip-scheduler-form-group textarea::placeholder {
   color: var(--color-text-muted);
 }
 
@@ -568,23 +559,18 @@
     width: 100%;
   }
 
-  .trip-scheduler-filter-controls {
+  .trip-scheduler-nav-controls {
     flex-direction: column;
     align-items: flex-start;
     gap: 10px;
   }
 
-  .trip-scheduler-filter-options {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 10px;
+  .trip-scheduler-nav-arrows {
+    width: 100%;
+    justify-content: space-between;
   }
 
-  .trip-scheduler-filter-status {
-    width: 100%;
-  }
-
-  .trip-scheduler-filter-status select {
-    width: 100%;
+  .trip-scheduler-nav-btn {
+    width: 48%;
   }
 }
