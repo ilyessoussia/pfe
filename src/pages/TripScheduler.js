@@ -16,6 +16,7 @@ const TripScheduler = () => {
     date: "",
     cargo: "",
     status: "scheduled",
+    color: "#E5E7EB", // Default color
   });
   const [assignFormData, setAssignFormData] = useState({
     tripId: "",
@@ -28,6 +29,7 @@ const TripScheduler = () => {
     date: "",
     cargo: "",
     status: "scheduled",
+    color: "#E5E7EB", // Default color
   });
   const [truckSearch, setTruckSearch] = useState("");
   const [showAddTripModal, setShowAddTripModal] = useState(false);
@@ -38,6 +40,15 @@ const TripScheduler = () => {
   const [selectedTruck, setSelectedTruck] = useState(null);
   const [showTruckList, setShowTruckList] = useState(false);
   const truckListRef = useRef(null);
+
+  // Predefined colors for selection
+  const colorOptions = [
+    { value: "#E5E7EB", label: "Gris" },
+    { value: "#BFDBFE", label: "Bleu Clair" },
+    { value: "#BBF7D0", label: "Vert Clair" },
+    { value: "#FECACA", label: "Rouge Clair" },
+    { value: "#FBCFE8", label: "Rose Clair" },
+  ];
 
   useEffect(() => {
     const fetchData = async () => {
@@ -66,6 +77,7 @@ const TripScheduler = () => {
           rawDate: trip.date,
           cargo: trip.cargo,
           status: trip.status,
+          color: trip.color || "#E5E7EB", // Default color if not set
           createdAt: new Date(trip.created_at),
         })));
       } catch (err) {
@@ -162,6 +174,7 @@ const TripScheduler = () => {
           date: formData.date,
           cargo: formData.cargo,
           status: formData.status,
+          color: formData.color,
         }])
         .select();
       if (error) throw error;
@@ -174,11 +187,12 @@ const TripScheduler = () => {
           rawDate: data[0].date,
           cargo: data[0].cargo,
           status: data[0].status,
+          color: data[0].color,
           createdAt: new Date(data[0].created_at),
         },
         ...prev,
       ]);
-      setFormData({ truckId: "", destination: "", date: "", cargo: "", status: "scheduled" });
+      setFormData({ truckId: "", destination: "", date: "", cargo: "", status: "scheduled", color: "#E5E7EB" });
       setTruckSearch("");
       setSelectedTruck(null);
       setShowAddTripModal(false);
@@ -224,6 +238,7 @@ const TripScheduler = () => {
           date: editFormData.date,
           cargo: editFormData.cargo,
           status: editFormData.status,
+          color: editFormData.color,
         })
         .eq('id', editFormData.id);
       if (error) throw error;
@@ -238,11 +253,12 @@ const TripScheduler = () => {
                 rawDate: editFormData.date,
                 cargo: editFormData.cargo,
                 status: editFormData.status,
+                color: editFormData.color,
               }
             : t
         )
       );
-      setEditFormData({ id: "", truckId: "", destination: "", date: "", cargo: "", status: "scheduled" });
+      setEditFormData({ id: "", truckId: "", destination: "", date: "", cargo: "", status: "scheduled", color: "#E5E7EB" });
       setTruckSearch("");
       setSelectedTruck(null);
       setShowEditTripModal(false);
@@ -290,17 +306,15 @@ const TripScheduler = () => {
       try {
         const { error } = await supabase
           .from('trips')
-          .update({ status: "canceled" })
+          .delete()
           .eq('id', tripId);
         if (error) throw error;
-        setTrips((prev) =>
-          prev.map((t) => (t.id === tripId ? { ...t, status: "canceled" } : t))
-        );
-        setSuccessMessage("Voyage annulé avec succès !");
+        setTrips((prev) => prev.filter((t) => t.id !== tripId));
+        setSuccessMessage("Voyage annulé et supprimé avec succès !");
         setTimeout(() => setSuccessMessage(""), 3000);
       } catch (err) {
-        console.error("Error canceling trip:", err);
-        setError("Erreur lors de l'annulation du voyage.");
+        console.error("Error deleting trip:", err);
+        setError("Erreur lors de la suppression du voyage.");
       }
     }
   };
@@ -310,17 +324,15 @@ const TripScheduler = () => {
       try {
         const { error } = await supabase
           .from('trips')
-          .update({ status: "completed" })
+          .delete()
           .eq('id', tripId);
         if (error) throw error;
-        setTrips((prev) =>
-          prev.map((t) => (t.id === tripId ? { ...t, status: "completed" } : t))
-        );
-        setSuccessMessage("Voyage marqué comme terminé avec succès !");
+        setTrips((prev) => prev.filter((t) => t.id !== tripId));
+        setSuccessMessage("Voyage terminé et supprimé avec succès !");
         setTimeout(() => setSuccessMessage(""), 3000);
       } catch (err) {
-        console.error("Error completing trip:", err);
-        setError("Erreur lors de la finalisation du voyage.");
+        console.error("Error deleting trip:", err);
+        setError("Erreur lors de la suppression du voyage.");
       }
     }
   };
@@ -329,7 +341,7 @@ const TripScheduler = () => {
     const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
     const tomorrowFormatted = tomorrow.toISOString().split('T')[0];
-    setFormData({ truckId: "", destination: "", date: tomorrowFormatted, cargo: "", status: "scheduled" });
+    setFormData({ truckId: "", destination: "", date: tomorrowFormatted, cargo: "", status: "scheduled", color: "#E5E7EB" });
     setTruckSearch("");
     setSelectedTruck(null);
     setError(null);
@@ -352,6 +364,7 @@ const TripScheduler = () => {
       date: trip.rawDate.split('T')[0],
       cargo: trip.cargo,
       status: trip.status,
+      color: trip.color || "#E5E7EB",
     });
     const truck = trucks.find(t => t.id === trip.truckId);
     setTruckSearch(truck ? truck.immatriculation : "");
@@ -446,71 +459,74 @@ const TripScheduler = () => {
             <div className="trip-scheduler-loading">Chargement des voyages...</div>
           ) : Object.keys(groupedTrips).length > 0 ? (
             <div className="trip-scheduler-agenda">
-              {Object.entries(groupedTrips).map(([date, dateTrips]) => (
-                <div key={date} className="trip-scheduler-agenda-day">
-                  <h3 className="trip-scheduler-agenda-date">
-                    {new Date(date).toLocaleDateString('fr-FR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
-                  </h3>
-                  <div className="trip-scheduler-items">
-                    {dateTrips.map((trip) => {
-                      const truck = trucks.find((t) => t.id === trip.truckId);
-                      return (
-                        <div
-                          key={trip.id}
-                          className={`trip-scheduler-item trip-scheduler-item-${trip.status}`}
-                        >
-                          <h3>{truck?.immatriculation || "Non assigné"}</h3>
-                          <p><strong>Destination:</strong> {trip.destination}</p>
-                          <p><strong>Date:</strong> {trip.date}</p>
-                          <p><strong>Cargaison:</strong> {trip.cargo}</p>
-                          <p>
-                            <strong>Statut:</strong>{" "}
-                            {trip.status === "scheduled"
-                              ? "Planifié"
-                              : trip.status === "in_progress"
-                              ? "En cours"
-                              : trip.status === "completed"
-                              ? "Terminé"
-                              : "Annulé"}
-                          </p>
-                          <div className="trip-scheduler-item-actions">
-                            {!trip.truckId && trip.status !== "canceled" && (
-                              <button
-                                className="trip-scheduler-assign-btn"
-                                onClick={() => openAssignTruckModal(trip.id)}
-                              >
-                                🚚 Assigner un Camion
-                              </button>
-                            )}
-                            {trip.status !== "canceled" && trip.status !== "completed" && (
-                              <>
+              <div className="trip-scheduler-agenda-container">
+                {Object.entries(groupedTrips).map(([date, dateTrips]) => (
+                  <div key={date} className="trip-scheduler-agenda-day">
+                    <h3 className="trip-scheduler-agenda-date">
+                      {new Date(date).toLocaleDateString('fr-FR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+                    </h3>
+                    <div className="trip-scheduler-items">
+                      {dateTrips.map((trip) => {
+                        const truck = trucks.find((t) => t.id === trip.truckId);
+                        return (
+                          <div
+                            key={trip.id}
+                            className={`trip-scheduler-item trip-scheduler-item-${trip.status}`}
+                            style={{ backgroundColor: trip.color }}
+                          >
+                            <h3>{trip.cargo}</h3>
+                            <p><strong>Camion:</strong> {truck?.immatriculation || "Non assigné"}</p>
+                            <p><strong>Destination:</strong> {trip.destination}</p>
+                            <p><strong>Date:</strong> {trip.date}</p>
+                            <p>
+                              <strong>Statut:</strong>{" "}
+                              {trip.status === "scheduled"
+                                ? "Planifié"
+                                : trip.status === "in_progress"
+                                ? "En cours"
+                                : trip.status === "completed"
+                                ? "Terminé"
+                                : "Annulé"}
+                            </p>
+                            <div className="trip-scheduler-item-actions">
+                              {!trip.truckId && trip.status !== "canceled" && (
                                 <button
-                                  className="trip-scheduler-edit-btn"
-                                  onClick={() => openEditTripModal(trip)}
+                                  className="trip-scheduler-assign-btn"
+                                  onClick={() => openAssignTruckModal(trip.id)}
                                 >
-                                  ✏️ Modifier
+                                  🚚 Assigner un Camion
                                 </button>
-                                <button
-                                  className="trip-scheduler-cancel-trip-btn"
-                                  onClick={() => handleCancel(trip.id)}
-                                >
-                                  ❌ Annuler
-                                </button>
-                                <button
-                                  className="trip-scheduler-complete-btn"
-                                  onClick={() => handleComplete(trip.id)}
-                                >
-                                  ✅ Terminer
-                                </button>
-                              </>
-                            )}
+                              )}
+                              {trip.status !== "canceled" && trip.status !== "completed" && (
+                                <>
+                                  <button
+                                    className="trip-scheduler-edit-btn"
+                                    onClick={() => openEditTripModal(trip)}
+                                  >
+                                    ✏️ Modifier
+                                  </button>
+                                  <button
+                                    className="trip-scheduler-cancel-trip-btn"
+                                    onClick={() => handleCancel(trip.id)}
+                                  >
+                                    ❌ Annuler
+                                  </button>
+                                  <button
+                                    className="trip-scheduler-complete-btn"
+                                    onClick={() => handleComplete(trip.id)}
+                                  >
+                                    ✅ Terminer
+                                  </button>
+                                </>
+                              )}
+                            </div>
                           </div>
-                        </div>
-                      );
-                    })}
+                        );
+                      })}
+                    </div>
                   </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
           ) : (
             <div className="trip-scheduler-no-trips">
@@ -526,7 +542,7 @@ const TripScheduler = () => {
                 className="trip-scheduler-modal-close"
                 onClick={() => {
                   setShowAddTripModal(false);
-                  setFormData({ truckId: "", destination: "", date: "", cargo: "", status: "scheduled" });
+                  setFormData({ truckId: "", destination: "", date: "", cargo: "", status: "scheduled", color: "#E5E7EB" });
                   setTruckSearch("");
                   setSelectedTruck(null);
                   setError(null);
@@ -656,6 +672,21 @@ const TripScheduler = () => {
                       <option value="completed">Terminé</option>
                     </select>
                   </div>
+                  <div className="trip-scheduler-form-group">
+                    <label htmlFor="color">Couleur de la carte</label>
+                    <select
+                      id="color"
+                      name="color"
+                      value={formData.color}
+                      onChange={handleInputChange}
+                    >
+                      {colorOptions.map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
                   <div className="trip-scheduler-form-actions">
                     <button type="submit" className="trip-scheduler-save-btn">
                       Planifier
@@ -664,7 +695,7 @@ const TripScheduler = () => {
                       type="button"
                       className="trip-scheduler-cancel-btn"
                       onClick={() => {
-                        setFormData({ truckId: "", destination: "", date: "", cargo: "", status: "scheduled" });
+                        setFormData({ truckId: "", destination: "", date: "", cargo: "", status: "scheduled", color: "#E5E7EB" });
                         setTruckSearch("");
                         setSelectedTruck(null);
                       }}
@@ -797,7 +828,7 @@ const TripScheduler = () => {
                 className="trip-scheduler-modal-close"
                 onClick={() => {
                   setShowEditTripModal(false);
-                  setEditFormData({ id: "", truckId: "", destination: "", date: "", cargo: "", status: "scheduled" });
+                  setEditFormData({ id: "", truckId: "", destination: "", date: "", cargo: "", status: "scheduled", color: "#E5E7EB" });
                   setTruckSearch("");
                   setSelectedTruck(null);
                   setError(null);
@@ -927,6 +958,21 @@ const TripScheduler = () => {
                       <option value="completed">Terminé</option>
                     </select>
                   </div>
+                  <div className="trip-scheduler-form-group">
+                    <label htmlFor="editColor">Couleur de la carte</label>
+                    <select
+                      id="editColor"
+                      name="color"
+                      value={editFormData.color}
+                      onChange={handleEditInputChange}
+                    >
+                      {colorOptions.map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
                   <div className="trip-scheduler-form-actions">
                     <button type="submit" className="trip-scheduler-save-btn">
                       Enregistrer
@@ -936,7 +982,7 @@ const TripScheduler = () => {
                       className="trip-scheduler-cancel-btn"
                       onClick={() => {
                         setShowEditTripModal(false);
-                        setEditFormData({ id: "", truckId: "", destination: "", date: "", cargo: "", status: "scheduled" });
+                        setEditFormData({ id: "", truckId: "", destination: "", date: "", cargo: "", status: "scheduled", color: "#E5E7EB" });
                         setTruckSearch("");
                         setSelectedTruck(null);
                       }}
