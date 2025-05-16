@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { Link } from "react-router-dom";
 import "./DailyCashTracking.css";
 import { supabase } from "../supabase";
@@ -20,54 +20,55 @@ const DailyCashTracking = () => {
   const [editingRows, setEditingRows] = useState({});
   const tableRef = useRef(null);
 
-  useEffect(() => {
-    const fetchEntries = async () => {
-      try {
-        setLoading(true);
-        let query = supabase.from('cash_entries').select('*').order('created_at', { ascending: false });
-        if (filterType === "today") {
-          const today = new Date().toISOString().split('T')[0];
-          query = query.eq('date', today);
-        } else if (filterType === "specific" && selectedDate) {
-          query = query.eq('date', selectedDate);
-        }
-        const { data, error } = await query;
-        if (error) throw error;
-        const formattedEntries = data.reduce((acc, entry) => {
-          const existing = acc.find((e) => e.description === entry.description && e.date === entry.date);
-          const amount = parseFloat(entry.amount) || 0;
-          if (existing) {
-            if (entry.entity === 'CHB') {
-              existing[entry.type === 'inflow' ? 'chbInflow' : 'chbOutflow'] = amount;
-            } else {
-              existing[entry.type === 'inflow' ? 'snttInflow' : 'snttOutflow'] = amount;
-            }
-            existing.relatedIds.push(entry.id);
-          } else {
-            acc.push({
-              id: entry.id,
-              description: entry.description,
-              chbInflow: entry.entity === 'CHB' && entry.type === 'inflow' ? amount : 0,
-              chbOutflow: entry.entity === 'CHB' && entry.type === 'outflow' ? amount : 0,
-              snttInflow: entry.entity === 'SNTT' && entry.type === 'inflow' ? amount : 0,
-              snttOutflow: entry.entity === 'SNTT' && entry.type === 'outflow' ? amount : 0,
-              date: entry.date,
-              createdAt: new Date(entry.created_at),
-              relatedIds: [entry.id],
-            });
-          }
-          return acc;
-        }, []);
-        setEntries(formattedEntries);
-      } catch (err) {
-        console.error("Error fetching cash entries:", err);
-        setError("Échec du chargement des entrées.");
-      } finally {
-        setLoading(false);
+  const fetchEntries = useCallback(async () => {
+    try {
+      setLoading(true);
+      let query = supabase.from('cash_entries').select('*').order('created_at', { ascending: true });
+      if (filterType === "today") {
+        const today = new Date().toISOString().split('T')[0];
+        query = query.eq('date', today);
+      } else if (filterType === "specific" && selectedDate) {
+        query = query.eq('date', selectedDate);
       }
-    };
-    fetchEntries();
+      const { data, error } = await query;
+      if (error) throw error;
+      const formattedEntries = data.reduce((acc, entry) => {
+        const existing = acc.find((e) => e.description === entry.description && e.date === entry.date);
+        const amount = parseFloat(entry.amount) || 0;
+        if (existing) {
+          if (entry.entity === 'CHB') {
+            existing[entry.type === 'inflow' ? 'chbInflow' : 'chbOutflow'] = amount;
+          } else {
+            existing[entry.type === 'inflow' ? 'snttInflow' : 'snttOutflow'] = amount;
+          }
+          existing.relatedIds.push(entry.id);
+        } else {
+          acc.push({
+            id: entry.id,
+            description: entry.description,
+            chbInflow: entry.entity === 'CHB' && entry.type === 'inflow' ? amount : 0,
+            chbOutflow: entry.entity === 'CHB' && entry.type === 'outflow' ? amount : 0,
+            snttInflow: entry.entity === 'SNTT' && entry.type === 'inflow' ? amount : 0,
+            snttOutflow: entry.entity === 'SNTT' && entry.type === 'outflow' ? amount : 0,
+            date: entry.date,
+            createdAt: new Date(entry.created_at),
+            relatedIds: [entry.id],
+          });
+        }
+        return acc;
+      }, []);
+      setEntries(formattedEntries);
+    } catch (err) {
+      console.error("Error fetching cash entries:", err);
+      setError("Échec du chargement des entrées.");
+    } finally {
+      setLoading(false);
+    }
   }, [filterType, selectedDate]);
+
+  useEffect(() => {
+    fetchEntries();
+  }, [fetchEntries]);
 
   const handleInputChange = (id, field, value, isNew = false) => {
     if (isNew) {
@@ -119,6 +120,7 @@ const DailyCashTracking = () => {
           .select();
         if (error) throw error;
         setEntries((prev) => [
+          ...prev,
           {
             id: data[0].id,
             description: data[0].description,
@@ -130,15 +132,17 @@ const DailyCashTracking = () => {
             createdAt: new Date(data[0].created_at),
             relatedIds: [data[0].id],
           },
-          ...prev,
         ]);
         setNewEntry({ description: "", chbInflow: "", chbOutflow: "", snttInflow: "", snttOutflow: "" });
       } else {
         const existingEntry = entries.find((e) => e.id === entry.id);
         const updates = await Promise.all(amounts.map(async ({ field, entity, type }) => {
           const amount = parseFloat(entry[field]) || 0;
-          const existingAmount = existingEntry[field] || 0;
-          const relatedId = existingEntry.relatedIds[amounts.indexOf({ field, entity, type })];
+          const existingAmount = parseFloat(existingEntry[field]) || 0;
+          const relatedId = existingEntry.relatedIds.find((id, index) => 
+            amounts[index].field === field && existingAmount > 0
+          );
+          
           if (amount > 0 && !relatedId) {
             const { data, error } = await supabase
               .from('cash_entries')
@@ -159,7 +163,7 @@ const DailyCashTracking = () => {
               .eq('id', relatedId);
             if (error) throw error;
             return { id: relatedId, field };
-          } else if (existingAmount > 0 && relatedId) {
+          } else if (existingAmount > 0 && relatedId && amount === 0) {
             const { error } = await supabase
               .from('cash_entries')
               .delete()
@@ -180,7 +184,7 @@ const DailyCashTracking = () => {
                   chbOutflow: parseFloat(entry.chbOutflow) || 0,
                   snttInflow: parseFloat(entry.snttInflow) || 0,
                   snttOutflow: parseFloat(entry.snttOutflow) || 0,
-                  relatedIds: validUpdates.map((u) => u.id),
+                  relatedIds: validUpdates.map((u) => u.id).filter(Boolean),
                 }
               : e
           )
@@ -323,7 +327,7 @@ const DailyCashTracking = () => {
             .total-row {
               font-weight: bold;
             }
-            .combined-total-row td {
+            .combined-total-row {
               font-weight: bold;
             }
             .total-of-totals-row td {
@@ -458,6 +462,13 @@ const DailyCashTracking = () => {
                 placeholder="xx/xx/xxxx"
               />
             )}
+            <button
+              className="cash-tracking-edit-btn"
+              onClick={fetchEntries}
+              style={{ marginLeft: '10px' }}
+            >
+              🔄 Refresh
+            </button>
             <button
               className="cash-tracking-edit-btn"
               onClick={printTable}
@@ -652,7 +663,7 @@ const DailyCashTracking = () => {
                     <td></td>
                   </tr>
                   <tr className="cash-tracking-combined-total-row">
-                    <td>Total CHB + SNTT</td>
+                    <td>Total Net</td>
                     <td className={chbTotal >= 0 ? 'income-value' : 'expense-value'}>
                       {chbTotal.toFixed(2)} TND
                     </td>
@@ -664,7 +675,7 @@ const DailyCashTracking = () => {
                     <td></td>
                   </tr>
                   <tr className="cash-tracking-total-of-totals-row">
-                    <td>Total Net</td>
+                    <td>Total CHB + SNTT</td>
                     <td colSpan="5" className={totalOfTotals >= 0 ? 'income-value' : 'expense-value'}>
                       {totalOfTotals.toFixed(2)} TND
                     </td>
