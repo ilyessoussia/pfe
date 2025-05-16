@@ -351,8 +351,8 @@ const DriverPaymentDashboard = () => {
                     <th>RIB Bancaire</th>
                     <th>Camion</th>
                     <th>Salaire de Base</th>
-                    <th>Avances</th>
-                    <th>Salaire Payé</th>
+                    <th>A compte</th>
+                    <th>Règlement Salaire</th>
                     <th>Salaire Restant</th>
                     <th>Statut</th>
                     <th>Actions</th>
@@ -389,13 +389,13 @@ const DriverPaymentDashboard = () => {
                           className="action-btn payment-btn"
                           onClick={() => handleAddPayment(driver)}
                         >
-                          Paiement
+                          Règlement Salaire
                         </button>
                         <button
                           className="action-btn advance-btn"
                           onClick={() => handleAddAdvance(driver)}
                         >
-                          Avance
+                          A compte
                         </button>
                         <button
                           className="action-btn history-btn"

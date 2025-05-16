@@ -16,6 +16,7 @@ import { AuthProvider } from "./AuthContext";
 import TrailerDashboard from "./pages/TrailerDashboard";
 import DriverPaymentDashboard from "./pages/DriverPaymentDashboard";
 import StockCarburant from "./pages/StockCarburant";
+import DailyCashTracking from './pages/DailyCashTracking';
 
 const App = () => (
   <AuthProvider>
@@ -103,6 +104,14 @@ const App = () => (
           element={
             <ProtectedRoute>
               <DriverPaymentDashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="//cash-tracking"
+          element={
+            <ProtectedRoute>
+              <DailyCashTracking/>
             </ProtectedRoute>
           }
         />

@@ -380,6 +380,9 @@ const FleetDashboard = () => {
               <Link to="/fleet/dashboard">📊 Gestion de Flotte</Link>
             </li>
             <li>
+              <Link to="/cash-tracking">💰 Gestion de caisse </Link>
+            </li>
+            <li>
               <Link to="/parc">🔧 Gestion des Pièces</Link>
             </li>
             <li>
@@ -606,7 +609,7 @@ const FleetDashboard = () => {
                             <span className="detail-value">{truck.currentMileage}</span>
                           </div>
                           <div className="detail-row">
-                            <span className="detail-label">🛢️ Prochaine Vidange</span>
+                            <span className="detail-label">🛢️ Prch Vidange</span>
                             <span className="detail-value">{truck.nextOilChange}</span>
                           </div>
                         </div>
