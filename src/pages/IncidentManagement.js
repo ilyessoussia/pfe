@@ -205,6 +205,9 @@ const IncidentManagement = () => {
             <li>
               <Link to="/parc">🔧 Gestion des Pièces</Link>
             </li>
+               <li>
+              <Link to="/fleet/stock-carburant">⛽ Stock Carburant</Link>
+           </li>
             <li>
               <Link to="/stock">📦 Gestion de Stock</Link>
             </li>
@@ -218,7 +221,10 @@ const IncidentManagement = () => {
               <Link to="/trailers">🚛 Gestion des Remorques</Link>
               </li>
             <li className="active">
-              <Link to="/fleet/incidents">🚨 Gestion des Incidents</Link>
+              <Link to="/incidents">🚨 Gestion des Incidents</Link>
+            </li>
+            <li>
+              <Link to="/driver-payments">💰 Gestion de Paiement des Chauffeurs</Link>
             </li>
           </ul>
         </nav>

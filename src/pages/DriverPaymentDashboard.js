@@ -217,6 +217,9 @@ const DriverPaymentDashboard = () => {
             <li>
               <Link to="/parc">🔧 Gestion des Pièces</Link>
             </li>
+                        <li>
+              <Link to="/fleet/stock-carburant">⛽ Stock Carburant</Link>
+           </li>
             <li>
               <Link to="/stock">📦 Gestion de Stock</Link>
             </li>

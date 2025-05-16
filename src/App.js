@@ -15,6 +15,7 @@ import ProtectedRoute from "./ProtectedRoute";
 import { AuthProvider } from "./AuthContext";
 import TrailerDashboard from "./pages/TrailerDashboard";
 import DriverPaymentDashboard from "./pages/DriverPaymentDashboard";
+import StockCarburant from "./pages/StockCarburant";
 
 const App = () => (
   <AuthProvider>
@@ -89,6 +90,14 @@ const App = () => (
             </ProtectedRoute>
           }
         />
+        <Route 
+        path="/fleet/stock-carburant"
+         element={
+          <ProtectedRoute>
+         <StockCarburant /> 
+         </ProtectedRoute>
+         }
+         />
           <Route
           path="/driver-payments"
           element={

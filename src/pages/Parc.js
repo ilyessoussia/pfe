@@ -377,6 +377,9 @@ const Parc = () => {
             <li className="active">
               <Link to="/parc">🔧 Gestion des Pièces</Link>
             </li>
+                        <li>
+              <Link to="/fleet/stock-carburant">⛽ Stock Carburant</Link>
+           </li>
             <li>
               <Link to="/stock">📦 Gestion de Stock</Link>
             </li>
@@ -391,6 +394,9 @@ const Parc = () => {
             </li>
             <li>
               <Link to="/incidents">🚨 Gestion des Incidents</Link>
+            </li>
+            <li>
+              <Link to="/driver-payments">💰 Gestion de Paiement des Chauffeurs</Link>
             </li>
           </ul>
         </nav>

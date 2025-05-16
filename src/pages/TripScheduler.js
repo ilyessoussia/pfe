@@ -292,6 +292,9 @@ const TripScheduler = () => {
             <li>
               <Link to="/parc">🔧 Gestion des Pièces</Link>
             </li>
+                        <li>
+              <Link to="/fleet/stock-carburant">⛽ Stock Carburant</Link>
+           </li>
             <li>
               <Link to="/stock">📦 Gestion de Stock</Link>
             </li>
@@ -306,6 +309,9 @@ const TripScheduler = () => {
                         </li>
             <li>
               <Link to="/incidents">🚨 Gestion des Incidents</Link>
+            </li>
+            <li>
+              <Link to="/driver-payments">💰 Gestion de Paiement des Chauffeurs</Link>
             </li>
           </ul>
         </nav>
@@ -539,7 +545,7 @@ const TripScheduler = () => {
               <section className="trip-scheduler-form-section">
                 <h2>Planifier un Nouveau Voyage</h2>
                 <form onSubmit={handleSubmit} className="trip-scheduler-form">
-                  <div className="trip-scheduler-form-group">
+                  <div className="form-group">
                     <label htmlFor="truckSelect">Camion <span className="required-field">*</span></label>
                     
                     {/* Dropdown selection instead of text search */}

@@ -341,6 +341,21 @@ const FuelTab = ({ onFuelAdded }) => {
     }
     try {
       setLoading(true);
+
+      // Check tank level
+      const { data: tankData, error: tankFetchError } = await supabase
+        .from('fuel_tank')
+        .select('id, current_level')
+        .single();
+      if (tankFetchError) {
+        console.error("Error fetching tank:", tankFetchError);
+        throw tankFetchError;
+      }
+      if (tankData.current_level < liters) {
+        setError(`Stock carburant insuffisant: ${tankData.current_level.toFixed(2)} L disponibles`);
+        return;
+      }
+
       const metrics = calculateMetrics(
         { kilometers, liters, cost },
         lastFuelEntry
@@ -358,14 +373,42 @@ const FuelTab = ({ onFuelAdded }) => {
         liters_per_100km: parseFloat(metrics.litersPer100km),
         created_at: new Date().toISOString(),
       };
-      const { data, error } = await supabase
+
+      // Insert fuel_history record
+      const { data, error: fuelError } = await supabase
         .from('fuel_history')
         .insert([newRecord])
         .select();
-      if (error) {
-        console.error("Supabase insert error:", error);
-        throw error;
+      if (fuelError) {
+        console.error("Supabase insert fuel error:", fuelError);
+        throw fuelError;
       }
+
+      // Update tank level and log transaction
+      const newTankLevel = tankData.current_level - liters;
+      const { error: tankUpdateError } = await supabase
+        .from('fuel_tank')
+        .update({ current_level: newTankLevel, updated_at: new Date().toISOString() })
+        .eq('id', tankData.id);
+      if (tankUpdateError) {
+        console.error("Supabase update tank error:", tankUpdateError);
+        throw tankUpdateError;
+      }
+
+      const { error: transactionError } = await supabase
+        .from('fuel_tank_transactions')
+        .insert([{
+          tank_id: tankData.id,
+          amount: -liters,
+          type: 'refuel',
+          truck_id: id, // UUID string from useParams()
+          created_at: new Date().toISOString(),
+        }]);
+      if (transactionError) {
+        console.error("Supabase insert transaction error:", transactionError);
+        throw transactionError;
+      }
+
       const newEntry = {
         id: data[0].id,
         truck_id: id,
@@ -484,7 +527,7 @@ const FuelTab = ({ onFuelAdded }) => {
             </ResponsiveContainer>
           ) : (
             <div className="no-chart-data">
-              <p>Aucune donnée disponible pour le mois sélectionné.</p>
+              <p>Aucune données disponible pour le mois sélectionné.</p>
             </div>
           )}
         </section>
@@ -513,7 +556,7 @@ const FuelTab = ({ onFuelAdded }) => {
             </ResponsiveContainer>
           ) : (
             <div className="no-chart-data">
-              <p>Aucune donnée de consommation disponible pour le mois sélectionné.</p>
+              <p>Aucune données de consommation disponible pour le mois sélectionné.</p>
             </div>
           )}
         </section>
@@ -539,7 +582,7 @@ const FuelTab = ({ onFuelAdded }) => {
             </ResponsiveContainer>
           ) : (
             <div className="no-chart-data">
-              <p>Aucune donnée de coût disponible pour le mois sélectionné.</p>
+              <p>Aucune données de coût disponible pour le mois sélectionné.</p>
             </div>
           )}
         </section>

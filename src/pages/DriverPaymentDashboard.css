@@ -133,9 +133,6 @@
   transition: background 0.2s ease;
 }
 
-.payment-table tbody tr:nth-child(even) {
-  background: var(--color-table-row-alt);
-}
 
 .payment-table tbody tr:hover {
   background: var(--color-primary-lightest);
