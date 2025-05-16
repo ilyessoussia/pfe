@@ -419,6 +419,7 @@ const DailyCashTracking = () => {
         <nav>
           <ul>
             <li><Link to="/fleet/dashboard">📊 Gestion de Flotte</Link></li>
+            <li className="active"><Link to="/cash-tracking">💵 Gestion de Caisse</Link></li>
             <li><Link to="/parc">🔧 Gestion des Pièces</Link></li>
             <li><Link to="/fleet/stock-carburant">⛽ Stock Carburant</Link></li>
             <li><Link to="/stock">📦 Gestion de Stock</Link></li>
@@ -427,7 +428,6 @@ const DailyCashTracking = () => {
             <li><Link to="/trailers">🚛 Gestion des Remorques</Link></li>
             <li><Link to="/incidents">🚨 Gestion des Incidents</Link></li>
             <li><Link to="/driver-payments">💰 Gestion de Paiement des Chauffeurs</Link></li>
-            <li className="active"><Link to="/cash-tracking">💵 Gestion de Caisse</Link></li>
           </ul>
         </nav>
         <div className="cash-tracking-sidebar-footer">
