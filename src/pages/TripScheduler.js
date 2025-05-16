@@ -10,6 +10,7 @@ const TripScheduler = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [successMessage, setSuccessMessage] = useState("");
+  const [expandedTrips, setExpandedTrips] = useState({}); // Track expanded state per trip
   const [formData, setFormData] = useState({
     truckId: "",
     destination: "",
@@ -463,6 +464,14 @@ const TripScheduler = () => {
     setShowEditTripModal(true);
   };
 
+  // Toggle expanded state for a trip
+  const toggleTripDetails = (tripId) => {
+    setExpandedTrips((prev) => ({
+      ...prev,
+      [tripId]: !prev[tripId],
+    }));
+  };
+
   // Navigation for 4-day window
   const handlePrevDays = () => {
     if (!currentStartDate || !minDate) return;
@@ -583,59 +592,75 @@ const TripScheduler = () => {
                     <div className="trip-scheduler-items">
                       {dateTrips.map((trip) => {
                         const truck = trucks.find((t) => t.id === trip.truckId);
+                        const isExpanded = expandedTrips[trip.id] || false;
                         return (
                           <div
                             key={trip.id}
-                            className={`trip-scheduler-item trip-scheduler-item-${trip.status}`}
+                            className={`trip-scheduler-item trip-scheduler-item-${trip.status} ${isExpanded ? 'trip-scheduler-item-expanded' : ''}`}
                             style={{ backgroundColor: trip.color }}
                           >
-                            <h3>{trip.cargo}</h3>
-                            <p><strong>Camion:</strong> {truck?.immatriculation || "Non assigné"}</p>
-                            <p><strong>Destination:</strong> {trip.destination}</p>
-                            <p><strong>Date:</strong> {trip.date}</p>
-                            <p><strong>Description:</strong> {trip.description || "Aucune description"}</p>
-                            <p>
-                              <strong>Statut:</strong>{" "}
-                              {trip.status === "scheduled"
-                                ? "Planifié"
-                                : trip.status === "in_progress"
-                                ? "En cours"
-                                : trip.status === "completed"
-                                ? "Terminé"
-                                : "Annulé"}
-                            </p>
-                            <div className="trip-scheduler-item-actions">
-                              {!trip.truckId && trip.status !== "canceled" && (
-                                <button
-                                  className="trip-scheduler-assign-btn"
-                                  onClick={() => openAssignTruckModal(trip.id)}
-                                >
-                                  🚚 Assigner un Camion
-                                </button>
-                              )}
-                              {trip.status !== "canceled" && trip.status !== "completed" && (
-                                <>
-                                  <button
-                                    className="trip-scheduler-edit-btn"
-                                    onClick={() => openEditTripModal(trip)}
-                                  >
-                                    ✏️ Modifier
-                                  </button>
-                                  <button
-                                    className="trip-scheduler-cancel-trip-btn"
-                                    onClick={() => handleCancel(trip.id)}
-                                  >
-                                    ❌ Annuler
-                                  </button>
-                                  <button
-                                    className="trip-scheduler-complete-btn"
-                                    onClick={() => handleComplete(trip.id)}
-                                  >
-                                    ✅ Terminer
-                                  </button>
-                                </>
-                              )}
+                            <div className="trip-scheduler-item-header">
+                              <div>
+                                <h3>{trip.cargo}</h3>
+                                <p><strong>Camion:</strong> {truck?.immatriculation || "Non assigné"}</p>
+                              </div>
+                              <button
+                                className="trip-scheduler-toggle-btn"
+                                onClick={() => toggleTripDetails(trip.id)}
+                                aria-label={isExpanded ? "Réduire les détails" : "Afficher les détails"}
+                              >
+                                {isExpanded ? '▲' : '▼'}
+                              </button>
                             </div>
+                            {isExpanded && (
+                              <div className="trip-scheduler-item-details">
+                                <p><strong>Destination:</strong> {trip.destination}</p>
+                                <p><strong>Date:</strong> {trip.date}</p>
+                                <p><strong>Description:</strong> {trip.description || "Aucune description"}</p>
+                                <p>
+                                  <strong>Statut:</strong>{" "}
+                                  {trip.status === "scheduled"
+                                    ? "Planifié"
+                                    : trip.status === "in_progress"
+                                    ? "En cours"
+                                    : trip.status === "completed"
+                                    ? "Terminé"
+                                    : "Annulé"}
+                                </p>
+                                <div className="trip-scheduler-item-actions">
+                                  {!trip.truckId && trip.status !== "canceled" && (
+                                    <button
+                                      className="trip-scheduler-assign-btn"
+                                      onClick={() => openAssignTruckModal(trip.id)}
+                                    >
+                                      🚚 Assigner un Camion
+                                    </button>
+                                  )}
+                                  {trip.status !== "canceled" && trip.status !== "completed" && (
+                                    <>
+                                      <button
+                                        className="trip-scheduler-edit-btn"
+                                        onClick={() => openEditTripModal(trip)}
+                                      >
+                                        ✏️ Modifier
+                                      </button>
+                                      <button
+                                        className="trip-scheduler-cancel-trip-btn"
+                                        onClick={() => handleCancel(trip.id)}
+                                      >
+                                        ❌ Annuler
+                                      </button>
+                                      <button
+                                        className="trip-scheduler-complete-btn"
+                                        onClick={() => handleComplete(trip.id)}
+                                      >
+                                        ✅ Terminer
+                                      </button>
+                                    </>
+                                  )}
+                                </div>
+                              </div>
+                            )}
                           </div>
                         );
                       })}
