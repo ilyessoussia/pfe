@@ -4,7 +4,7 @@ import { useAuth } from '../AuthContext';
 import './Login.css';
 
 const Login = () => {
-  const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -13,28 +13,31 @@ const Login = () => {
 
   const validateForm = () => {
     const newErrors = {};
-    if (!username.trim()) newErrors.username = "Le nom d'utilisateur est requis";
+    if (!email.trim()) newErrors.email = "L'email est requis";
+    else if (!/\S+@\S+\.\S+/.test(email)) newErrors.email = "L'email est invalide";
     if (!password) newErrors.password = "Le mot de passe est requis";
     return newErrors;
   };
 
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
     const formErrors = validateForm();
 
     if (Object.keys(formErrors).length === 0) {
       setIsSubmitting(true);
-
-      // Simulate API call
-      setTimeout(() => {
-        if (username === 'admin' && password === 'chbsntt2025') {
-          login();
-          navigate('/fleet/dashboard');
-        } else {
-          setErrors({ auth: "Nom d'utilisateur ou mot de passe incorrect" });
-        }
+      try {
+        const trimmedEmail = email.trim();
+        const trimmedPassword = password.trim();
+        console.log('Form submission:', { email: trimmedEmail, password: trimmedPassword });
+        const user = await login(trimmedEmail, trimmedPassword);
+        console.log('Login result:', user);
+        navigate('/fleet/dashboard', { replace: true });
+      } catch (err) {
+        console.error('Login error:', err.message);
+        setErrors({ auth: err.message === 'Invalid login credentials' ? "Email ou mot de passe incorrect" : err.message });
+      } finally {
         setIsSubmitting(false);
-      }, 800);
+      }
     } else {
       setErrors(formErrors);
     }
@@ -52,17 +55,17 @@ const Login = () => {
 
         <form onSubmit={handleLogin} className="login-form">
           <div className="form-group">
-            <label htmlFor="username">Nom d'utilisateur</label>
+            <label htmlFor="email">Email</label>
             <input
-              id="username"
-              type="text"
-              placeholder="Entrez votre nom d'utilisateur"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              className={errors.username ? "input-error" : ""}
+              id="email"
+              type="email"
+              placeholder="Entrez votre email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className={errors.email ? "input-error" : ""}
               disabled={isSubmitting}
             />
-            {errors.username && <span className="error-message">{errors.username}</span>}
+            {errors.email && <span className="error-message">{errors.email}</span>}
           </div>
 
           <div className="form-group">
@@ -82,9 +85,9 @@ const Login = () => {
           {errors.auth && <div className="auth-error">{errors.auth}</div>}
 
           <div className="form-actions">
-            <button 
-              type="submit" 
-              className="btn-primary" 
+            <button
+              type="submit"
+              className="btn-primary"
               disabled={isSubmitting}
             >
               {isSubmitting ? "Connexion en cours..." : "Se connecter"}

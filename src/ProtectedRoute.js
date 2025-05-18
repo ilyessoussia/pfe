@@ -3,9 +3,10 @@ import { Navigate } from 'react-router-dom';
 import { useAuth } from './AuthContext';
 
 const ProtectedRoute = ({ children }) => {
-  const { isLoggedIn } = useAuth();
+  const { user } = useAuth();
+  console.log('ProtectedRoute check:', { user });
 
-  return isLoggedIn ? children : <Navigate to="/fleet" />;
+  return user ? children : <Navigate to="/fleet" />;
 };
 
 export default ProtectedRoute;
