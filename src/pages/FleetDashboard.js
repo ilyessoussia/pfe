@@ -30,7 +30,6 @@ const FleetDashboard = () => {
   const [mapView, setMapView] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [lastUpdated, setLastUpdated] = useState(new Date().toLocaleString());
   const [latestFuelByTruck, setLatestFuelByTruck] = useState({});
   const [showAlerts, setShowAlerts] = useState(true);
   const [showTrailerModal, setShowTrailerModal] = useState(false);
@@ -75,7 +74,9 @@ const FleetDashboard = () => {
           trailer_immatriculation: assignment.trailers.immatriculation,
         };
       });
-      setTruckTrailerAssignments(assignments);
+      setTruckTrailerAssignments(
+
+assignments);
 
       // Fetch fuel records
       const { data: fuelData, error: fuelError } = await supabase
@@ -215,7 +216,6 @@ const FleetDashboard = () => {
       }));
 
       setTrucks(formattedTrucks);
-      setLastUpdated(new Date().toLocaleString());
     } catch (err) {
       console.error("Error fetching data:", err);
       setError("Échec du chargement des données du tableau de bord.");
