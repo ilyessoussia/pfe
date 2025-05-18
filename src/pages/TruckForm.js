@@ -36,42 +36,46 @@ const TruckForm = ({ onClose }) => {
 
   const statusOptions = ["active", "inactive"];
 
-  const validateForm = () => {
-    const newErrors = {};
-    const currentYear = new Date().getFullYear();
+const validateForm = () => {
+  const newErrors = {};
+  const currentYear = new Date().getFullYear();
 
-    if (formData.numeroSerie && !/^[A-Z0-9]{5,17}$/i.test(formData.numeroSerie)) {
-      newErrors.numeroSerie = "Le numéro de série doit contenir entre 5 et 17 caractères alphanumériques";
+  if (!formData.numeroSerie.trim()) {
+    newErrors.numeroSerie = "Le numéro de série est requis";
+  } else if (!/^[A-Z0-9]{5,17}$/i.test(formData.numeroSerie)) {
+    newErrors.numeroSerie = "Le numéro de série doit contenir entre 5 et 17 caractères alphanumériques";
+  }
+
+  if (!formData.immatriculation.trim()) {
+    newErrors.immatriculation = "L'immatriculation est requise";
+  }
+
+  if (!formData.modele.trim()) {
+    newErrors.modele = "Le modèle est requis";
+  }
+
+  if (formData.anneeFabrication) {
+    const year = parseInt(formData.anneeFabrication);
+    if (isNaN(year) || year < 1900 || year > currentYear) {
+      newErrors.anneeFabrication = `L'année doit être entre 1900 et ${currentYear}`;
     }
+  }
 
-   
+  if (!formData.typeCarburant) {
+    newErrors.typeCarburant = "Le type de carburant est requis";
+  }
 
-    if (!formData.modele.trim()) {
-      newErrors.modele = "Le modèle est requis";
-    }
+  if (!formData.status) {
+    newErrors.status = "L'état du camion est requis";
+  }
 
-    if (formData.anneeFabrication) {
-      const year = parseInt(formData.anneeFabrication);
-      if (isNaN(year) || year < 1900 || year > currentYear) {
-        newErrors.anneeFabrication = `L'année doit être entre 1900 et ${currentYear}`;
-      }
-    }
+  if (formData.telephoneChauffeur && !/^\d{8}$/.test(formData.telephoneChauffeur)) {
+    newErrors.telephoneChauffeur = "Format de numéro de téléphone invalide (8 chiffres requis)";
+  }
 
-    if (!formData.typeCarburant) {
-      newErrors.typeCarburant = "Le type de carburant est requis";
-    }
-
-    if (!formData.status) {
-      newErrors.status = "L'état du camion est requis";
-    }
-
-    if (formData.telephoneChauffeur && !/^\d{8}$/.test(formData.telephoneChauffeur)) {
-      newErrors.telephoneChauffeur = "Format de numéro de téléphone invalide (8 chiffres requis)";
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
+  setErrors(newErrors);
+  return Object.keys(newErrors).length === 0;
+};
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -149,7 +153,7 @@ const TruckForm = ({ onClose }) => {
       <h2>Ajouter un Nouveau Camion</h2>
       <form className="truck-form" onSubmit={handleSubmit}>
         <div className="truck-field-group">
-          <label>Numéro de Série du Véhicule</label>
+          <label>Numéro de Série du Véhicule*</label>
           <input 
             name="numeroSerie" 
             value={formData.numeroSerie}

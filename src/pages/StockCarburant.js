@@ -14,6 +14,10 @@ const StockCarburant = () => {
   const [restockError, setRestockError] = useState("");
   const [restockLoading, setRestockLoading] = useState(false);
   const [fetchError, setFetchError] = useState("");
+  const [transactions, setTransactions] = useState([]);
+  const [transactionsError, setTransactionsError] = useState("");
+  const [recentFuelActivities, setRecentFuelActivities] = useState([]);
+  const [showFuelActivities, setShowFuelActivities] = useState(true);
 
   const fetchTankLevel = async () => {
     try {
@@ -33,10 +37,131 @@ const StockCarburant = () => {
     }
   };
 
+  const fetchTransactions = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('fuel_tank_transactions')
+        .select('id, created_at, amount, type')
+        .eq('type', 'restock')
+        .order('created_at', { ascending: false });
+      if (error) {
+        console.error("Supabase fetch transactions error:", error);
+        throw error;
+      }
+      console.log("Fetched transactions:", data);
+      setTransactions(data);
+    } catch (err) {
+      console.error("Error fetching transactions:", err);
+      setTransactionsError(`Erreur lors du chargement de l'historique: ${err.message}`);
+    }
+  };
+
+  const fetchFuelActivities = async () => {
+    try {
+      const { data: fuelData, error: fuelError } = await supabase
+        .from('fuel_history')
+        .select('truck_id, liters_per_100km, created_at')
+        .order('created_at', { ascending: false })
+        .limit(8);
+      if (fuelError) {
+        console.error("Supabase fetch fuel history error:", fuelError);
+        throw fuelError;
+      }
+      console.log("Fetched fuel history:", fuelData);
+
+      const { data: trucksData, error: trucksError } = await supabase
+        .from('trucks')
+        .select('id, immatriculation');
+      if (trucksError) {
+        console.error("Supabase fetch trucks error:", trucksError);
+        throw trucksError;
+      }
+      console.log("Fetched trucks:", trucksData);
+
+      const truckMap = {};
+      trucksData.forEach(truck => {
+        truckMap[truck.id] = truck.immatriculation || "Camion";
+      });
+
+      const fuelActivities = fuelData.map(fuel => ({
+        type: "fuel",
+        data: {
+          truckId: fuel.truck_id,
+          litersPer100km: fuel.liters_per_100km,
+        },
+        timestamp: new Date(fuel.created_at),
+        truck: truckMap[fuel.truck_id] || "Camion",
+      }));
+      setRecentFuelActivities(fuelActivities);
+    } catch (err) {
+      console.error("Error fetching fuel activities:", err);
+      setFetchError(`Erreur lors du chargement des activités de carburant: ${err.message}`);
+    }
+  };
+
+  const handleDeleteTransaction = async (id, amount) => {
+    try {
+      // Fetch current tank data
+      const { data: tankData, error: tankFetchError } = await supabase
+        .from('fuel_tank')
+        .select('id, current_level')
+        .single();
+      if (tankFetchError) {
+        console.error("Error fetching tank:", tankFetchError);
+        throw tankFetchError;
+      }
+
+      // Update tank level by subtracting the deleted restock amount
+      const newTankLevel = tankData.current_level - amount;
+      if (newTankLevel < 0) {
+        throw new Error("La suppression rendrait le niveau du réservoir négatif");
+      }
+
+      const { error: tankUpdateError } = await supabase
+        .from('fuel_tank')
+        .update({ current_level: newTankLevel, updated_at: new Date().toISOString() })
+        .eq('id', tankData.id);
+      if (tankUpdateError) {
+        console.error("Supabase update tank error:", tankUpdateError);
+        throw tankUpdateError;
+      }
+
+      // Delete the transaction
+      const { error: deleteError } = await supabase
+        .from('fuel_tank_transactions')
+        .delete()
+        .eq('id', id);
+      if (deleteError) {
+        console.error("Supabase delete transaction error:", deleteError);
+        throw deleteError;
+      }
+
+      // Update local state
+      setTransactions(transactions.filter(transaction => transaction.id !== id));
+      setTankLevel(newTankLevel);
+      alert("Transaction supprimée avec succès !");
+    } catch (err) {
+      console.error("Error deleting transaction:", err);
+      setTransactionsError(`Erreur lors de la suppression: ${err.message}`);
+    }
+  };
+
+  const handleRefresh = async () => {
+    setFetchError("");
+    setTransactionsError("");
+    await Promise.all([
+      fetchTankLevel(),
+      fetchTransactions(),
+      fetchFuelActivities()
+    ]);
+  };
+
   useEffect(() => {
     fetchTankLevel();
+    fetchTransactions();
+    fetchFuelActivities();
 
-    const subscription = supabase
+    const tankSubscription = supabase
       .channel('fuel_tank_changes')
       .on(
         'postgres_changes',
@@ -48,7 +173,27 @@ const StockCarburant = () => {
       )
       .subscribe();
 
-    return () => supabase.removeChannel(subscription);
+    const transactionSubscription = supabase
+      .channel('fuel_tank_transactions_changes')
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'fuel_tank_transactions' },
+        (payload) => {
+          if (payload.new.type === 'restock') {
+            console.log("New restock transaction:", payload.new);
+            setTransactions((prev) => [payload.new, ...prev]);
+          } else if (payload.new.type === 'refuel') {
+            console.log("New refuel transaction:", payload.new);
+            fetchFuelActivities();
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(tankSubscription);
+      supabase.removeChannel(transactionSubscription);
+    };
   }, []);
 
   const handleOpenRestockModal = () => {
@@ -143,6 +288,17 @@ const StockCarburant = () => {
     }
   };
 
+  const formatDate = (dateString) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('fr-FR', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  };
+
   return (
     <div className="stock-carburant-container">
       <aside className="sidebar">
@@ -181,7 +337,7 @@ const StockCarburant = () => {
         </nav>
         <div className="stock-carburant-sidebar-footer">
           <p>Version 1.2.0</p>
-          <p>© 2025 Fleet Manager</p>
+          <p>© 2025 </p>
         </div>
       </aside>
       <main className="stock-carburant-content">
@@ -189,29 +345,97 @@ const StockCarburant = () => {
           <h1>⛽ Stock Carburant</h1>
         </header>
         {fetchError && <div className="stock-carburant-error-message">{fetchError}</div>}
-        <section className="tank-section">
-          <div className="tank-status">
-            <div className="tank-visual" style={{ '--tank-level': tankLevel !== null ? (tankLevel / tankCapacity) * 100 : 0 }}>
-              <div className="tank-liquid"></div>
-            </div>
-            <div className="tank-info">
-              <h2>Niveau du Réservoir</h2>
-              <p>Capacité: {tankCapacity.toFixed(2)} L</p>
-              <p>
-                Niveau actuel: {tankLevel !== null ? `${tankLevel.toFixed(2)} L` : "Chargement..."}
-                {tankLevel !== null && (
-                  <span> ({((tankLevel / tankCapacity) * 100).toFixed(1)}%)</span>
-                )}
-              </p>
-              {tankLevel !== null && tankLevel < 5000 && (
-                <p className="low-fuel-warning">⚠️ Niveau de carburant faible !</p>
+        <div className="dashboard-grid">
+          <div className="main-content">
+            <section className="tank-section">
+              <div className="tank-status">
+                <div className="tank-visual" style={{ '--tank-level': tankLevel !== null ? (tankLevel / tankCapacity) * 100 : 0 }}>
+                  <div className="tank-liquid"></div>
+                </div>
+                <div className="tank-info">
+                  <h2>Niveau du Réservoir</h2>
+                  <p>Capacité: {tankCapacity.toFixed(2)} L</p>
+                  <p>
+                    Niveau actuel: {tankLevel !== null ? `${tankLevel.toFixed(2)} L` : "Chargement..."}
+                    {tankLevel !== null && (
+                      <span> ({((tankLevel / tankCapacity) * 100).toFixed(1)}%)</span>
+                    )}
+                  </p>
+                  {tankLevel !== null && tankLevel < 5000 && (
+                    <p className="low-fuel-warning">⚠️ Niveau de carburant faible !</p>
+                  )}
+                  <button className="restock-tank-btn" onClick={handleOpenRestockModal}>
+                    <span className="plus-icon">+</span> Réapprovisionner Réservoir
+                  </button>
+                </div>
+              </div>
+            </section>
+            <section className="history-section">
+              <h2>Historique des Réapprovisionnements</h2>
+              <button className="refresh-btn" onClick={handleRefresh} title="Rafraîchir les données">
+            🔄 Rafraîchir
+          </button>
+              {transactionsError && <div className="stock-carburant-error-message">{transactionsError}</div>}
+              {transactions.length === 0 ? (
+                <p className="no-history">Aucun réapprovisionnement enregistré.</p>
+              ) : (
+                <table className="history-table">
+                  <thead>
+                    <tr>
+                      <th>Date</th>
+                      <th>Quantité (L)</th>
+                      <th>Type</th>
+                      <th>Action</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {transactions.map((transaction) => (
+                      <tr key={transaction.id}>
+                        <td>{formatDate(transaction.created_at)}</td>
+                        <td>{transaction.amount.toFixed(2)}</td>
+                        <td>{transaction.type.charAt(0).toUpperCase() + transaction.type.slice(1)}</td>
+                        <td>
+                          <button
+                            className="delete-history-btn"
+                            onClick={() => handleDeleteTransaction(transaction.id, transaction.amount)}
+                            aria-label={`Supprimer la transaction du ${formatDate(transaction.created_at)}`}
+                          >
+                            Supprimer
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               )}
-              <button className="restock-tank-btn" onClick={handleOpenRestockModal}>
-                <span className="plus-icon">+</span> Réapprovisionner Réservoir
+            </section>
+          </div>
+          <section className={`recent-fuel-activities ${showFuelActivities ? "expanded" : "collapsed"}`}>
+            <div className="fuel-activities-header">
+              <h2>Activités de Carburant Récentes</h2>
+              <button onClick={() => setShowFuelActivities(!showFuelActivities)}>
+                {showFuelActivities ? "X" : "Afficher"}
               </button>
             </div>
-          </div>
-        </section>
+            {showFuelActivities && (
+              <div className="fuel-activities-list">
+                {recentFuelActivities.length > 0 ? (
+                  recentFuelActivities.map((activity, index) => (
+                    <div key={index} className="fuel-activity-item">
+                      <span className="fuel-icon">⛽</span>
+                      <div className="fuel-content">
+                        <p>{activity.truck}: {activity.data.litersPer100km.toFixed(2)} L/100km</p>
+                        <span className="fuel-date">{activity.timestamp.toLocaleString()}</span>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <p>Aucune activité de carburant.</p>
+                )}
+              </div>
+            )}
+          </section>
+        </div>
         {showRestockModal && (
           <div className="modal-overlay">
             <div className="modal-content">

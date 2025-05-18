@@ -537,7 +537,7 @@ const TripScheduler = () => {
         </nav>
         <div className="trip-scheduler-sidebar-footer">
           <p>Version 1.2.0</p>
-          <p>© 2025 Fleet Manager</p>
+          <p>© 2025 </p>
         </div>
       </aside>
 

@@ -74,7 +74,7 @@ const PaymentAdvanceHistoryModal = ({ driver, advances, payments, month, onEditA
     <div className="modal-overlay">
       <div className="modal-content">
         <div className="modal-header">
-          <h3>Fiche de paie pour {driver.name} ({month})</h3>
+          <h3>Historique pour {driver.name} ({month})</h3>
           <button className="close-modal-btn" onClick={onClose}>
             ×
           </button>

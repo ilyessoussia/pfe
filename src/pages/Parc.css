@@ -50,62 +50,28 @@
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
-.sidebar {
-  width: 250px;
-  background-color: var(--color-sidebar-background);
-  padding: 20px;
-  box-shadow: 2px 0 5px var(--color-shadow);
-  display: flex;
-  flex-direction: column;
-}
-
 .fleet-management-fleet-title {
-  font-size: 1.5rem;
-  margin-bottom: 30px;
-  padding-bottom: 15px;
+  font-size: 1.5rem; /* Reduced for mobile */
+  margin-bottom: 1rem; /* Reduced from 30px */
+  padding-bottom: 0.5rem; /* Reduced from 15px */
   border-bottom: 1px solid var(--color-primary-light);
   letter-spacing: 1px;
   font-weight: 400;
   color: var(--color-primary);
 }
 
-.sidebar nav ul {
-  list-style: none;
-  padding: 0;
-  flex: 1;
-}
-
-.sidebar nav ul li {
-  margin-bottom: 10px;
-}
-
-.sidebar nav ul li a {
-  text-decoration: none;
-  color: var(--color-text-light);
-  font-size: 1rem;
-  display: block;
-  padding: 10px;
-  border-radius: 3px;
-  transition: all 0.3s;
-}
-
-.sidebar nav ul li a:hover,
-.sidebar nav ul li.active a {
-  background-color: var(--color-primary-light);
-  color: var(--color-primary);
-}
-
 .fleet-management-sidebar-footer {
   margin-top: auto;
-  padding-top: 20px;
-  border-top: 1px solid var(--color-primary-light);
-  font-size: 0.8rem;
-  color: var(--color-primary-muted);
+  padding-top: 1rem; /* Reduced from 16px */
+  border-top: 1px solid var(--color-table-border);
+  font-size: 0.9rem; /* Increased for readability */
+  color: var(--color-text-muted);
+  text-align: center;
 }
 
 .fleet-management-content {
   flex: 1;
-  padding: 25px;
+  padding: 1rem; /* Reduced from 25px */
   background-color: var(--color-content-background);
   color: var(--color-text-light);
 }
@@ -114,32 +80,31 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 25px;
+  margin-bottom: 1rem; /* Reduced from 25px */
 }
 
 .fleet-management-header h1 {
   margin: 0;
   font-size: 2rem;
   color: var(--color-primary);
-  font-weight: 400;
-  letter-spacing: 1px;
+  font-weight: 600;
 }
 
 .fleet-management-last-updated {
-  margin: 5px 0 0;
+  margin: 0.25rem 0 0; /* Adjusted from 5px */
   color: var(--color-text-muted);
-  font-size: 0.85rem;
+  font-size: 0.9rem; /* Increased from 0.85rem */
 }
 
 .fleet-management-header-actions {
   display: flex;
-  gap: 15px;
+  gap: 0.75rem; /* Reduced from 15px */
 }
 
 .fleet-management-refresh-btn {
-  padding: 10px 20px;
+  padding: 0.75rem 1.25rem; /* Increased for touch */
   border: none;
-  border-radius: 3px;
+  border-radius: 0.25rem; /* Consistent units */
   cursor: pointer;
   font-weight: 500;
   display: flex;
@@ -149,31 +114,37 @@
   background-color: var(--color-button-background);
   color: var(--color-primary);
   border: 1px solid var(--color-primary);
+  font-size: 1rem; /* Increased for readability */
+  min-height: 44px; /* Touch-friendly */
 }
 
-.fleet-management-refresh-btn:hover {
+.fleet-management-refresh-btn:hover,
+.fleet-management-refresh-btn:active {
   background-color: var(--color-button-hover);
 }
 
 .fleet-management-tabs {
   display: flex;
-  gap: 10px;
-  margin-bottom: 25px;
+  flex-wrap: wrap; /* Allow wrapping on mobile */
+  gap: 0.5rem; /* Reduced from 10px */
+  margin-bottom: 1rem; /* Reduced from 25px */
 }
 
 .fleet-management-tab {
-  padding: 8px 18px;
+  padding: 0.75rem 1rem; /* Increased from 8px 18px */
   border: 1px solid var(--color-border-dark);
-  border-radius: 3px;
+  border-radius: 0.25rem;
   background-color: var(--color-button-background);
   color: var(--color-text-muted);
   cursor: pointer;
   transition: all 0.3s;
   letter-spacing: 0.5px;
-  font-size: 0.95rem;
+  font-size: 1rem; /* Increased from 0.95rem */
+  min-height: 44px;
 }
 
-.fleet-management-tab:hover {
+.fleet-management-tab:hover,
+.fleet-management-tab:active {
   background-color: var(--color-button-hover);
   border-color: var(--color-primary);
   color: var(--color-primary);
@@ -186,11 +157,11 @@
 }
 
 .fleet-management-alert {
-  padding: 10px;
-  margin-bottom: 25px;
-  border-radius: 3px;
+  padding: 0.75rem; /* Reduced from 10px */
+  margin-bottom: 1rem; /* Reduced from 25px */
+  border-radius: 0.25rem;
   font-weight: 500;
-  font-size: 0.85rem;
+  font-size: 0.9rem; /* Increased from 0.85rem */
 }
 
 .fleet-management-success-alert {
@@ -207,10 +178,10 @@
 
 .fleet-management-inventory-section {
   background-color: var(--color-section-background);
-  border-radius: 5px;
-  padding: 25px;
+  border-radius: 0.375rem; /* Consistent units */
+  padding: 1rem; /* Reduced from 25px */
   box-shadow: 0 4px 6px var(--color-shadow-light);
-  margin-bottom: 30px;
+  margin-bottom: 1rem; /* Reduced from 30px */
   border: 1px solid var(--color-border-dark);
 }
 
@@ -218,12 +189,12 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 20px;
+  margin-bottom: 1rem; /* Reduced from 20px */
 }
 
 .fleet-management-filter-controls h2 {
   margin: 0;
-  font-size: 1.5rem;
+  font-size: 1.25rem; /* Reduced from 1.5rem */
   color: var(--color-primary);
   font-weight: 400;
   letter-spacing: 0.5px;
@@ -231,23 +202,25 @@
 
 .fleet-management-filter-options {
   display: flex;
+  flex-wrap: wrap; /* Allow wrapping */
   align-items: center;
-  gap: 10px;
+  gap: 0.5rem; /* Reduced from 10px */
 }
 
 .fleet-management-label {
   color: var(--color-text-light);
-  font-size: 0.95rem;
+  font-size: 1rem; /* Increased from 0.95rem */
 }
 
 .fleet-management-search-bar {
-  padding: 8px;
+  padding: 0.75rem; /* Increased from 8px */
   background-color: var(--color-input-background);
   color: var(--color-text-light);
   border: 1px solid var(--color-primary);
-  border-radius: 3px;
-  font-size: 0.95rem;
+  border-radius: 0.25rem;
+  font-size: 1rem; /* Increased from 0.95rem */
   transition: all 0.3s;
+  min-height: 44px;
 }
 
 .fleet-management-search-bar::placeholder {
@@ -261,13 +234,14 @@
 }
 
 .fleet-management-filter-options select {
-  padding: 8px;
+  padding: 0.75rem; /* Increased from 8px */
   background-color: var(--color-input-background);
   color: var(--color-text-light);
   border: 1px solid var(--color-primary);
-  border-radius: 3px;
-  font-size: 0.95rem;
+  border-radius: 0.25rem;
+  font-size: 1rem; /* Increased from 0.95rem */
   transition: all 0.3s;
+  min-height: 44px;
 }
 
 .fleet-management-filter-options select:focus {
@@ -278,18 +252,18 @@
 
 .fleet-management-loading {
   text-align: center;
-  padding: 25px;
+  padding: 1rem; /* Reduced from 25px */
   color: var(--color-text-muted);
-  font-size: 0.95rem;
+  font-size: 1rem; /* Increased from 0.95rem */
   background-color: var(--color-section-background);
-  border-radius: 5px;
+  border-radius: 0.375rem;
 }
 
 .fleet-management-no-data {
   text-align: center;
-  padding: 25px;
+  padding: 1rem; /* Reduced from 25px */
   color: var(--color-text-muted);
-  font-size: 1rem;
+  font-size: 1rem; /* Consistent with loading */
   background-color: var(--color-section-background);
 }
 
@@ -305,44 +279,46 @@
   border: 1px solid var(--color-table-border);
 }
 
-.fleet-management-parts-table thead {
+.f，一定-management-parts-table thead {
   background-color: var(--color-table-header);
   color: var(--color-primary);
 }
 
 .fleet-management-parts-table th {
   text-align: left;
-  padding: 12px;
+  padding: 0.75rem; /* Reduced from 12px */
   font-weight: 500;
-  font-size: 1rem;
+  font-size: 0.9rem; /* Reduced from 1rem */
   letter-spacing: 0.5px;
   border: 1px solid var(--color-table-border);
 }
 
 .fleet-management-parts-table td {
-  padding: 12px;
+  padding: 0.75rem; /* Reduced from 12px */
   color: var(--color-table-text);
   font-weight: 400;
-  font-size: 1rem;
+  font-size: 0.9rem; /* Reduced from 1rem */
   border: 1px solid var(--color-table-border);
 }
 
-.fleet-management-parts-table tr:hover {
+.fleet-management-parts-table tr:hover,
+.fleet-management-parts-table tr:active {
   background-color: var(--color-primary-lightest);
 }
 
 .fleet-management-edit-btn,
 .fleet-management-use-btn,
 .fleet-management-restock-btn {
-  padding: 8px 15px;
+  padding: 0.75rem 1rem; /* Increased from 8px 15px */
   border: none;
-  border-radius: 3px;
+  border-radius: 0.25rem;
   cursor: pointer;
   font-weight: 500;
   transition: all 0.3s;
   letter-spacing: 0.5px;
-  font-size: 0.85rem;
-  margin-right: 5px;
+  font-size: 0.9rem; /* Increased from 0.85rem */
+  margin-right: 0.25rem; /* Reduced from 5px */
+  min-height: 44px;
 }
 
 .fleet-management-edit-btn {
@@ -350,7 +326,8 @@
   color: var(--color-background);
 }
 
-.fleet-management-edit-btn:hover {
+.fleet-management-edit-btn:hover,
+.fleet-management-edit-btn:active {
   background-color: var(--color-primary-dark);
 }
 
@@ -359,7 +336,8 @@
   color: var(--color-background);
 }
 
-.fleet-management-use-btn:hover {
+.fleet-management-use-btn:hover,
+.fleet-management-use-btn:active {
   background-color: var(--color-success-dark);
 }
 
@@ -373,22 +351,23 @@
   color: var(--color-background);
 }
 
-.fleet-management-restock-btn:hover {
+.fleet-management-restock-btn:hover,
+.fleet-management-restock-btn:active {
   background-color: var(--color-restock-dark);
 }
 
 .fleet-management-add-part-section {
   background-color: var(--color-section-background);
-  border-radius: 5px;
-  padding: 25px;
+  border-radius: 0.375rem;
+  padding: 1rem; /* Reduced from 25px */
   box-shadow: 0 4px 6px var(--color-shadow-light);
-  margin-bottom: 30px;
+  margin-bottom: 1rem; /* Reduced from 30px */
   border: 1px solid var(--color-border-dark);
 }
 
 .fleet-management-add-part-section h2 {
-  margin: 0 0 20px 0;
-  font-size: 1.5rem;
+  margin: 0 0 1rem; /* Reduced from 20px */
+  font-size: 1.25rem; /* Reduced from 1.5rem */
   color: var(--color-primary);
   font-weight: 400;
   letter-spacing: 0.5px;
@@ -397,12 +376,12 @@
 .fleet-management-part-form {
   display: flex;
   flex-direction: column;
-  gap: 15px;
+  gap: 0.75rem; /* Reduced from 15px */
 }
 
 .fleet-management-form-row {
   display: flex;
-  gap: 15px;
+  gap: 0.75rem; /* Reduced from 15px */
 }
 
 .fleet-management-form-row .fleet-management-form-group {
@@ -412,25 +391,26 @@
 .fleet-management-form-group {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 0.5rem; /* Reduced from 8px */
 }
 
 .fleet-management-form-group label {
   color: var(--color-primary);
   font-weight: 400;
-  font-size: 0.95rem;
+  font-size: 1rem; /* Increased from 0.95rem */
 }
 
 .fleet-management-form-group input,
 .fleet-management-form-group textarea,
 .fleet-management-form-group select {
-  padding: 10px;
+  padding: 0.75rem; /* Increased from 10px */
   background-color: var(--color-input-background);
   color: var(--color-text-light);
   border: 1px solid var(--color-primary);
-  border-radius: 3px;
-  font-size: 0.95rem;
+  border-radius: 0.25rem;
+  font-size: 1rem; /* Increased from 0.95rem */
   transition: all 0.3s;
+  min-height: 44px;
 }
 
 .fleet-management-form-group input:focus,
@@ -448,39 +428,45 @@
 
 .fleet-management-form-actions {
   display: flex;
-  gap: 15px;
-  margin-top: 15px;
+  gap: 0.75rem; /* Reduced from 15px */
+  margin-top: 0.75rem; /* Reduced from 15px */
 }
 
 .fleet-management-btn-submit {
-  padding: 10px 20px;
+  padding: 0.75rem 1.25rem; /* Increased from 10px 20px */
   background-color: var(--color-primary);
   color: var(--color-background);
   border: none;
-  border-radius: 3px;
+  border-radius: 0.25rem;
   cursor: pointer;
   font-weight: 500;
   transition: all 0.3s;
   letter-spacing: 0.5px;
+  font-size: 1rem; /* Increased for readability */
+  min-height: 44px;
 }
 
-.fleet-management-btn-submit:hover {
+.fleet-management-btn-submit:hover,
+.fleet-management-btn-submit:active {
   background-color: var(--color-primary-dark);
 }
 
 .fleet-management-btn-cancel {
-  padding: 10px 20px;
+  padding: 0.75rem 1.25rem; /* Increased from 10px 20px */
   background-color: var(--color-error);
   color: var(--color-background);
   border: none;
-  border-radius: 3px;
+  border-radius: 0.25rem;
   cursor: pointer;
   font-weight: 500;
   transition: all 0.3s;
   letter-spacing: 0.5px;
+  font-size: 1rem; /* Increased for readability */
+  min-height: 44px;
 }
 
-.fleet-management-btn-cancel:hover {
+.fleet-management-btn-cancel:hover,
+.fleet-management-btn-cancel:active {
   background-color: var(--color-error-dark);
 }
 
@@ -499,16 +485,146 @@
 
 .fleet-management-modal-content {
   background-color: var(--color-section-background);
-  padding: 20px;
-  border-radius: 5px;
+  padding: 1.25rem; /* Reduced from 20px */
+  border-radius: 0.375rem;
   box-shadow: 0 4px 6px var(--color-shadow-dark);
   width: 100%;
-  max-width: 500px;
+  max-width: 90%; /* More flexible than 500px */
 }
 
 .fleet-management-modal-content h2 {
-  margin: 0 0 20px 0;
-  font-size: 1.5rem;
+  margin: 0 0 1rem; /* Reduced from 20px */
+  font-size: 1.25rem; /* Reduced from 1.5rem */
   color: var(--color-primary);
   font-weight: 400;
+}
+
+/* Media Queries for Mobile Responsiveness */
+@media (max-width: 768px) {
+  .fleet-management-container {
+    flex-direction: column; /* Stack sidebar and content */
+  }
+
+  .fleet-management-inventory-section,
+  .fleet-management-add-part-section {
+    padding: 1rem;
+    margin-bottom: 1rem;
+  }
+
+  .fleet-management-filter-controls {
+    flex-direction: column; /* Stack controls */
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+
+  .fleet-management-header {
+    flex-direction: column; /* Stack header */
+    align-items: flex-start;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+  }
+
+  .fleet-management-header-actions {
+    width: 100%;
+    justify-content: flex-end;
+  }
+
+  .fleet-management-form-row {
+    flex-direction: column; /* Stack form inputs */
+  }
+
+  .fleet-management-tabs {
+    gap: 0.5rem;
+  }
+
+  .fleet-management-filter-options {
+    gap: 0.5rem;
+  }
+
+  .fleet-management-parts-table {
+    display: block; /* Stack table for mobile */
+  }
+
+  .fleet-management-parts-table thead {
+    display: none; /* Hide headers */
+  }
+
+  .fleet-management-parts-table tr {
+    display: block;
+    margin-bottom: 0.5rem;
+    border-bottom: 1px solid var(--color-table-border);
+  }
+
+  .fleet-management-parts-table td {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.5rem;
+    font-size: 0.85rem;
+    border: none;
+    border-bottom: 1px solid var(--color-table-border);
+  }
+
+  .fleet-management-parts-table td:before {
+    content: attr(data-label); /* Requires data-label in HTML */
+    font-weight: 500;
+    color: var(--color-primary);
+    width: 50%;
+  }
+
+  .fleet-management-modal-content {
+    padding: 1rem;
+    max-width: 95%;
+  }
+}
+
+@media (max-width: 400px) {
+  .fleet-management-content {
+    padding: 0.5rem;
+  }
+
+  .fleet-management-inventory-section,
+  .fleet-management-add-part-section {
+    padding: 0.75rem;
+  }
+
+  .fleet-management-header h1 {
+    font-size: 1.25rem;
+  }
+
+  .fleet-management-filter-controls h2 {
+    font-size: 1rem;
+  }
+
+  .fleet-management-fleet-title {
+    font-size: 1rem;
+  }
+
+  .fleet-management-form-group input,
+  .fleet-management-form-group textarea,
+  .fleet-management-form-group select {
+    font-size: 0.9rem;
+    padding: 0.5rem;
+  }
+
+  .fleet-management-search-bar,
+  .fleet-management-filter-options select {
+    font-size: 0.9rem;
+    padding: 0.5rem;
+  }
+
+  .fleet-management-refresh-btn,
+  .fleet-management-btn-submit,
+  .fleet-management-btn-cancel {
+    font-size: 0.9rem;
+    padding: 0.5rem 1rem;
+  }
+
+  .fleet-management-tab {
+    font-size: 0.9rem;
+    padding: 0.5rem 0.75rem;
+  }
+
+  .fleet-management-modal-content {
+    padding: 0.75rem;
+  }
 }

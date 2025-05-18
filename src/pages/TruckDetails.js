@@ -18,6 +18,7 @@ const TruckDetails = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [editSection, setEditSection] = useState(null);
   const [editedTruck, setEditedTruck] = useState(null);
+  const [trailers, setTrailers] = useState([]);
 
   const fetchFuelData = useCallback(async () => {
     try {
@@ -70,6 +71,7 @@ const TruckDetails = () => {
         setLoading(true);
         console.log("Fetching truck data for ID:", id);
         
+        // Fetch truck
         const { data: truckData, error: truckError } = await supabase
           .from('trucks')
           .select('*')
@@ -83,6 +85,58 @@ const TruckDetails = () => {
         }
         
         console.log("Truck data:", truckData);
+        
+        // Fetch trailer assignment
+        let trailer = null;
+        const { data: assignmentData, error: assignmentError } = await supabase
+          .from('truck_trailer_assignments')
+          .select(`
+            trailer_id,
+            trailers (
+              id,
+              vin,
+              immatriculation,
+              dpmc,
+              ptac,
+              axle_reference,
+              last_insurance_date,
+              insurance_expiry_date,
+              last_technical_inspection,
+              next_technical_inspection,
+              description
+            )
+          `)
+          .eq('truck_id', id)
+          .single();
+        
+        if (assignmentError && assignmentError.code !== 'PGRST116') {
+          console.error("Error fetching trailer assignment:", assignmentError);
+        } else if (assignmentData) {
+          trailer = {
+            id: assignmentData.trailers.id,
+            vin: assignmentData.trailers.vin || "Non spécifié",
+            immatriculation: assignmentData.trailers.immatriculation || "Non spécifié",
+            dpmc: assignmentData.trailers.dpmc || "Non spécifiée",
+            ptac: assignmentData.trailers.ptac ? `${assignmentData.trailers.ptac} kg` : "Non spécifié",
+            axle_reference: assignmentData.trailers.axle_reference || "Non spécifié",
+            last_insurance_date: assignmentData.trailers.last_insurance_date || "Non spécifiée",
+            insurance_expiry_date: assignmentData.trailers.insurance_expiry_date || "Non spécifiée",
+            last_technical_inspection: assignmentData.trailers.last_technical_inspection || "Non spécifiée",
+            next_technical_inspection: assignmentData.trailers.next_technical_inspection || "Non spécifiée",
+            description: assignmentData.trailers.description || "Non spécifié",
+          };
+        }
+        
+        console.log("Trailer data:", trailer);
+        
+        // Fetch all trailers
+        const { data: trailersData, error: trailersError } = await supabase
+          .from('trailers')
+          .select('id, vin, immatriculation, dpmc, ptac, axle_reference, last_insurance_date, insurance_expiry_date, last_technical_inspection, next_technical_inspection, description')
+          .order('immatriculation', { ascending: true });
+        
+        if (trailersError) throw trailersError;
+        setTrailers(trailersData);
         
         setTruck({
           id: truckData.id,
@@ -102,6 +156,7 @@ const TruckDetails = () => {
           insuranceExpirationDate: truckData.insurance_expiration_date,
           lastTechnicalInspectionDate: truckData.last_technical_inspection_date,
           nextTechnicalInspectionDate: truckData.next_technical_inspection_date,
+          trailer: trailer,
         });
         
         setEditedTruck({
@@ -122,6 +177,7 @@ const TruckDetails = () => {
           insuranceExpirationDate: truckData.insurance_expiration_date,
           lastTechnicalInspectionDate: truckData.last_technical_inspection_date,
           nextTechnicalInspectionDate: truckData.next_technical_inspection_date,
+          trailerId: trailer ? trailer.id : "",
         });
         
         await fetchFuelData();
@@ -184,7 +240,8 @@ const TruckDetails = () => {
 
   const handleSaveChanges = async () => {
     try {
-      const { error } = await supabase
+      // Update truck details
+      const { error: truckError } = await supabase
         .from('trucks')
         .update({
           numero_serie: editedTruck.numeroSerie || null,
@@ -206,17 +263,83 @@ const TruckDetails = () => {
         })
         .eq('id', id);
       
-      if (error) {
-        throw error;
+      if (truckError) {
+        throw truckError;
       }
       
-      setTruck(editedTruck);
+      // Update trailer assignment
+      if (editSection === "trailer") {
+        const { data: existingAssignment, error: fetchError } = await supabase
+          .from('truck_trailer_assignments')
+          .select('id')
+          .eq('truck_id', id)
+          .single();
+        
+        if (fetchError && fetchError.code !== 'PGRST116') throw fetchError;
+        
+        if (editedTruck.trailerId) {
+          // Insert or update assignment
+          if (existingAssignment) {
+            const { error: updateError } = await supabase
+              .from('truck_trailer_assignments')
+              .update({ trailer_id: editedTruck.trailerId, assigned_at: new Date().toISOString() })
+              .eq('truck_id', id);
+            
+            if (updateError) throw updateError;
+          } else {
+            const { error: insertError } = await supabase
+              .from('truck_trailer_assignments')
+              .insert([{ truck_id: id, trailer_id: editedTruck.trailerId }]);
+            
+            if (insertError) throw insertError;
+          }
+        } else if (existingAssignment) {
+          // Delete assignment if trailerId is empty
+          const { error: deleteError } = await supabase
+            .from('truck_trailer_assignments')
+            .delete()
+            .eq('truck_id', id);
+          
+          if (deleteError) throw deleteError;
+        }
+      }
+      
+      // Fetch updated trailer data
+      let updatedTrailer = null;
+      if (editedTruck.trailerId) {
+        const { data: trailerData, error: trailerError } = await supabase
+          .from('trailers')
+          .select('id, vin, immatriculation, dpmc, ptac, axle_reference, last_insurance_date, insurance_expiry_date, last_technical_inspection, next_technical_inspection, description')
+          .eq('id', editedTruck.trailerId)
+          .single();
+        
+        if (trailerError) throw trailerError;
+        
+        updatedTrailer = {
+          id: trailerData.id,
+          vin: trailerData.vin || "Non spécifié",
+          immatriculation: trailerData.immatriculation || "Non spécifié",
+          dpmc: trailerData.dpmc || "Non spécifiée",
+          ptac: trailerData.ptac ? `${trailerData.ptac} kg` : "Non spécifié",
+          axle_reference: trailerData.axle_reference || "Non spécifié",
+          last_insurance_date: trailerData.last_insurance_date || "Non spécifiée",
+          insurance_expiry_date: trailerData.insurance_expiry_date || "Non spécifiée",
+          last_technical_inspection: trailerData.last_technical_inspection || "Non spécifiée",
+          next_technical_inspection: trailerData.next_technical_inspection || "Non spécifiée",
+          description: trailerData.description || "Non spécifié",
+        };
+      }
+      
+      setTruck({
+        ...editedTruck,
+        trailer: updatedTrailer,
+      });
       setIsEditing(false);
       setEditSection(null);
       
       alert("Modifications enregistrées avec succès!");
     } catch (error) {
-      console.error("Error updating truck:", error);
+      console.error("Error updating truck or trailer:", error);
       alert("Erreur lors de l'enregistrement des modifications.");
     }
   };
@@ -312,65 +435,7 @@ const TruckDetails = () => {
         {activeTab === "apercu" && truck && (
           <div className="overview-content">
             <section className="truck-info">
-              <div className="driver-info">
-                <div className="section-header">
-                  <h3>👤 Informations du Chauffeur</h3>
-                  {!isEditing && (
-                    <button 
-                      className="edit-btn"
-                      onClick={() => handleEditClick("driver")}
-                    >
-                      ✏️ Modifier
-                    </button>
-                  )}
-                </div>
-                
-                {isEditing && editSection === "driver" ? (
-                  <form className="edit-form">
-                    <div className="forme-group">
-                      <label>Nom:</label>
-                      <input 
-                        type="text" 
-                        name="chauffeur" 
-                        value={editedTruck?.chauffeur || ""} 
-                        onChange={handleInputChange}
-                      />
-                    </div>
-                    <div className="forme-group">
-                      <label>Téléphone:</label>
-                      <input 
-                        type="text" 
-                        name="telephoneChauffeur" 
-                        value={editedTruck?.telephoneChauffeur || ""} 
-                        onChange={handleInputChange}
-                      />
-                    </div>
-                    <div className="forme-group">
-                      <label>Résidence:</label>
-                      <input 
-                        type="text" 
-                        name="residenceChauffeur" 
-                        value={editedTruck?.residenceChauffeur || ""} 
-                        onChange={handleInputChange}
-                      />
-                    </div>
-                    <div className="form-actions">
-                      <button type="button" onClick={handleSaveChanges} className="save-btn">
-                        Enregistrer
-                      </button>
-                      <button type="button" onClick={handleCancelEdit} className="cancel-btn">
-                        Annuler
-                      </button>
-                    </div>
-                  </form>
-                ) : (
-                  <>
-                    <p><strong>Nom:</strong> {truck.chauffeur || "Non spécifié"}</p>
-                    <p><strong>Téléphone:</strong> {truck.telephoneChauffeur || "Non spécifié"}</p>
-                    <p><strong>Résidence:</strong> {truck.residenceChauffeur || "Non spécifiée"}</p>
-                  </>
-                )}
-              </div>
+              
 
               <div className="truck-details">
                 <div className="section-header">
@@ -387,7 +452,7 @@ const TruckDetails = () => {
                 
                 {isEditing && editSection === "truck" ? (
                   <form className="edit-form">
-                    <div className="forme-group">
+                    <div className="form-group">
                       <label>Modèle:</label>
                       <input 
                         type="text" 
@@ -396,7 +461,7 @@ const TruckDetails = () => {
                         onChange={handleInputChange}
                       />
                     </div>
-                    <div className="forme-group">
+                    <div className="form-group">
                       <label>Année:</label>
                       <input 
                         type="number" 
@@ -405,7 +470,7 @@ const TruckDetails = () => {
                         onChange={handleInputChange}
                       />
                     </div>
-                    <div className="forme-group">
+                    <div className="form-group">
                       <label>VIN:</label>
                       <input 
                         type="text" 
@@ -414,7 +479,7 @@ const TruckDetails = () => {
                         onChange={handleInputChange}
                       />
                     </div>
-                    <div className="forme-group">
+                    <div className="form-group">
                       <label>Kilométrage Actuel:</label>
                       <input 
                         type="number" 
@@ -423,7 +488,7 @@ const TruckDetails = () => {
                         onChange={handleInputChange}
                       />
                     </div>
-                    <div className="forme-group">
+                    <div className="form-group">
                       <label>Type de Carburant:</label>
                       <input 
                         type="text" 
@@ -432,7 +497,7 @@ const TruckDetails = () => {
                         onChange={handleInputChange}
                       />
                     </div>
-                    <div className="forme-group">
+                    <div className="form-group">
                       <label>État:</label>
                       <select 
                         name="status" 
@@ -443,7 +508,7 @@ const TruckDetails = () => {
                         <option value="inactive">Inactif</option>
                       </select>
                     </div>
-                    <div className="forme-group">
+                    <div className="form-group">
                       <label>Dernière Date d'Assurance:</label>
                       <input 
                         type="date" 
@@ -452,7 +517,7 @@ const TruckDetails = () => {
                         onChange={handleInputChange}
                       />
                     </div>
-                    <div className="forme-group">
+                    <div className="form-group">
                       <label>Date d'Expiration de l'Assurance:</label>
                       <input 
                         type="date" 
@@ -461,7 +526,7 @@ const TruckDetails = () => {
                         onChange={handleInputChange}
                       />
                     </div>
-                    <div className="forme-group">
+                    <div className="form-group">
                       <label>Dernière Date de Contrôle Technique:</label>
                       <input 
                         type="date" 
@@ -470,7 +535,7 @@ const TruckDetails = () => {
                         onChange={handleInputChange}
                       />
                     </div>
-                    <div className="forme-group">
+                    <div className="form-group">
                       <label>Prochaine Date de Contrôle Technique:</label>
                       <input 
                         type="date" 
@@ -479,7 +544,7 @@ const TruckDetails = () => {
                         onChange={handleInputChange}
                       />
                     </div>
-                    <div className="forme-group">
+                    <div className="form-group">
                       <label>Équipements:</label>
                       <input 
                         type="text" 
@@ -488,7 +553,7 @@ const TruckDetails = () => {
                         onChange={handleInputChange}
                       />
                     </div>
-                    <div className="forme-group">
+                    <div className="form-group">
                       <label>Accessoires:</label>
                       <input 
                         type="text" 
@@ -527,8 +592,129 @@ const TruckDetails = () => {
                   </>
                 )}
               </div>
+
+              <div className="trailer-info">
+                <div className="section-header">
+                  <h3>🚚 Détails de la Remorque</h3>
+                  {!isEditing && (
+                    <button 
+                      className="edit-btn"
+                      onClick={() => handleEditClick("trailer")}
+                    >
+                      ✏️ Modifier
+                    </button>
+                  )}
+                </div>
+                
+                {isEditing && editSection === "trailer" ? (
+                  <form className="edit-form">
+                    <div className="form-group">
+                      <label>Remorque Assignée:</label>
+                      <select
+                        name="trailerId"
+                        value={editedTruck?.trailerId || ""}
+                        onChange={handleInputChange}
+                      >
+                        <option value="">Aucune remorque</option>
+                        {trailers.map(trailer => (
+                          <option key={trailer.id} value={trailer.id}>
+                            {trailer.immatriculation} (VIN: {trailer.vin})
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="form-actions">
+                      <button type="button" onClick={handleSaveChanges} className="save-btn">
+                        Enregistrer
+                      </button>
+                      <button type="button" onClick={handleCancelEdit} className="cancel-btn">
+                        Annuler
+                      </button>
+                    </div>
+                  </form>
+                ) : (
+                  <>
+                    {truck.trailer ? (
+                      <>
+                        <p><strong>VIN:</strong> {truck.trailer.vin}</p>
+                        <p><strong>Immatriculation:</strong> {truck.trailer.immatriculation}</p>
+                        <p><strong>DPMC (Date de Première Mise en Circulation):</strong> {truck.trailer.dpmc}</p>
+                        <p><strong>PTAC (kg):</strong> {truck.trailer.ptac}</p>
+                        <p><strong>Référence d’essieux:</strong> {truck.trailer.axle_reference}</p>
+                        <p><strong>Dernière Date d'Assurance:</strong> {truck.trailer.last_insurance_date}</p>
+                        <p><strong>Date d'Expiration de l'Assurance:</strong> {truck.trailer.insurance_expiry_date}</p>
+                        <p><strong>Dernière Date de Contrôle Technique:</strong> {truck.trailer.last_technical_inspection}</p>
+                        <p><strong>Prochaine Date de Contrôle Technique:</strong> {truck.trailer.next_technical_inspection}</p>
+                        <p><strong>Description:</strong> {truck.trailer.description}</p>
+                      </>
+                    ) : (
+                      <p>Aucune remorque assignée.</p>
+                    )}
+                  </>
+                )}
+              </div>
+              <div className="driver-info">
+                <div className="section-header">
+                  <h3>👤 Informations du Chauffeur</h3>
+                  {!isEditing && (
+                    <button 
+                      className="edit-btn"
+                      onClick={() => handleEditClick("driver")}
+                    >
+                      ✏️ Modifier
+                    </button>
+                  )}
+                </div>
+                
+                {isEditing && editSection === "driver" ? (
+                  <form className="edit-form">
+                    <div className="form-group">
+                      <label>Nom:</label>
+                      <input 
+                        type="text" 
+                        name="chauffeur" 
+                        value={editedTruck?.chauffeur || ""} 
+                        onChange={handleInputChange}
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label>Téléphone:</label>
+                      <input 
+                        type="text" 
+                        name="telephoneChauffeur" 
+                        value={editedTruck?.telephoneChauffeur || ""} 
+                        onChange={handleInputChange}
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label>Résidence:</label>
+                      <input 
+                        type="text" 
+                        name="residenceChauffeur" 
+                        value={editedTruck?.residenceChauffeur || ""} 
+                        onChange={handleInputChange}
+                      />
+                    </div>
+                    <div className="form-actions">
+                      <button type="button" onClick={handleSaveChanges} className="save-btn">
+                        Enregistrer
+                      </button>
+                      <button type="button" onClick={handleCancelEdit} className="cancel-btn">
+                        Annuler
+                      </button>
+                    </div>
+                  </form>
+                ) : (
+                  <>
+                    <p><strong>Nom:</strong> {truck.chauffeur || "Non spécifié"}</p>
+                    <p><strong>Téléphone:</strong> {truck.telephoneChauffeur || "Non spécifié"}</p>
+                    <p><strong>Résidence:</strong> {truck.residenceChauffeur || "Non spécifiée"}</p>
+                  </>
+                )}
+              </div>
             </section>
           </div>
+          
         )}
 
         {activeTab === "carburant" && (

@@ -33,12 +33,11 @@
   display: flex;
   min-height: 100vh;
   background-color: var(--color-background);
-  
 }
 
 .fleet-title {
   color: var(--color-primary);
-  font-weight: 500; /* Kept from previous enhancement */
+  font-weight: 500;
 }
 
 .truck-content {
@@ -46,7 +45,7 @@
   padding: 25px;
   background-color: var(--color-content-background);
   color: var(--color-text-light);
-  box-shadow: inset 0 0 10px var(--color-shadow-light); /* Kept for depth */
+  box-shadow: inset 0 0 10px var(--color-shadow-light);
 }
 
 header {
@@ -54,21 +53,20 @@ header {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 25px;
-  border-bottom: 2px solid var(--color-border-dark); /* Kept stronger border */
+  border-bottom: 2px solid var(--color-border-dark);
 }
 
 header h1 {
   margin: 0;
   font-size: 2rem;
   color: var(--color-primary);
-  font-weight: 500; /* Kept bolder */
-  letter-spacing: 1px;
+  font-weight: 600;
 }
 
 .back-btn {
   text-decoration: none;
   color: var(--color-primary);
-  font-weight: 500; /* Kept bolder */
+  font-weight: 500;
   display: flex;
   align-items: center;
   transition: all 0.3s;
@@ -76,7 +74,7 @@ header h1 {
 
 .back-btn:hover {
   color: var(--color-primary-dark);
-  background-color: var(--color-primary-lightest); /* Kept hover background */
+  background-color: var(--color-primary-lightest);
   padding: 5px;
   border-radius: 3px;
 }
@@ -84,33 +82,33 @@ header h1 {
 .edit-truck {
   background-color: var(--color-primary);
   color: var(--color-black);
-  border: 1px solid var(--color-primary-dark); /* Kept added border */
+  border: 1px solid var(--color-primary-dark);
   border-radius: 3px;
   padding: 10px 20px;
   cursor: pointer;
-  font-weight: 600; /* Kept bolder */
+  font-weight: 600;
   letter-spacing: 0.5px;
   transition: all 0.3s;
 }
 
 .edit-truck:hover {
   background-color: var(--color-primary-dark);
-  box-shadow: 0 4px 8px var(--color-shadow-dark); /* Kept hover shadow */
+  box-shadow: 0 4px 8px var(--color-shadow-dark);
 }
 
 /* Tabs styling */
 .tabs {
   display: flex;
   margin-bottom: 25px;
-  border-bottom: 2px solid var(--color-border-dark); /* Kept stronger border */
-  background-color: var(--color-white); /* Kept white background */
+  border-bottom: 2px solid var(--color-border-dark);
+  background-color: var(--color-white);
   border-radius: 5px;
-  padding: 5px; /* Kept padding */
+  padding: 5px;
 }
 
 .tab {
   background: none;
-  border: 1px solid var(--color-border-dark); /* Kept added border */
+  border: 1px solid var(--color-border-dark);
   padding: 12px 24px;
   font-size: 1rem;
   cursor: pointer;
@@ -119,33 +117,33 @@ header h1 {
   transition: all 0.3s;
   color: var(--color-text-muted);
   letter-spacing: 0.5px;
-  border-radius: 5px; /* Kept rounded corners */
+  border-radius: 5px;
 }
 
 .tab:hover {
   color: var(--color-primary);
-  background-color: var(--color-primary-lightest); /* Kept hover background */
+  background-color: var(--color-primary-lightest);
 }
 
 .tab.active {
   border-bottom: 3px solid var(--color-primary);
   color: var(--color-primary);
-  font-weight: 500; /* Kept bolder */
-  background-color: var(--color-primary-lightest); /* Kept active background */
+  font-weight: 500;
+  background-color: var(--color-primary-lightest);
 }
 
 .tab:focus {
   outline: none;
-  box-shadow: 0 0 0 3px var(--color-primary-light); /* Kept focus state */
+  box-shadow: 0 0 0 3px var(--color-primary-light);
 }
 
 /* Content sections styling */
 .overview-content, .fuel-history, .maintenance-tab {
   background-color: var(--color-section-background);
   border-radius: 5px;
-  box-shadow: 0 6px 12px var(--color-shadow-dark); /* Kept enhanced shadow */
+  box-shadow: 0 6px 12px var(--color-shadow-dark);
   padding: 25px;
-  border: 2px solid var(--color-border-dark); /* Kept stronger border */
+  border: 2px solid var(--color-border-dark);
 }
 
 /* Truck info section */
@@ -156,30 +154,30 @@ header h1 {
   margin-bottom: 30px;
 }
 
-.driver-info, .truck-details {
+.driver-info, .truck-details, .trailer-info {
   background-color: var(--color-info-background);
   padding: 25px;
   border-radius: 5px;
-  border: 1px solid var(--color-border-dark); /* Reverted to original */
+  border: 1px solid var(--color-border-dark);
   transition: all 0.3s;
 }
 
-.driver-info:hover, .truck-details:hover {
+.driver-info:hover, .truck-details:hover, .trailer-info:hover {
   border-color: var(--color-primary);
-  box-shadow: 0 8px 15px var(--color-shadow-dark); /* Reverted to original */
+  box-shadow: 0 8px 15px var(--color-shadow-dark);
 }
 
-.driver-info h3, .truck-details h3 {
+.driver-info h3, .truck-details h3, .trailer-info h3 {
   margin-top: 0;
   margin-bottom: 20px;
   color: var(--color-primary);
-  font-size: 1.5rem; /* Increased from 1.3rem */
-  font-weight: 400; /* Reverted to original */
+  font-size: 1.5rem;
+  font-weight: 400;
   letter-spacing: 0.5px;
 }
 
-.driver-info p, .truck-details p {
-  font-size: 1.2rem; /* Increased from default (assumed 1rem) */
+.driver-info p, .truck-details p, .trailer-info p {
+  font-size: 1.2rem;
 }
 
 /* Section headers with edit buttons */
@@ -188,71 +186,70 @@ header h1 {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 1rem;
-  border-bottom: 2px solid var(--color-border-dark); /* Kept stronger border */
+  border-bottom: 2px solid var(--color-border-dark);
   padding-bottom: 0.5rem;
 }
-
 
 /* Edit button styling */
 .edit-btn {
   padding: 0.4rem 0.8rem;
   background-color: var(--color-button-background);
-  border: 2px solid var(--color-primary-light); /* Kept stronger border */
+  border: 2px solid var(--color-primary-light);
   border-radius: 6px;
   cursor: pointer;
   font-size: 0.9rem;
-  font-weight: 500; /* Kept bolder */
+  font-weight: 500;
   transition: all 0.2s;
 }
 
 .edit-btn:hover {
   background-color: var(--color-button-hover);
-  box-shadow: 0 2px 4px var(--color-shadow-dark); /* Kept hover shadow */
+  box-shadow: 0 2px 4px var(--color-shadow-dark);
 }
 
 /* Edit form styling */
-.edit-forme {
+.edit-form {
   display: grid;
   grid-template-columns: 1fr;
   gap: 1rem;
   background-color: var(--color-form-background);
   padding: 1.5rem;
   border-radius: 8px;
-  box-shadow: 0 4px 10px var(--color-shadow-dark); /* Kept enhanced shadow */
+  box-shadow: 0 4px 10px var(--color-shadow-dark);
   margin-bottom: 1rem;
-  border: 2px solid var(--color-border-dark); /* Kept added border */
+  border: 2px solid var(--color-border-dark);
 }
 
-.forme-group {
+.form-group {
   display: flex;
   flex-direction: column;
   margin-bottom: 0.5rem;
 }
 
-.forme-group label {
-  font-weight: 600; /* Kept bolder */
+.form-group label {
+  font-weight: 600;
   margin-bottom: 0.4rem;
   color: var(--color-primary);
-  font-size: 1.1rem; /* Increased for forms in info sections */
+  font-size: 1.1rem;
 }
 
-.forme-group input,
-.forme-group select {
+.form-group input,
+.form-group select {
   padding: 0.7rem;
   background-color: var(--color-input-background);
   color: var(--color-primary);
-  border: 2px solid var(--color-primary-light); /* Kept stronger border */
+  border: 2px solid var(--color-primary-light);
   border-radius: 6px;
   font-size: 1rem;
   transition: border 0.2s, background-color 0.2s, box-shadow 0.2s;
 }
 
-.forme-group input:focus,
-.forme-group select:focus {
+.form-group input:focus,
+.form-group select:focus {
   border-color: var(--color-primary-lighter);
   outline: none;
   background-color: var(--color-input-hover);
-  box-shadow: 0 0 5px var(--color-primary-lightest); /* Kept focus shadow */
+  box-shadow: 0 0 5px var(--color-primary-lightest);
 }
 
 /* Form actions (save/cancel buttons) */
@@ -267,65 +264,37 @@ header h1 {
   padding: 0.6rem 1.2rem;
   background-color: var(--color-primary-light);
   color: var(--color-form-background);
-  border: 2px solid var(--color-primary-lighter); /* Kept added border */
+  border: 2px solid var(--color-primary-lighter);
   border-radius: 6px;
-  font-weight: 700; /* Kept bolder */
+  font-weight: 700;
   cursor: pointer;
   transition: background-color 0.2s, box-shadow 0.2s;
 }
 
 .save-btn:hover {
   background-color: var(--color-save-button);
-  box-shadow: 0 2px 4px var(--color-shadow-dark); /* Kept hover shadow */
+  box-shadow: 0 2px 4px var(--color-shadow-dark);
 }
 
 .cancel-btn {
   padding: 0.6rem 1.2rem;
   background-color: var(--color-button-secondary);
   color: var(--color-primary-light);
-  border: 2px solid var(--color-border-dark); /* Kept added border */
+  border: 2px solid var(--color-border-dark);
   border-radius: 6px;
-  font-weight: 700; /* Kept bolder */
+  font-weight: 700;
   cursor: pointer;
   transition: background-color 0.2s, box-shadow 0.2s;
 }
 
 .cancel-btn:hover {
   background-color: var(--color-input-hover);
-  box-shadow: 0 2px 4px var(--color-shadow-dark); /* Kept hover shadow */
+  box-shadow: 0 2px 4px var(--color-shadow-dark);
 }
 
-/* Sidebar styling */
-.sidebar {
-  padding: 15px;
-  background-color: var(--color-white);
-  border-right: 2px solid var(--color-border-dark); /* Kept stronger border */
-  box-shadow: 0 4px 8px var(--color-shadow-light); /* Kept subtle shadow */
-}
 
-.sidebar nav ul {
-  list-style: none;
-  padding: 0;
-}
 
-.sidebar nav ul li {
-  margin-bottom: 15px;
-}
 
-.sidebar nav ul li a {
-  text-decoration: none;
-  color: var(--color-text-light);
-  font-size: 1rem; /* Kept from previous context */
-  font-weight: 500; /* Kept bolder */
-  transition: all 0.3s;
-}
-
-.sidebar nav ul li a:hover {
-  color: var(--color-primary);
-  background-color: var(--color-primary-lightest); /* Kept hover background */
-  padding: 5px;
-  border-radius: 3px;
-}
 
 /* Responsive adjustments */
 @media (max-width: 768px) {
@@ -337,7 +306,7 @@ header h1 {
     width: 100%;
     padding: 15px;
     border-right: none;
-    border-bottom: 2px solid var(--color-border-dark); /* Kept stronger border */
+    border-bottom: 2px solid var(--color-border-dark);
   }
   
   .truck-info {
@@ -389,10 +358,10 @@ header h1 {
   z-index: 100;
   max-height: 200px;
   overflow-y: auto;
-  border: 2px solid var(--color-border-dark); /* Kept stronger border */
+  border: 2px solid var(--color-border-dark);
   border-radius: 4px;
-  box-shadow: 0 4px 8px var(--color-shadow-dark); /* Kept enhanced shadow */
-  background-color: var(--color-white); /* Kept white background */
+  box-shadow: 0 4px 8px var(--color-shadow-dark);
+  background-color: var(--color-white);
 }
 
 .trip-scheduler-truck-item {
@@ -411,12 +380,12 @@ header h1 {
 .trip-scheduler-selected-truck {
   margin-top: 6px;
   color: var(--color-green);
-  font-weight: 600; /* Kept bolder */
+  font-weight: 600;
 }
 
 .trip-scheduler-no-trucks {
   color: var(--color-red);
   font-size: 0.9em;
   margin-top: 4px;
-  font-weight: 500; /* Kept bolder */
+  font-weight: 500;
 }

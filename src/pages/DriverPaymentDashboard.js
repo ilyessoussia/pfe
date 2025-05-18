@@ -282,7 +282,7 @@ const DriverPaymentDashboard = () => {
       <main className="dashboard-content">
         <header className="dashboard-header">
           <div>
-            <h1>Gestion de Paiement des Chauffeurs</h1>
+            <h1>💰 Gestion de Paiement des Chauffeurs</h1>
             <p className="last-updated">Mise à jour: {lastUpdated}</p>
           </div>
           <div className="header-actions">

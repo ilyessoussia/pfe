@@ -1,6 +1,5 @@
 :root {
   --color-background: #E5E7EB;
-  --color-sidebar-background: #F3F4F6;
   --color-primary: #6366F1;
   --color-primary-light: rgba(99, 102, 241, 0.3);
   --color-primary-lighter: rgba(99, 102, 241, 0.15);
@@ -53,64 +52,40 @@
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
-.sidebar {
-  width: 220px;
-  background: var(--color-sidebar-background);
-  color: var(--color-primary);
-  padding: 15px;
-  box-shadow: 2px 0 8px var(--color-shadow);
-  display: flex;
-  flex-direction: column;
-}
-
 .fleet-title {
   font-size: 1.5rem;
-  margin-bottom: 30px;
-  padding-bottom: 15px;
+  margin-bottom: 1.5rem; /* Reduced for mobile */
+  padding-bottom: 0.75rem;
   border-bottom: 1px solid var(--color-primary-light);
   letter-spacing: 1px;
   font-weight: 400;
   color: var(--color-primary);
 }
 
-.sidebar nav ul {
-  list-style: none;
-  padding: 0;
-}
-
-.sidebar nav li {
-  margin-bottom: 5px;
-}
-
-.sidebar nav li.active a {
-  background: var(--color-primary-light);
-  border-left: 2px solid var(--color-primary);
-}
-
-.sidebar nav a {
-  color: var(--color-primary);
-  text-decoration: none;
-  display: block;
-  padding: 10px 12px;
-  border-radius: 4px;
-  font-size: 0.9rem;
-}
-
-.sidebar nav a:hover {
-  background: var(--color-primary-lighter);
+.sidebar {
+  width: 280px;
+  display: flex;
+  flex-direction: column;
+  color: var(--color-text-light);
+  flex-shrink: 0;
+  padding: 1rem; /* Consistent rem units */
+  background-color: var(--color-white);
+  border-right: 2px solid var(--color-border-dark);
+  box-shadow: 0 4px 8px var(--color-shadow-light);
 }
 
 .sidebar-footer {
   margin-top: auto;
-  padding-top: 15px;
-  border-top: 1px solid var(--color-primary-light);
-  font-size: 0.75rem;
-  color: var(--color-primary-dark);
+  padding-top: 1rem;
+  border-top: 1px solid var(--color-table-border);
+  font-size: 0.9rem; /* Slightly larger for readability */
+  color: var(--color-text-muted);
+  text-align: center;
 }
 
 .dashboard-content {
   flex: 1;
-  padding: 8px;
+  padding: 0.5rem; /* Reduced for mobile */
   background: transparent;
   color: var(--color-text-light);
 }
@@ -119,32 +94,32 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 8px;
+  margin-bottom: 0.5rem;
 }
 
 .dashboard-header h1 {
   margin: 0;
-  font-size: 1.5rem;
+  font-size: 2rem;
   color: var(--color-primary);
-  font-weight: 500;
+  font-weight: 600;
 }
 
 .last-updated {
-  margin: 2px 0 0;
+  margin: 0.125rem 0 0;
   color: var(--color-text-muted);
-  font-size: 0.8rem;
+  font-size: 0.85rem; /* Increased for readability */
 }
 
 .header-actions {
   display: flex;
-  gap: 6px;
+  gap: 0.5rem;
 }
 
 .refresh-btn, .add-truck, .assign-trailer-btn {
-  padding: 10px 20px;
-  border-radius: 3px;
+  padding: 0.75rem 1.25rem; /* Increased for touch targets */
+  border-radius: 0.25rem;
   cursor: pointer;
-  font-size: 18px;
+  font-size: 1rem; /* Larger for readability */
   font-weight: bold;
   display: flex;
   align-items: center;
@@ -153,9 +128,11 @@
   background: var(--color-button-background);
   color: var(--color-primary);
   border: 1px solid var(--color-primary);
+  min-height: 44px; /* Minimum touch target size */
 }
 
-.refresh-btn:hover, .add-truck:hover, .assign-trailer-btn:hover {
+.refresh-btn:hover, .add-truck:hover, .assign-trailer-btn:hover,
+.refresh-btn:active, .add-truck:active, .assign-trailer-btn:active {
   background: var(--color-button-hover);
 }
 
@@ -164,7 +141,7 @@
   color: var(--color-background);
 }
 
-.add-truck:hover {
+.add-truck:hover, .add-truck:active {
   background: var(--color-primary-dark);
 }
 
@@ -172,34 +149,35 @@
   background: var(--color-success);
   color: var(--color-card-background);
   border: 1px solid var(--color-success-border);
-  margin-top: 8px;
+  margin-top: 0.5rem;
   width: 100%;
   justify-content: center;
-  font-size: 0.85rem;
+  font-size: 0.9rem;
 }
 
-.assign-trailer-btn:hover {
+.assign-trailer-btn:hover, .assign-trailer-btn:active {
   background: var(--color-success-dark);
 }
 
-.trailer-info {
+.trailer-infos {
   font-size: 0.95rem;
   color: var(--color-text-light);
-  margin: 2px 0 0 0;
+  margin: 0.125rem 0 0;
   font-weight: 500;
 }
 
 .dashboard-grid {
   display: grid;
-  grid-template-columns: 1fr 250px 250px;
-  gap: 8px;
-  height: calc(100vh - 50px);
+  grid-template-columns: 1fr 300px;
+  gap: 0.5rem;
+  height: auto; /* Changed to auto to prevent overflow */
+  min-height: calc(100vh - 4rem); /* Adjusted for mobile */
 }
 
 .alerts-section {
   background: var(--color-section-background);
-  border-radius: 6px;
-  padding: 10px;
+  border-radius: 0.375rem;
+  padding: 0.75rem;
   overflow-y: auto;
   transition: all 0.3s;
 }
@@ -208,11 +186,11 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 8px;
+  margin-bottom: 0.5rem;
 }
 
 .alerts-header h2 {
-  font-size: 1.1rem;
+  font-size: 1rem; /* Slightly smaller for mobile */
   color: var(--color-primary);
   font-weight: 500;
   margin: 0;
@@ -223,20 +201,21 @@
   border: none;
   color: var(--color-primary);
   cursor: pointer;
-  font-size: 0.8rem;
+  font-size: 0.85rem;
+  min-height: 44px; /* Touch-friendly */
 }
 
 .alerts-list {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 0.5rem;
 }
 
 .alert-card {
   background: var(--color-card-background);
-  border-radius: 4px;
-  padding: 8px;
-  font-size: 0.85rem;
+  border-radius: 0.25rem;
+  padding: 0.75rem;
+  font-size: 0.9rem; /* Increased for readability */
   border-left: 4px solid;
   display: flex;
   align-items: center;
@@ -264,7 +243,7 @@
 }
 
 .alert-card p {
-  margin: 4px 0;
+  margin: 0.25rem 0;
   color: var(--color-text-light);
   flex: 1;
   font-weight: 500;
@@ -273,10 +252,10 @@
 .alert-card a {
   color: var(--color-primary);
   text-decoration: none;
-  margin-left: 8px;
+  margin-left: 0.5rem;
 }
 
-.alert-card a:hover {
+.alert-card a:hover, .alert-card a:active {
   text-decoration: underline;
 }
 
@@ -285,19 +264,21 @@
   border: none;
   color: var(--color-text-muted);
   cursor: pointer;
-  font-size: 0.7rem;
-  padding: 2px 6px;
+  font-size: 0.85rem;
+  padding: 0.5rem; /* Increased for touch */
   border-radius: 50%;
   transition: all 0.2s;
+  min-height: 44px;
+  min-width: 44px;
 }
 
-.alert-card .close-alert:hover {
+.alert-card .close-alert:hover, .alert-card .close-alert:active {
   background: var(--color-primary-light);
   color: var(--color-primary);
 }
 
 .alert-icon {
-  margin-right: 6px;
+  margin-right: 0.5rem;
 }
 
 .main-content {
@@ -309,8 +290,8 @@
 
 .truck-section {
   background: var(--color-section-background);
-  border-radius: 6px;
-  padding: 10px;
+  border-radius: 0.375rem;
+  padding: 0.75rem;
   flex: 1;
   display: flex;
   flex-direction: column;
@@ -321,36 +302,37 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 6px;
+  margin-bottom: 0.5rem;
 }
 
 .truck-filter h2 {
-  font-size: 1.1rem;
+  font-size: 1rem;
   color: var(--color-primary);
   font-weight: 500;
   margin: 0;
 }
 
 .total-trucks {
-  margin: 2px 0 0;
+  margin: 0.125rem 0 0;
   color: var(--color-text-light);
   font-size: 0.9rem;
 }
 
 .filter-controls {
   display: flex;
-  gap: 6px;
+  gap: 0.5rem;
   align-items: center;
 }
 
 .search-bar {
-  padding: 5px 10px;
+  padding: 0.5rem 0.75rem; /* Increased for touch */
   border: 1px solid var(--color-border-dark);
-  border-radius: 4px;
+  border-radius: 0.25rem;
   background: var(--color-card-background);
   color: var(--color-text-light);
-  font-size: 0.85rem;
+  font-size: 0.9rem;
   transition: all 0.2s;
+  min-height: 44px;
 }
 
 .search-bar::placeholder {
@@ -365,42 +347,45 @@
 }
 
 .filter-controls select, .filter-controls button {
-  padding: 5px 10px;
+  padding: 0.5rem 0.75rem;
   border: 1px solid var(--color-border-dark);
-  border-radius: 4px;
+  border-radius: 0.25rem;
   background: var(--color-card-background);
   color: var(--color-text-light);
   cursor: pointer;
-  font-size: 0.85rem;
+  font-size: 0.9rem;
   transition: all 0.2s;
+  min-height: 44px;
 }
 
-.filter-controls select:hover, .filter-controls button:hover {
+.filter-controls select:hover, .filter-controls button:hover,
+.filter-controls select:active, .filter-controls button:active {
   background: var(--color-input-hover);
   border-color: var(--color-primary);
   color: var(--color-primary);
 }
 
 .map-section {
-  border-radius: 6px;
+  border-radius: 0.375rem;
   overflow: hidden;
   box-shadow: 0 2px 4px var(--color-shadow-light);
-  height: 700px;
+  height: 60vh; /* Dynamic height for mobile */
+  max-height: 500px; /* Prevent excessive height */
 }
 
 .truck-cards {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-  gap: 8px;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); /* Increased min width for better card size */
+  gap: 0.5rem;
   flex: 1;
   overflow-y: auto;
-  padding-right: 4px;
+  padding-right: 0.25rem;
 }
 
 .truck-card {
   background: var(--color-card-background);
-  border-radius: 6px;
-  padding: 10px;
+  border-radius: 0.375rem;
+  padding: 0.75rem;
   text-decoration: none;
   color: inherit;
   box-shadow: 0 2px 4px var(--color-shadow-light);
@@ -408,7 +393,7 @@
   border: 1px solid var(--color-border-dark);
 }
 
-.truck-card:hover {
+.truck-card:hover, .truck-card:active {
   transform: translateY(-2px);
   box-shadow: 0 6px 12px var(--color-shadow-dark);
   background: #F9FAFB;
@@ -430,7 +415,7 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 6px;
+  margin-bottom: 0.5rem;
 }
 
 .truck-header h2 {
@@ -441,8 +426,8 @@
 }
 
 .status-badge {
-  font-size: 0.7rem;
-  padding: 3px 8px;
+  font-size: 0.8rem; /* Increased for readability */
+  padding: 0.25rem 0.5rem;
   border-radius: 12px;
 }
 
@@ -463,22 +448,27 @@
 
 .truck-model {
   color: var(--color-text-muted);
-  margin: 0 0 6px;
-  font-size: 0.8rem;
+  margin: 0 0 0.5rem;
+  font-size: 0.85rem;
 }
 
-.truck-details {
-  font-size: 0.8rem;
+.truck-detailss {
+  font-size: 0.85rem;
+  background-color: var(--color-info-background);
+  padding: 0.5rem;
+  border-radius: 0.25rem;
+  border: 1px solid var(--color-border-dark);
+  transition: all 0.3s;
 }
 
 .detail-row {
   display: flex;
   justify-content: space-between;
-  margin-bottom: 4px;
+  margin-bottom: 0.25rem;
 }
 
 .detail-label {
-  color: var(--color-text-muted);
+  color: var(--color-text-light);
 }
 
 .detail-value {
@@ -487,8 +477,8 @@
 
 .recent-fuel-activities {
   background: var(--color-section-background);
-  border-radius: 6px;
-  padding: 10px;
+  border-radius: 0.375rem;
+  padding: 0.75rem;
   overflow-y: auto;
   transition: all 0.3s;
 }
@@ -502,11 +492,11 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 8px;
+  margin-bottom: 0.5rem;
 }
 
 .fuel-activities-header h2 {
-  font-size: 1.1rem;
+  font-size: 1rem;
   color: var(--color-primary);
   font-weight: 500;
   margin: 0;
@@ -517,35 +507,36 @@
   border: none;
   color: var(--color-primary);
   cursor: pointer;
-  font-size: 0.8rem;
+  font-size: 0.85rem;
+  min-height: 44px;
 }
 
 .fuel-activities-list {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 0.5rem;
 }
 
 .fuel-activity-item {
   display: flex;
   align-items: center;
   background: var(--color-card-background);
-  padding: 8px;
-  border-radius: 4px;
+  padding: 0.75rem;
+  border-radius: 0.25rem;
   border: 1px solid var(--color-border-dark);
 }
 
 .fuel-icon {
-  width: 20px;
-  height: 20px;
+  width: 1.5rem; /* Increased for touch */
+  height: 1.5rem;
   background: var(--color-primary);
   color: var(--color-black);
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 0.8rem;
-  margin-right: 6px;
+  font-size: 0.9rem;
+  margin-right: 0.5rem;
 }
 
 .fuel-content {
@@ -554,30 +545,30 @@
 
 .fuel-content p {
   margin: 0;
-  font-size: 0.8rem;
+  font-size: 0.85rem;
   color: var(--color-text-light);
   font-weight: 500;
 }
 
 .fuel-date {
-  font-size: 0.75rem;
+  font-size: 0.8rem;
   color: var(--color-text-muted);
 }
 
 .error-message {
   background: var(--color-error-bg);
   color: var(--color-error);
-  padding: 8px;
-  border-radius: 4px;
-  margin-bottom: 8px;
-  font-size: 0.85rem;
+  padding: 0.75rem;
+  border-radius: 0.25rem;
+  margin-bottom: 0.5rem;
+  font-size: 0.9rem;
 }
 
 .loading, .no-trucks {
   text-align: center;
   color: var(--color-text-muted);
-  font-size: 0.85rem;
-  padding: 8px;
+  font-size: 0.9rem;
+  padding: 0.75rem;
 }
 
 .modal-overlay {
@@ -595,10 +586,10 @@
 
 .modal-content {
   background: var(--color-card-background);
-  padding: 15px;
-  border-radius: 6px;
+  padding: 1.25rem; /* Increased for mobile */
+  border-radius: 0.375rem;
   width: 100%;
-  max-width: 400px;
+  max-width: 90%; /* Consistent with existing mobile rule */
   box-shadow: 0 4px 12px var(--color-shadow-dark);
 }
 
@@ -606,12 +597,12 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 10px;
+  margin-bottom: 0.75rem;
 }
 
 .modal-header h3 {
   margin: 0;
-  font-size: 1.2rem;
+  font-size: 1.1rem; /* Slightly smaller for mobile */
   color: var(--color-primary);
   font-weight: 500;
 }
@@ -622,34 +613,37 @@
   color: var(--color-text-muted);
   cursor: pointer;
   font-size: 1rem;
-  padding: 4px;
+  padding: 0.5rem;
+  min-height: 44px;
+  min-width: 44px;
 }
 
-.close-modal-btn:hover {
+.close-modal-btn:hover, .close-modal-btn:active {
   color: var(--color-primary);
 }
 
 .form-group {
-  margin-bottom: 10px;
+  margin-bottom: 0.75rem;
 }
 
 .form-group label {
   display: block;
-  margin-bottom: 4px;
-  font-size: 0.85rem;
+  margin-bottom: 0.25rem;
+  font-size: 0.9rem;
   color: var(--color-text-light);
   font-weight: 500;
 }
 
 .form-group select {
   width: 100%;
-  padding: 6px 10px;
+  padding: 0.5rem 0.75rem;
   border: 1px solid var(--color-border-dark);
-  border-radius: 4px;
+  border-radius: 0.25rem;
   background: var(--color-card-background);
   color: var(--color-text-light);
-  font-size: 0.85rem;
+  font-size: 0.9rem;
   transition: all 0.2s;
+  min-height: 44px;
 }
 
 .form-group select:hover, .form-group select:focus {
@@ -661,15 +655,16 @@
 .form-actions {
   display: flex;
   justify-content: flex-end;
-  gap: 6px;
+  gap: 0.5rem;
 }
 
 .cancel-btn, .submit-btn {
-  padding: 8px 16px;
-  border-radius: 4px;
+  padding: 0.75rem 1.25rem; /* Increased for touch */
+  border-radius: 0.25rem;
   cursor: pointer;
-  font-size: 0.85rem;
+  font-size: 0.9rem;
   transition: all 0.2s;
+  min-height: 44px;
 }
 
 .cancel-btn {
@@ -678,7 +673,7 @@
   border: 1px solid var(--color-border-dark);
 }
 
-.cancel-btn:hover {
+.cancel-btn:hover, .cancel-btn:active {
   background: var(--color-input-hover);
 }
 
@@ -688,7 +683,7 @@
   border: none;
 }
 
-.submit-btn:hover {
+.submit-btn:hover, .submit-btn:active {
   background: var(--color-primary-dark);
 }
 
@@ -700,23 +695,24 @@
 .success-message {
   background: var(--color-success-bg);
   color: var(--color-success);
-  padding: 6px;
-  border-radius: 4px;
-  margin-bottom: 8px;
-  font-size: 0.85rem;
+  padding: 0.5rem;
+  border-radius: 0.25rem;
+  margin-bottom: 0.5rem;
+  font-size: 0.9rem;
 }
 
+/* Media Queries */
 @media (max-width: 1200px) {
   .dashboard-grid {
     grid-template-columns: 1fr 250px;
   }
 
   .alerts-section {
-    display: none;
+    display: none; /* Already hidden, kept as is */
   }
 
   .truck-cards {
-    max-height: 400px;
+    max-height: none; /* Remove restrictive height */
   }
 }
 
@@ -727,7 +723,7 @@
 
   .sidebar {
     width: 100%;
-    padding: 10px;
+    padding: 0.75rem;
   }
 
   .dashboard-grid {
@@ -735,17 +731,18 @@
   }
 
   .recent-fuel-activities {
-    max-height: 150px;
+    max-height: none; /* Allow natural height */
   }
 
   .truck-cards {
-    max-height: 300px;
+    max-height: none;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); /* Adjusted for mobile */
   }
 
   .dashboard-header {
     flex-direction: column;
     align-items: flex-start;
-    gap: 8px;
+    gap: 0.5rem;
   }
 
   .header-actions {
@@ -758,7 +755,35 @@
   }
 
   .modal-content {
-    max-width: 90%;
-    padding: 10px;
+    max-width: 95%; /* Slightly more room */
+    padding: 1rem;
   }
-} 
+}
+
+@media (max-width: 400px) {
+  .fleet-title {
+    font-size: 1.25rem; /* Smaller for narrow screens */
+  }
+
+  .dashboard-content {
+    padding: 0.25rem;
+  }
+
+  .truck-cards {
+    grid-template-columns: 1fr; /* Single column for very small screens */
+  }
+
+  .search-bar, .filter-controls select, .filter-controls button {
+    font-size: 0.85rem; /* Slightly smaller but readable */
+    padding: 0.5rem;
+  }
+
+  .refresh-btn, .add-truck, .assign-trailer   {
+    font-size: 0.9rem;
+    padding: 0.5rem 1rem;
+  }
+
+  .modal-content {
+    padding: 0.75rem;
+  }
+}

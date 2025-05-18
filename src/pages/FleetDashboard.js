@@ -26,7 +26,6 @@ const FleetDashboard = () => {
   const [truckTrailerAssignments, setTruckTrailerAssignments] = useState({});
   const [alerts, setAlerts] = useState([]);
   const [dismissedAlerts, setDismissedAlerts] = useState([]);
-  const [recentFuelActivities, setRecentFuelActivities] = useState([]);
   const [fleetStats, setFleetStats] = useState({ totalTrucks: 0 });
   const [mapView, setMapView] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -34,7 +33,6 @@ const FleetDashboard = () => {
   const [lastUpdated, setLastUpdated] = useState(new Date().toLocaleString());
   const [latestFuelByTruck, setLatestFuelByTruck] = useState({});
   const [showAlerts, setShowAlerts] = useState(true);
-  const [showFuelActivities, setShowFuelActivities] = useState(true);
   const [showTrailerModal, setShowTrailerModal] = useState(false);
   const [selectedTruckId, setSelectedTruckId] = useState(null);
   const [selectedTrailerId, setSelectedTrailerId] = useState("");
@@ -197,20 +195,6 @@ const FleetDashboard = () => {
       });
       setAlerts(alerts);
 
-      // Compute recent fuel activities
-      const fuelActivities = fuelData
-        .slice(0, 8)
-        .map(fuel => ({
-          type: "fuel",
-          data: {
-            truckId: fuel.truck_id,
-            litersPer100km: fuel.liters_per_100km,
-          },
-          timestamp: new Date(fuel.created_at),
-          truck: trucksData.find(t => t.id === fuel.truck_id)?.immatriculation || "Camion",
-        }));
-      setRecentFuelActivities(fuelActivities);
-
       // Format trucks
       const formattedTrucks = trucksData.map(truck => ({
         id: truck.id,
@@ -322,8 +306,8 @@ const FleetDashboard = () => {
       const fuelLevel = fuelEntry.litersPer100km || 0;
       return (
         (filter.fuel === "low" && fuelLevel < 10) ||
-        (filter.fuel === "medium" && fuelLevel >= 10 && fuelLevel <= 30) ||
-        (filter.fuel === "high" && fuelLevel > 30)
+        (filter.fuel === "medium" && fuelLevel >= 10 && fuelLevel <= 40) ||
+        (filter.fuel === "high" && fuelLevel > 40)
       );
     })
     .filter(truck => {
@@ -379,13 +363,13 @@ const FleetDashboard = () => {
             <li className="active">
               <Link to="/fleet/dashboard">📊 Gestion de Flotte</Link>
             </li>
-           <li><Link to="/cash-tracking">💵 Gestion de Caisse</Link></li>
+            <li><Link to="/cash-tracking">💵 Gestion de Caisse</Link></li>
             <li>
               <Link to="/parc">🔧 Gestion des Pièces</Link>
             </li>
             <li>
               <Link to="/fleet/stock-carburant">⛽ Stock Carburant</Link>
-           </li>
+            </li>
             <li>
               <Link to="/stock">📦 Gestion de Stock</Link>
             </li>
@@ -415,8 +399,7 @@ const FleetDashboard = () => {
       <main className="dashboard-content">
         <header className="dashboard-header">
           <div>
-            <h1>Tableau de Bord</h1>
-            <p className="last-updated">Mise à jour: {lastUpdated}</p>
+            <h1>📊 Gestion de Flotte</h1>
           </div>
           <div className="header-actions">
             <button className="refresh-btn" onClick={handleRefresh} disabled={loading}>
@@ -585,7 +568,7 @@ const FleetDashboard = () => {
                           <div>
                             <h2>{truck.immatriculation || truck.id}</h2>
                             {truck.trailerImmatriculation && (
-                              <p className="trailer-info">Remorque: {truck.trailerImmatriculation}</p>
+                              <p className="trailer-infos"> {truck.trailerImmatriculation}</p>
                             )}
                           </div>
                           <span className={`status-badge ${getStatusClass(truck.status)}`}>
@@ -593,7 +576,7 @@ const FleetDashboard = () => {
                           </span>
                         </div>
                         <p className="truck-model">{truck.model}</p>
-                        <div className="truck-details">
+                        <div className="truck-detailss">
                           <div className="detail-row">
                             <span className="detail-label">👤 Chauffeur</span>
                             <span className="detail-value">{truck.driver}</span>
@@ -603,7 +586,7 @@ const FleetDashboard = () => {
                             <span className="detail-value">{truck.lastFuel}</span>
                           </div>
                           <div className="detail-row">
-                            <span className="detail-label">🛣️ Kilométrage</span>
+                            <span className="ocry">🛣️ Kilométrage</span>
                             <span className="detail-value">{truck.currentMileage}</span>
                           </div>
                           <div className="detail-row">
@@ -661,32 +644,6 @@ const FleetDashboard = () => {
                     ))
                 ) : (
                   <p>Aucune alerte.</p>
-                )}
-              </div>
-            )}
-          </section>
-
-          <section className={`recent-fuel-activities ${showFuelActivities ? "expanded" : "collapsed"}`}>
-            <div className="fuel-activities-header">
-              <h2>Activités de Carburant Récentes</h2>
-              <button onClick={() => setShowFuelActivities(!showFuelActivities)}>
-                {showFuelActivities ? "X" : "Afficher"}
-              </button>
-            </div>
-            {showFuelActivities && (
-              <div className="fuel-activities-list">
-                {recentFuelActivities.length > 0 ? (
-                  recentFuelActivities.map((activity, index) => (
-                    <div key={index} className="fuel-activity-item">
-                      <span className="fuel-icon">⛽</span>
-                      <div className="fuel-content">
-                        <p>{activity.truck}: {activity.data.litersPer100km.toFixed(2)} L/100km</p>
-                        <span className="fuel-date">{activity.timestamp.toLocaleString()}</span>
-                      </div>
-                    </div>
-                  ))
-                ) : (
-                  <p>Aucune activité de carburant.</p>
                 )}
               </div>
             )}

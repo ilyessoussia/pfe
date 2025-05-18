@@ -14,6 +14,7 @@ import IncidentManagement from './pages/IncidentManagement';
 import ProtectedRoute from "./ProtectedRoute";
 import { AuthProvider } from "./AuthContext";
 import TrailerDashboard from "./pages/TrailerDashboard";
+import TrailerDetails from "./pages/TrailerDetails";
 import DriverPaymentDashboard from "./pages/DriverPaymentDashboard";
 import StockCarburant from "./pages/StockCarburant";
 import DailyCashTracking from './pages/DailyCashTracking';
@@ -88,6 +89,14 @@ const App = () => (
           element={
             <ProtectedRoute>
               <TrailerDashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/trailers/:id"
+          element={
+            <ProtectedRoute>
+              <TrailerDetails />
             </ProtectedRoute>
           }
         />

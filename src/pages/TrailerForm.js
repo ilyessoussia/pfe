@@ -163,7 +163,7 @@ const TrailerForm = ({ trailer, onClose }) => {
               onChange={handleInputChange}
               required
               aria-required="true"
-              placeholder="ex: 1234 TUN 56"
+              placeholder="ex: REM 7722"
             />
           </div>
           <div className="form-group">

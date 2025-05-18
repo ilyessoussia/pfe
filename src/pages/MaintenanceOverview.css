@@ -64,11 +64,12 @@
 
 
 .maintenance-overview-sidebar-footer {
-    margin-top: auto;
-    padding-top: 20px;
-    border-top: 1px solid var(--color-primary-light);
-    font-size: 0.8rem;
-    color: var(--color-primary-muted);
+        margin-top: auto;
+    padding-top: 16px;
+    border-top: 1px solid var(--color-table-border);
+    font-size: 0.85rem;
+    color: var(--color-text-muted);
+    text-align: center;
 }
 
 .maintenance-overview-content {
@@ -83,11 +84,10 @@
 }
 
 .maintenance-overview-header h1 {
-    margin: 0;
-    font-size: 2rem;
-    color: var(--color-primary);
-    font-weight: 400;
-    letter-spacing: 1px;
+  margin: 0;
+  font-size: 2rem;
+  color: var(--color-primary);
+  font-weight: 600;
 }
 
 .maintenance-overview-error-message {
@@ -229,6 +229,100 @@
     font-size: 0.95rem;
     background-color: var(--color-section-background);
     border-radius: 5px;
+}
+.maintenance-overview-error-message {
+  color: var(--color-red);
+  font-weight: 500;
+  margin-bottom: 15px;
+  text-align: center;
+}
+
+.maintenance-overview-success-message {
+  color: var(--color-green);
+  font-weight: 500;
+  margin-bottom: 15px;
+  text-align: center;
+}
+
+.maintenance-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.maintenance-modal {
+  background-color: var(--color-white);
+  border-radius: 8px;
+  padding: 20px;
+  width: 90%;
+  max-width: 500px;
+  box-shadow: 0 6px 12px var(--color-shadow-dark);
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.modal-header h3 {
+  margin: 0;
+  color: var(--color-primary);
+}
+
+.close-modal-btn {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  color: var(--color-text-light);
+}
+
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.submit-btn {
+  padding: 10px 20px;
+  background-color: var(--color-green);
+  border: 2px solid var(--color-green);
+  border-radius: 6px;
+  color: var(--color-white);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.submit-btn:hover {
+  background-color: #059669;
+  box-shadow: 0 2px 4px var(--color-shadow-dark);
+}
+
+.cancel-btn {
+  padding: 10px 20px;
+  background-color: var(--color-red);
+  border: 2px solid var(--color-red);
+  border-radius: 6px;
+  color: var(--color-white);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.cancel-btn:hover {
+  background-color: #DC2626;
+  box-shadow: 0 2px 4px var(--color-shadow-dark);
 }
 
 /* Responsive adjustments */

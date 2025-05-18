@@ -6,7 +6,11 @@ import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend } f
 
 const FuelTab = ({ onFuelAdded }) => {
   const { id } = useParams();
-  const [selectedMonth, setSelectedMonth] = useState("2025-5");
+  const [selectedMonth, setSelectedMonth] = useState(() => {
+    const now = new Date();
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+  });
+  const [monthOptions, setMonthOptions] = useState([]);
   const [showModal, setShowModal] = useState(false);
   const [newRefuel, setNewRefuel] = useState({
     kilometers: "",
@@ -179,6 +183,57 @@ const FuelTab = ({ onFuelAdded }) => {
     fetchLastFuelEntry();
     fetchFuelHistory();
   }, [id, fetchFuelHistory]);
+
+  // Generate monthOptions dynamically from localHistory
+  useEffect(() => {
+    const frenchMonths = [
+      "janvier", "février", "mars", "avril", "mai", "juin",
+      "juillet", "août", "septembre", "octobre", "novembre", "décembre"
+    ];
+    const monthsSet = new Set();
+    
+    // Extract unique year-month pairs from localHistory
+    localHistory.forEach((entry) => {
+      if (entry.raw_date) {
+        const date = parseDate(entry.raw_date);
+        if (!isNaN(date.getTime())) {
+          const year = date.getFullYear();
+          const month = String(date.getMonth() + 1).padStart(2, "0");
+          monthsSet.add(`${year}-${month}`);
+        }
+      }
+    });
+
+    // Convert to monthOptions format
+    const options = Array.from(monthsSet)
+      .map((yearMonth) => {
+        const [year, month] = yearMonth.split('-').map(Number);
+        return {
+          value: yearMonth,
+          label: `${frenchMonths[month - 1]} ${year}`
+        };
+      })
+      .sort((a, b) => a.value.localeCompare(b.value));
+
+    // If no data, add current month as default
+    if (options.length === 0) {
+      const now = new Date();
+      const year = now.getFullYear();
+      const month = String(now.getMonth() + 1).padStart(2, "0");
+      options.push({
+        value: `${year}-${month}`,
+        label: `${frenchMonths[now.getMonth()]} ${year}`
+      });
+    }
+
+    setMonthOptions(options);
+
+    // Set selectedMonth to the most recent month with data or current month
+    const mostRecentMonth = options.length > 0 ? options[options.length - 1].value : selectedMonth;
+    if (!options.some(option => option.value === selectedMonth)) {
+      setSelectedMonth(mostRecentMonth);
+    }
+  }, [localHistory, selectedMonth]);
 
   useEffect(() => {
     if (localHistory && localHistory.length > 0) {
@@ -401,7 +456,7 @@ const FuelTab = ({ onFuelAdded }) => {
           tank_id: tankData.id,
           amount: -liters,
           type: 'refuel',
-          truck_id: id, // UUID string from useParams()
+          truck_id: id,
           created_at: new Date().toISOString(),
         }]);
       if (transactionError) {
@@ -438,13 +493,6 @@ const FuelTab = ({ onFuelAdded }) => {
       setLoading(false);
     }
   };
-
-  const monthOptions = [
-    { value: "2025-2", label: "février 2025" },
-    { value: "2025-3", label: "mars 2025" },
-    { value: "2025-4", label: "avril 2025" },
-    { value: "2025-5", label: "mai 2025" },
-  ];
 
   return (
     <div className="fuel-tab-content">

@@ -15,6 +15,8 @@ const Parc = () => {
     partNumber: '',
     location: '',
     description: '',
+    fournisseur: '',
+    date_acquisition: '',
   });
   const [editingPartId, setEditingPartId] = useState(null);
   const [editFormData, setEditFormData] = useState(null);
@@ -24,6 +26,8 @@ const Parc = () => {
   const [successMessage, setSuccessMessage] = useState('');
   const [filterType, setFilterType] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
+  const [usageSearchQuery, setUsageSearchQuery] = useState('');
+  const [purchaseSearchQuery, setPurchaseSearchQuery] = useState('');
   const [lastUpdated, setLastUpdated] = useState(new Date().toLocaleString());
   const [showUseModal, setShowUseModal] = useState(false);
   const [showRestockModal, setShowRestockModal] = useState(false);
@@ -35,10 +39,13 @@ const Parc = () => {
   });
   const [restockFormData, setRestockFormData] = useState({
     quantity: 1,
+    fournisseur: '',
+    date_acquisition: new Date().toISOString().split('T')[0],
   });
   const [trucks, setTrucks] = useState([]);
   const [trailers, setTrailers] = useState([]);
   const [usageHistory, setUsageHistory] = useState([]);
+  const [purchaseHistory, setPurchaseHistory] = useState([]);
 
   const fetchData = useCallback(async () => {
     try {
@@ -91,10 +98,27 @@ const Parc = () => {
       if (historyError) throw historyError;
       setUsageHistory(historyData);
 
+      // Fetch purchase history
+      const { data: purchaseData, error: purchaseError } = await supabase
+        .from('part_purchase_history')
+        .select(`
+          id,
+          part_id,
+          quantity,
+          fournisseur,
+          date_acquisition,
+          created_at,
+          spare_parts(name)
+        `)
+        .order('created_at', { ascending: false });
+
+      if (purchaseError) throw purchaseError;
+      setPurchaseHistory(purchaseData);
+
       setLastUpdated(new Date().toLocaleString());
     } catch (err) {
       console.error("Erreur lors du chargement des données:", err);
-      setError("Échec du chargement des données d'inventaire, des camions, des remorques ou de l'historique.");
+      setError("Échec du chargement des données d'inventaire, des camions, des remorques, de l'historique d'utilisation ou d'achat.");
     } finally {
       setLoading(false);
     }
@@ -102,6 +126,61 @@ const Parc = () => {
 
   useEffect(() => {
     fetchData();
+
+    const usageSubscription = supabase
+      .channel('part_usage_history_changes')
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'part_usage_history' },
+        async (payload) => {
+          const { data } = await supabase
+            .from('part_usage_history')
+            .select(`
+              id,
+              part_id,
+              truck_id,
+              trailer_id,
+              quantity_used,
+              used_at,
+              spare_parts(name),
+              trucks(immatriculation),
+              trailers(immatriculation)
+            `)
+            .eq('id', payload.new.id)
+            .single();
+          setUsageHistory((prev) => [data, ...prev]);
+        }
+      )
+      .subscribe();
+
+    const purchaseSubscription = supabase
+      .channel('part_purchase_history_changes')
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'part_purchase_history' },
+        async (payload) => {
+          const { data } = await supabase
+            .from('part_purchase_history')
+            .select(`
+              id,
+              part_id,
+              quantity,
+              fournisseur,
+              date_acquisition,
+              created_at,
+              spare_parts(name)
+            `)
+            .eq('id', payload.new.id)
+            .single();
+          setPurchaseHistory((prev) => [data, ...prev]);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(usageSubscription);
+      supabase.removeChannel(purchaseSubscription);
+    };
   }, [fetchData]);
 
   const handleInputChange = (e) => {
@@ -153,13 +232,33 @@ const Parc = () => {
         part_number: formData.partNumber || null,
         location: formData.location || null,
         description: formData.description || null,
+        fournisseur: formData.fournisseur || null,
+        date_acquisition: formData.date_acquisition || null,
       };
 
-      const { error } = await supabase
+      const { data: insertedPart, error: insertError } = await supabase
         .from('spare_parts')
-        .insert([newPart]);
+        .insert([newPart])
+        .select()
+        .single();
 
-      if (error) throw error;
+      if (insertError) throw insertError;
+
+      // Log purchase in history
+      if (formData.fournisseur || formData.date_acquisition) {
+        const purchaseLog = {
+          part_id: insertedPart.id,
+          quantity: parseInt(formData.quantity) || 1,
+          fournisseur: formData.fournisseur || null,
+          date_acquisition: formData.date_acquisition || new Date().toISOString().split('T')[0],
+        };
+
+        const { error: logError } = await supabase
+          .from('part_purchase_history')
+          .insert([purchaseLog]);
+
+        if (logError) throw logError;
+      }
 
       setFormData({
         name: '',
@@ -170,6 +269,8 @@ const Parc = () => {
         partNumber: '',
         location: '',
         description: '',
+        fournisseur: '',
+        date_acquisition: '',
       });
 
       setSuccessMessage('Pièce ajoutée avec succès!');
@@ -196,6 +297,8 @@ const Parc = () => {
       partNumber: part.part_number || '',
       location: part.location || '',
       description: part.description || '',
+      fournisseur: part.fournisseur || '',
+      date_acquisition: part.date_acquisition ? new Date(part.date_acquisition).toISOString().split('T')[0] : '',
     });
     setActiveTab(part.category === 'truck' ? 'edit-truck' : 'edit-general');
   };
@@ -215,6 +318,8 @@ const Parc = () => {
         part_number: editFormData.partNumber || null,
         location: editFormData.location || null,
         description: editFormData.description || null,
+        fournisseur: editFormData.fournisseur || null,
+        date_acquisition: editFormData.date_acquisition || null,
       };
 
       const { error } = await supabase
@@ -316,6 +421,8 @@ const Parc = () => {
     setSelectedPart(part);
     setRestockFormData({
       quantity: 1,
+      fournisseur: '',
+      date_acquisition: new Date().toISOString().split('T')[0],
     });
     setShowRestockModal(true);
   };
@@ -340,6 +447,20 @@ const Parc = () => {
 
       if (updateError) throw updateError;
 
+      // Log purchase in history
+      const purchaseLog = {
+        part_id: selectedPart.id,
+        quantity: quantityAdded,
+        fournisseur: restockFormData.fournisseur || null,
+        date_acquisition: restockFormData.date_acquisition || new Date().toISOString().split('T')[0],
+      };
+
+      const { error: logError } = await supabase
+        .from('part_purchase_history')
+        .insert([purchaseLog]);
+
+      if (logError) throw logError;
+
       setSuccessMessage(`Ajout de ${quantityAdded} pièce(s) au stock enregistré avec succès!`);
       setTimeout(() => setSuccessMessage(''), 3000);
 
@@ -348,6 +469,8 @@ const Parc = () => {
       setSelectedPart(null);
       setRestockFormData({
         quantity: 1,
+        fournisseur: '',
+        date_acquisition: new Date().toISOString().split('T')[0],
       });
     } catch (err) {
       console.error("Erreur lors de l'ajout au stock:", err);
@@ -365,6 +488,25 @@ const Parc = () => {
       return part.name?.toLowerCase().includes(searchQuery.toLowerCase());
     });
 
+  const filteredUsageHistory = usageHistory.filter(entry => {
+    if (!usageSearchQuery) return true;
+    const searchLower = usageSearchQuery.toLowerCase();
+    return (
+      entry.spare_parts?.name?.toLowerCase().includes(searchLower) ||
+      entry.trucks?.immatriculation?.toLowerCase().includes(searchLower) ||
+      entry.trailers?.immatriculation?.toLowerCase().includes(searchLower)
+    );
+  });
+
+  const filteredPurchaseHistory = purchaseHistory.filter(entry => {
+    if (!purchaseSearchQuery) return true;
+    const searchLower = purchaseSearchQuery.toLowerCase();
+    return (
+      entry.spare_parts?.name?.toLowerCase().includes(searchLower) ||
+      entry.fournisseur?.toLowerCase().includes(searchLower)
+    );
+  });
+
   return (
     <div className="fleet-management-container">
       <aside className="sidebar">
@@ -378,9 +520,9 @@ const Parc = () => {
             <li className="active">
               <Link to="/parc">🔧 Gestion des Pièces</Link>
             </li>
-                        <li>
+            <li>
               <Link to="/fleet/stock-carburant">⛽ Stock Carburant</Link>
-           </li>
+            </li>
             <li>
               <Link to="/stock">📦 Gestion de Stock</Link>
             </li>
@@ -403,7 +545,7 @@ const Parc = () => {
         </nav>
         <div className="fleet-management-sidebar-footer">
           <p>Version 1.2.0</p>
-          <p>© 2025 Fleet Manager</p>
+          <p>© 2025 </p>
         </div>
       </aside>
 
@@ -463,6 +605,16 @@ const Parc = () => {
           >
             Historique d'Utilisation
           </button>
+          <button 
+            className={`fleet-management-tab ${activeTab === 'purchase-history' ? 'active' : ''}`}
+            onClick={() => {
+              setActiveTab('purchase-history');
+              setEditingPartId(null);
+              setEditFormData(null);
+            }}
+          >
+            Historique d'Achat
+          </button>
         </div>
 
         {successMessage && (
@@ -515,6 +667,8 @@ const Parc = () => {
                       <th>Prix</th>
                       <th>Numéro de Pièce</th>
                       <th>Emplacement</th>
+                      <th>Fournisseur</th>
+                      <th>Date d'Acquisition</th>
                       {filterType === 'truck' || filterType === 'all' ? <th>Type de Camion</th> : null}
                       <th>Actions</th>
                     </tr>
@@ -529,6 +683,8 @@ const Parc = () => {
                           <td>{parseFloat(part.price).toFixed(2)} DT</td>
                           <td>{part.part_number || '-'}</td>
                           <td>{part.location || '-'}</td>
+                          <td>{part.fournisseur || '-'}</td>
+                          <td>{part.date_acquisition ? new Date(part.date_acquisition).toLocaleDateString('fr-FR') : '-'}</td>
                           {(filterType === 'truck' || filterType === 'all') && 
                             <td>{part.category === 'truck' ? part.truck_type : '-'}</td>
                           }
@@ -557,7 +713,7 @@ const Parc = () => {
                       ))
                     ) : (
                       <tr>
-                        <td colSpan={filterType === 'all' ? 8 : 7} className="fleet-management-no-data">
+                        <td colSpan={filterType === 'all' ? 10 : 9} className="fleet-management-no-data">
                           {loading ? 'Chargement...' : 'Aucune pièce trouvée dans l\'inventaire. Utilisez les onglets ci-dessus pour ajouter des pièces.'}
                         </td>
                       </tr>
@@ -571,10 +727,22 @@ const Parc = () => {
 
         {activeTab === 'history' && (
           <div className="fleet-management-inventory-section">
-            <h2>Historique d'Utilisation des Pièces</h2>
+            <div className="fleet-management-filter-controls">
+              <h2>Historique d'Utilisation des Pièces</h2>
+              <div className="fleet-management-filter-options">
+                <label className="fleet-management-label">Rechercher: </label>
+                <input
+                  type="text"
+                  placeholder="Rechercher par nom de pièce ou immatriculation..."
+                  value={usageSearchQuery}
+                  onChange={e => setUsageSearchQuery(e.target.value)}
+                  className="fleet-management-search-bar"
+                />
+              </div>
+            </div>
             {loading ? (
               <div className="fleet-management-loading">Chargement de l'historique...</div>
-            ) : usageHistory.length > 0 ? (
+            ) : filteredUsageHistory.length > 0 ? (
               <div className="fleet-management-parts-table-container">
                 <table className="fleet-management-parts-table">
                   <thead>
@@ -586,7 +754,7 @@ const Parc = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {usageHistory.map((entry) => (
+                    {filteredUsageHistory.map((entry) => (
                       <tr key={entry.id}>
                         <td>{entry.spare_parts?.name || 'Pièce inconnue'}</td>
                         <td>
@@ -606,6 +774,56 @@ const Parc = () => {
             ) : (
               <div className="fleet-management-no-data">
                 Aucun historique d'utilisation trouvé.
+              </div>
+            )}
+          </div>
+        )}
+
+        {activeTab === 'purchase-history' && (
+          <div className="fleet-management-inventory-section">
+            <div className="fleet-management-filter-controls">
+              <h2>Historique d'Achat des Pièces</h2>
+              <div className="fleet-management-filter-options">
+                <label className="fleet-management-label">Rechercher: </label>
+                <input
+                  type="text"
+                  placeholder="Rechercher par nom de pièce ou fournisseur..."
+                  value={purchaseSearchQuery}
+                  onChange={e => setPurchaseSearchQuery(e.target.value)}
+                  className="fleet-management-search-bar"
+                />
+              </div>
+            </div>
+            {loading ? (
+              <div className="fleet-management-loading">Chargement de l'historique...</div>
+            ) : filteredPurchaseHistory.length > 0 ? (
+              <div className="fleet-management-parts-table-container">
+                <table className="fleet-management-parts-table">
+                  <thead>
+                    <tr>
+                      <th>Pièce</th>
+                      <th>Fournisseur</th>
+                      <th>Quantité</th>
+                      <th>Date d'Acquisition</th>
+                      <th>Date d'Enregistrement</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredPurchaseHistory.map((entry) => (
+                      <tr key={entry.id}>
+                        <td>{entry.spare_parts?.name || 'Pièce inconnue'}</td>
+                        <td>{entry.fournisseur || '-'}</td>
+                        <td>{entry.quantity}</td>
+                        <td>{new Date(entry.date_acquisition).toLocaleDateString('fr-FR')}</td>
+                        <td>{new Date(entry.created_at).toLocaleString('fr-FR')}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <div className="fleet-management-no-data">
+                Aucun historique d'achat trouvé.
               </div>
             )}
           </div>
@@ -680,6 +898,30 @@ const Parc = () => {
                 </div>
               </div>
 
+              <div className="fleet-management-form-row">
+                <div className="fleet-management-form-group">
+                  <label htmlFor="fournisseur">Fournisseur</label>
+                  <input
+                    type="text"
+                    id="fournisseur"
+                    name="fournisseur"
+                    value={formData.fournisseur}
+                    onChange={handleInputChange}
+                  />
+                </div>
+
+                <div className="fleet-management-form-group">
+                  <label htmlFor="date_acquisition">Date d'Acquisition</label>
+                  <input
+                    type="date"
+                    id="date_acquisition"
+                    name="date_acquisition"
+                    value={formData.date_acquisition}
+                    onChange={handleInputChange}
+                  />
+                </div>
+              </div>
+
               {activeTab === 'add-truck' && (
                 <div className="fleet-management-form-group">
                   <label htmlFor="truckType">Type/Modèle de Camion*</label>
@@ -722,6 +964,8 @@ const Parc = () => {
                       partNumber: '',
                       location: '',
                       description: '',
+                      fournisseur: '',
+                      date_acquisition: '',
                     });
                   }}
                   disabled={submitting}
@@ -797,6 +1041,30 @@ const Parc = () => {
                     id="edit-location"
                     name="location"
                     value={editFormData.location}
+                    onChange={handleEditInputChange}
+                  />
+                </div>
+              </div>
+
+              <div className="fleet-management-form-row">
+                <div className="fleet-management-form-group">
+                  <label htmlFor="edit-fournisseur">Fournisseur</label>
+                  <input
+                    type="text"
+                    id="edit-fournisseur"
+                    name="fournisseur"
+                    value={editFormData.fournisseur}
+                    onChange={handleEditInputChange}
+                  />
+                </div>
+
+                <div className="fleet-management-form-group">
+                  <label htmlFor="edit-date_acquisition">Date d'Acquisition</label>
+                  <input
+                    type="date"
+                    id="edit-date_acquisition"
+                    name="date_acquisition"
+                    value={editFormData.date_acquisition}
                     onChange={handleEditInputChange}
                   />
                 </div>
@@ -929,6 +1197,27 @@ const Parc = () => {
                     name="quantity"
                     min="1"
                     value={restockFormData.quantity}
+                    onChange={handleRestockInputChange}
+                    required
+                  />
+                </div>
+                <div className="fleet-management-form-group">
+                  <label htmlFor="fournisseur">Fournisseur</label>
+                  <input
+                    type="text"
+                    id="fournisseur"
+                    name="fournisseur"
+                    value={restockFormData.fournisseur}
+                    onChange={handleRestockInputChange}
+                  />
+                </div>
+                <div className="fleet-management-form-group">
+                  <label htmlFor="date_acquisition">Date d'Acquisition*</label>
+                  <input
+                    type="date"
+                    id="date_acquisition"
+                    name="date_acquisition"
+                    value={restockFormData.date_acquisition}
                     onChange={handleRestockInputChange}
                     required
                   />
