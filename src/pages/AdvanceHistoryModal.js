@@ -1,16 +1,17 @@
 import React from "react";
 import "./PaymentAdvanceHistoryModal.css";
 
-const PaymentAdvanceHistoryModal = ({ driver, advances, payments, month, onEditAdvance, onDeleteAdvance, onEditPayment, onDeletePayment, onClose }) => {
-  // Filter advances and payments by the selected month
+const PaymentAdvanceHistoryModal = ({ driver, advances, payments, absences, month, onEditAdvance, onDeleteAdvance, onEditPayment, onDeletePayment, onDeleteAbsence, onClose }) => {
   const filteredAdvances = advances.filter(
     (a) => a.advance_date && new Date(a.advance_date).toISOString().slice(0, 7) === month
   );
   const filteredPayments = payments.filter(
     (p) => p.payment_date && new Date(p.payment_date).toISOString().slice(0, 7) === month
   );
+  const filteredAbsences = absences.filter(
+    (a) => a.absence_date && new Date(a.absence_date).toISOString().slice(0, 7) === month
+  );
 
-  // Combine advances and payments into a single history array (all months for display)
   const history = [
     ...advances.map((advance) => ({
       id: advance.id,
@@ -48,16 +49,27 @@ const PaymentAdvanceHistoryModal = ({ driver, advances, payments, month, onEditA
       status: payment.status || "N/A",
       original: payment,
     })),
+    ...absences.map((absence) => ({
+      id: absence.id,
+      type: "Absence",
+      date: absence.absence_date
+        ? new Date(absence.absence_date).toLocaleDateString("fr-FR")
+        : "N/A",
+      amount: typeof absence.deduction_amount === "number" ? absence.deduction_amount.toFixed(2) : "0.00",
+      description: `Absence de ${absence.days_absent} jour(s)` || "N/A",
+      payment_method: "N/A",
+      numero_de_virement: "N/A",
+      status: null,
+      original: absence,
+    })),
   ];
 
-  // Sort by date (newest first)
   history.sort((a, b) => {
     const dateA = a.date !== "N/A" ? new Date(a.date.split("/").reverse().join("-")) : new Date(0);
     const dateB = b.date !== "N/A" ? new Date(b.date.split("/").reverse().join("-")) : new Date(0);
     return dateB - dateA;
   });
 
-  // Calculate totals for the selected month
   const totalAdvances = filteredAdvances.reduce(
     (total, advance) => total + (typeof advance.amount === "number" ? advance.amount : 0),
     0
@@ -66,9 +78,13 @@ const PaymentAdvanceHistoryModal = ({ driver, advances, payments, month, onEditA
     (total, payment) => total + (typeof payment.salary_paid === "number" ? payment.salary_paid : 0),
     0
   );
+  const totalDeductions = filteredAbsences.reduce(
+    (total, absence) => total + (typeof absence.deduction_amount === "number" ? absence.deduction_amount : 0),
+    0
+  );
   const totalPaid = totalAdvances + totalPayments;
   const baseSalary = typeof driver.base_salary === "number" ? driver.base_salary : 0;
-  const remainingSalary = baseSalary - totalPaid;
+  const remainingSalary = baseSalary - totalPaid - totalDeductions;
 
   return (
     <div className="modal-overlay">
@@ -86,12 +102,16 @@ const PaymentAdvanceHistoryModal = ({ driver, advances, payments, month, onEditA
             <div className="summary-value">{baseSalary.toFixed(2)} TND</div>
           </div>
           <div className="summary-item">
-            <div className="summary-label">Règlement salaire</div>
+            <div className="summary-label">Règlement salaire:</div>
             <div className="summary-value">{totalPayments.toFixed(2)} TND</div>
           </div>
           <div className="summary-item">
             <div className="summary-label">A compte:</div>
             <div className="summary-value">{totalAdvances.toFixed(2)} TND</div>
+          </div>
+          <div className="summary-item">
+            <div className="summary-label">Déductions (Absences):</div>
+            <div className="summary-value">{totalDeductions.toFixed(2)} TND</div>
           </div>
           <div className="summary-item">
             <div className="summary-label">Total Payé:</div>
@@ -124,7 +144,11 @@ const PaymentAdvanceHistoryModal = ({ driver, advances, payments, month, onEditA
                 {history.map((item) => (
                   <tr
                     key={`${item.type}-${item.id}`}
-                    className={item.type === "Avance" ? "advance-row" : "payment-row"}
+                    className={
+                      item.type === "Avance" ? "advance-row" :
+                      item.type === "Paiement" ? "payment-row" :
+                      "absence-row"
+                    }
                   >
                     <td>{item.date}</td>
                     <td>{item.type}</td>
@@ -134,13 +158,30 @@ const PaymentAdvanceHistoryModal = ({ driver, advances, payments, month, onEditA
                     <td>{item.numero_de_virement}</td>
                     <td>{item.status}</td>
                     <td>
-                    
+                      {item.type === "Avance" && (
+                        <button
+                          className="history-edit-btn"
+                          onClick={() => onEditAdvance(item.original)}
+                        >
+                          Modifier
+                        </button>
+                      )}
+                      {item.type === "Paiement" && (
+                        <button
+                          className="history-edit-btn"
+                          onClick={() => onEditPayment(item.original)}
+                        >
+                          Modifier
+                        </button>
+                      )}
                       <button
                         className="history-delete-btn"
                         onClick={() =>
                           item.type === "Avance"
                             ? onDeleteAdvance(item.id)
-                            : onDeletePayment(item.id)
+                            : item.type === "Paiement"
+                            ? onDeletePayment(item.id)
+                            : onDeleteAbsence(item.id)
                         }
                       >
                         Supprimer

@@ -7,21 +7,91 @@ import AdvanceForm from "./AdvanceForm";
 import PaymentAdvanceHistoryModal from "./AdvanceHistoryModal";
 import { supabase } from "../supabase";
 
+const AbsenceModal = ({ driver, onClose, onSave }) => {
+  const [daysAbsent, setDaysAbsent] = useState(0);
+  const [deductionAmount, setDeductionAmount] = useState(0);
+
+  const handleSave = async () => {
+    try {
+      const { error } = await supabase
+        .from("driver_absences")
+        .insert({
+          driver_id: driver.id,
+          absence_date: new Date().toISOString(),
+          days_absent: parseInt(daysAbsent),
+          deduction_amount: parseFloat(deductionAmount),
+        });
+      if (error) throw error;
+      onSave();
+      onClose();
+    } catch (err) {
+      console.error("Error saving absence:", err);
+      alert("Échec de l'enregistrement de l'absence. Veuillez réessayer.");
+    }
+  };
+
+  return (
+    <div className="modal-overlay">
+      <div className="modal-content">
+        <div className="modal-header">
+          <h3>Enregistrer une absence pour {driver.name}</h3>
+          <button className="close-modal-btn" onClick={onClose}>
+            ×
+          </button>
+        </div>
+        <div className="modal-body">
+          <div className="form-group">
+            <label>Nombre de jours d'absence:</label>
+            <input
+              type="number"
+              value={daysAbsent}
+              onChange={(e) => setDaysAbsent(e.target.value)}
+              min="0"
+              className="form-input"
+            />
+          </div>
+          <div className="form-group">
+            <label>Montant de la déduction (TND):</label>
+            <input
+              type="number"
+              value={deductionAmount}
+              onChange={(e) => setDeductionAmount(e.target.value)}
+              min="0"
+              step="0.01"
+              className="form-input"
+            />
+          </div>
+        </div>
+        <div className="modal-footer">
+          <button className="save-btn" onClick={handleSave}>
+            Enregistrer
+          </button>
+          <button className="close-btn" onClick={onClose}>
+            Annuler
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const DriverPaymentDashboard = () => {
   const [drivers, setDrivers] = useState([]);
   const [trucks, setTrucks] = useState([]);
   const [advances, setAdvances] = useState([]);
   const [payments, setPayments] = useState([]);
+  const [absences, setAbsences] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [showDriverForm, setShowDriverForm] = useState(false);
   const [showPaymentForm, setShowPaymentForm] = useState(false);
   const [showAdvanceForm, setShowAdvanceForm] = useState(false);
+  const [showAbsenceModal, setShowAbsenceModal] = useState(false);
   const [showHistoryModal, setShowHistoryModal] = useState(false);
   const [selectedDriver, setSelectedDriver] = useState(null);
   const [selectedAdvance, setSelectedAdvance] = useState(null);
   const [selectedPayment, setSelectedPayment] = useState(null);
-  const [filterMonth, setFilterMonth] = useState(new Date().toISOString().slice(0, 7)); // YYYY-MM
+  const [filterMonth, setFilterMonth] = useState(new Date().toISOString().slice(0, 7));
   const [filterDriver, setFilterDriver] = useState("all");
   const [lastUpdated, setLastUpdated] = useState(new Date().toLocaleString());
 
@@ -30,41 +100,40 @@ const DriverPaymentDashboard = () => {
       setLoading(true);
       setError(null);
 
-      // Fetch drivers
       const { data: driversData, error: driversError } = await supabase
         .from("drivers")
         .select("*, trucks(immatriculation)")
         .order("name", { ascending: true });
       if (driversError) throw new Error(`Échec du chargement des chauffeurs: ${driversError.message}`);
-      if (!Array.isArray(driversData)) throw new Error("Données des chauffeurs invalides.");
 
-      // Fetch trucks
       const { data: trucksData, error: trucksError } = await supabase
         .from("trucks")
         .select("id, immatriculation")
         .order("immatriculation", { ascending: true });
       if (trucksError) throw new Error(`Échec du chargement des camions: ${trucksError.message}`);
-      if (!Array.isArray(trucksData)) throw new Error("Données des camions invalides.");
       setTrucks(trucksData);
 
-      // Fetch payments
       const { data: paymentsData, error: paymentsError } = await supabase
         .from("driver_payments")
         .select("*")
         .order("payment_date", { ascending: false });
       if (paymentsError) throw new Error(`Échec du chargement des paiements: ${paymentsError.message}`);
-      if (!Array.isArray(paymentsData)) throw new Error("Données des paiements invalides.");
       setPayments(paymentsData);
 
-      // Fetch advances
       const { data: advancesData, error: advancesError } = await supabase
         .from("driver_advances")
         .select("*")
         .order("advance_date", { ascending: false });
       if (advancesError) throw new Error(`Échec du chargement des avances: ${advancesError.message}`);
-      if (!Array.isArray(advancesData)) throw new Error("Données des avances invalides.");
+      setAdvances(advancesData);
 
-      // Format drivers with payment status for current month
+      const { data: absencesData, error: absencesError } = await supabase
+        .from("driver_absences")
+        .select("*")
+        .order("absence_date", { ascending: false });
+      if (absencesError) throw new Error(`Échec du chargement des absences: ${absencesError.message}`);
+      setAbsences(absencesData);
+
       const formattedDrivers = driversData.map((driver) => {
         const driverPayments = paymentsData
           .filter((p) => p.driver_id === driver.id && p.payment_date)
@@ -80,12 +149,21 @@ const DriverPaymentDashboard = () => {
           (sum, a) => sum + (typeof a.amount === "number" ? a.amount : 0),
           0
         );
+        const driverAbsences = absencesData
+          .filter((a) => a.driver_id === driver.id && a.absence_date)
+          .filter((a) => new Date(a.absence_date).toISOString().slice(0, 7) === filterMonth);
+        const totalDeductions = driverAbsences.reduce(
+          (sum, a) => sum + (typeof a.deduction_amount === "number" ? a.deduction_amount : 0),
+          0
+        );
         const salaryPaid = totalSalaryPaid;
         const baseSalary = typeof driver.base_salary === "number" ? driver.base_salary : 0;
         const totalReceived = salaryPaid + totalAdvances;
-        const remainingSalary = baseSalary - totalReceived;
+        const remainingSalary = baseSalary - totalReceived - totalDeductions;
         const paymentStatus =
-          totalReceived >= baseSalary ? "paid" : totalReceived > 0 ? "partial" : "unpaid";
+          remainingSalary <= 0 ? "paid" :
+          totalReceived > 0 ? "partial" :
+          "unpaid";
 
         return {
           id: driver.id ?? "",
@@ -99,6 +177,7 @@ const DriverPaymentDashboard = () => {
           payment_status: paymentStatus,
           salary_paid: salaryPaid,
           total_advances: totalAdvances,
+          total_deductions: totalDeductions,
           remaining_salary: remainingSalary < 0 ? 0 : remainingSalary,
           payment_method: driverPayments.length > 0 ? driverPayments[0].payment_method : "N/A",
           status: driverPayments.length > 0 ? driverPayments[0].status : "N/A",
@@ -136,39 +215,46 @@ const DriverPaymentDashboard = () => {
     setShowAdvanceForm(true);
   };
 
+  const handleAddAbsence = (driver) => {
+    setSelectedDriver(driver);
+    setShowAbsenceModal(true);
+  };
+
   const handleEditDriver = (driver) => {
     setSelectedDriver(driver);
     setShowDriverForm(true);
   };
 
   const handleDeleteDriver = async (driverId) => {
-    if (!window.confirm("Voulez-vous vraiment supprimer ce chauffeur et toutes ses données associées (paiements et avances) ? Cette action est irréversible.")) return;
+    if (!window.confirm("Voulez-vous vraiment supprimer ce chauffeur et toutes ses données associées (paiements, avances et absences) ? Cette action est irréversible.")) return;
     try {
       setLoading(true);
       setError(null);
 
-      // Delete associated payments
       const { error: paymentsError } = await supabase
         .from("driver_payments")
         .delete()
         .eq("driver_id", driverId);
       if (paymentsError) throw new Error(`Échec de la suppression des paiements: ${paymentsError.message}`);
 
-      // Delete associated advances
       const { error: advancesError } = await supabase
         .from("driver_advances")
         .delete()
         .eq("driver_id", driverId);
       if (advancesError) throw new Error(`Échec de la suppression des avances: ${advancesError.message}`);
 
-      // Delete the driver
+      const { error: absencesError } = await supabase
+        .from("driver_absences")
+        .delete()
+        .eq("driver_id", driverId);
+      if (absencesError) throw new Error(`Échec de la suppression des absences: ${absencesError.message}`);
+
       const { error: driverError } = await supabase
         .from("drivers")
         .delete()
         .eq("id", driverId);
       if (driverError) throw new Error(`Échec de la suppression du chauffeur: ${driverError.message}`);
 
-      // Refresh data to ensure consistency
       await fetchData();
       setLastUpdated(new Date().toLocaleString());
     } catch (err) {
@@ -196,7 +282,7 @@ const DriverPaymentDashboard = () => {
       if (error) throw error;
       setAdvances((prev) => prev.filter((a) => a.id !== advanceId));
       setLastUpdated(new Date().toLocaleString());
-      fetchData(); // Refresh to update payment status
+      fetchData();
     } catch (err) {
       console.error("Error deleting advance:", err);
       setError("Échec de la suppression de l'avance. Veuillez réessayer.");
@@ -220,10 +306,27 @@ const DriverPaymentDashboard = () => {
       if (error) throw error;
       setPayments((prev) => prev.filter((p) => p.id !== paymentId));
       setLastUpdated(new Date().toLocaleString());
-      fetchData(); // Refresh to update payment status
+      fetchData();
     } catch (err) {
       console.error("Error deleting payment:", err);
       setError("Échec de la suppression du paiement. Veuillez réessayer.");
+    }
+  };
+
+  const handleDeleteAbsence = async (absenceId) => {
+    if (!window.confirm("Voulez-vous vraiment supprimer cette absence ?")) return;
+    try {
+      const { error } = await supabase
+        .from("driver_absences")
+        .delete()
+        .eq("id", absenceId);
+      if (error) throw error;
+      setAbsences((prev) => prev.filter((a) => a.id !== absenceId));
+      setLastUpdated(new Date().toLocaleString());
+      fetchData();
+    } catch (err) {
+      console.error("Error deleting absence:", err);
+      setError("Échec de la suppression de l'absence. Veuillez réessayer.");
     }
   };
 
@@ -334,16 +437,29 @@ const DriverPaymentDashboard = () => {
           />
         )}
 
+        {showAbsenceModal && (
+          <AbsenceModal
+            driver={selectedDriver}
+            onClose={() => {
+              setShowAbsenceModal(false);
+              setSelectedDriver(null);
+            }}
+            onSave={fetchData}
+          />
+        )}
+
         {showHistoryModal && (
           <PaymentAdvanceHistoryModal
             driver={selectedDriver}
             advances={advances.filter((a) => a.driver_id === selectedDriver?.id)}
             payments={payments.filter((p) => p.driver_id === selectedDriver?.id)}
+            absences={absences.filter((a) => a.driver_id === selectedDriver?.id)}
             month={filterMonth}
             onEditAdvance={handleEditAdvance}
             onDeleteAdvance={handleDeleteAdvance}
             onEditPayment={handleEditPayment}
             onDeletePayment={handleDeletePayment}
+            onDeleteAbsence={handleDeleteAbsence}
             onClose={() => {
               setShowHistoryModal(false);
               setSelectedDriver(null);
@@ -389,6 +505,7 @@ const DriverPaymentDashboard = () => {
                     <th>Salaire de Base</th>
                     <th>A compte</th>
                     <th>Règlement Salaire</th>
+                    <th>Déductions</th>
                     <th>Salaire Restant</th>
                     <th>Statut</th>
                     <th>Actions</th>
@@ -412,6 +529,7 @@ const DriverPaymentDashboard = () => {
                       <td>{driver.base_salary.toFixed(2)} TND</td>
                       <td>{driver.total_advances.toFixed(2)} TND</td>
                       <td>{driver.salary_paid.toFixed(2)} TND</td>
+                      <td>{driver.total_deductions.toFixed(2)} TND</td>
                       <td>{driver.remaining_salary.toFixed(2)} TND</td>
                       <td>
                         {driver.payment_status === "unpaid"
@@ -432,6 +550,12 @@ const DriverPaymentDashboard = () => {
                           onClick={() => handleAddAdvance(driver)}
                         >
                           A compte
+                        </button>
+                        <button
+                          className="action-btn absence-btn"
+                          onClick={() => handleAddAbsence(driver)}
+                        >
+                          Absence
                         </button>
                         <button
                           className="action-btn history-btn"

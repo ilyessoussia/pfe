@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../AuthContext';
 import './Login.css';
+import camionImage from '../pictures/camion.png'; // Import image
 
 const Login = () => {
   const [email, setEmail] = useState('');
@@ -49,12 +50,12 @@ const Login = () => {
         <div className="login-header">
           <h2>Connexion</h2>
           <div className="login-logo">
-            <span className="logo-icon">🚚</span>
+            <img src={camionImage} alt="Camion Logo" />
           </div>
         </div>
 
-        <form onSubmit={handleLogin} className="login-form">
-          <div className="form-group">
+        <form onSubmit={handleLogin} className="login-form" aria-label="Formulaire de connexion">
+          <div className="forme-group">
             <label htmlFor="email">Email</label>
             <input
               id="email"
@@ -64,11 +65,12 @@ const Login = () => {
               onChange={(e) => setEmail(e.target.value)}
               className={errors.email ? "input-error" : ""}
               disabled={isSubmitting}
+              aria-label="Adresse email"
             />
             {errors.email && <span className="error-message">{errors.email}</span>}
           </div>
 
-          <div className="form-group">
+          <div className="forme-group">
             <label htmlFor="password">Mot de passe</label>
             <input
               id="password"
@@ -78,21 +80,20 @@ const Login = () => {
               onChange={(e) => setPassword(e.target.value)}
               className={errors.password ? "input-error" : ""}
               disabled={isSubmitting}
+              aria-label="Mot de passe"
             />
             {errors.password && <span className="error-message">{errors.password}</span>}
           </div>
 
           {errors.auth && <div className="auth-error">{errors.auth}</div>}
 
-          <div className="form-actions">
-            <button
-              type="submit"
-              className="btn-primary"
-              disabled={isSubmitting}
-            >
-              {isSubmitting ? "Connexion en cours..." : "Se connecter"}
-            </button>
-          </div>
+          <button
+            type="submit"
+            className="btne-primary"
+            disabled={isSubmitting}
+          >
+            {isSubmitting ? "Connexion en cours..." : "Se connecter"}
+          </button>
         </form>
       </div>
     </div>
