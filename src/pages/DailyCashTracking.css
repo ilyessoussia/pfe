@@ -9,7 +9,7 @@
   --color-shadow-light: rgba(0, 0, 0, 0.05);
   --color-shadow-dark: rgba(0, 0, 0, 0.15);
   --color-content-background: #F3F4F6;
-  --color-text-light: #111827; /* Darkened from #1F2937 */
+  --color-text-light: #111827;
   --color-text-muted: #6B7280;
   --color-black: #000000;
   --color-button-background: #E0E7FF;
@@ -26,10 +26,10 @@
   --color-success-dark: #059669;
   --color-success-border: rgba(16, 185, 129, 0.3);
   --color-table-border: #9CA3AF;
-  --color-table-header: #D1D9FF; /* Darkened from #E0E7FF */
-  --color-footer-bg: #C7E6FF; /* Darkened from #E0F2FE */
-  --color-chb-bg: #C7E6FF; /* Darkened from #E0F2FE */
-  --color-sntt-bg: #ffb876; /* Darkened from #EDE9FE */
+  --color-table-header: #D1D9FF;
+  --color-footer-bg: #C7E6FF;
+  --color-chb-bg: #C7E6FF;
+  --color-sntt-bg: #ffb876;
 }
 
 .cash-tracking-container {
@@ -38,8 +38,6 @@
   background-color: var(--color-background);
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
-
-
 
 .cash-tracking-fleet-title {
   font-size: 1.5rem;
@@ -51,15 +49,13 @@
   color: var(--color-primary);
 }
 
-
-
 .cash-tracking-sidebar-footer {
-      margin-top: auto;
-    padding-top: 16px;
-    border-top: 1px solid var(--color-table-border);
-    font-size: 0.85rem;
-    color: var(--color-text-muted);
-    text-align: center;
+  margin-top: auto;
+  padding-top: 16px;
+  border-top: 1px solid var(--color-table-border);
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+  text-align: center;
 }
 
 .cash-tracking-content {
@@ -324,6 +320,12 @@
   background-color: var(--color-primary-dark);
 }
 
+.cash-tracking-edit-btn:disabled,
+.cash-tracking-delete-btn:disabled {
+  background-color: var(--color-text-muted);
+  cursor: not-allowed;
+}
+
 .cash-tracking-delete-btn {
   padding: 8px;
   background-color: var(--color-error);
@@ -344,6 +346,97 @@
   font-size: 1rem;
   background-color: var(--color-section-background);
   border-radius: 5px;
+}
+
+tr[data-editable="false"] {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+tr[data-editable="false"] input,
+tr[data-editable="false"] button {
+  cursor: not-allowed;
+}
+
+/* Password prompt styles */
+.cash-tracking-password-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  background-color: var(--color-background);
+  padding: 20px;
+}
+
+.cash-tracking-password-title {
+  font-size: 1.8rem;
+  color: var(--color-primary);
+  font-weight: 600;
+  margin-bottom: 10px;
+}
+
+.cash-tracking-password-text {
+  font-size: 1rem;
+  color: var(--color-text-light);
+  margin-bottom: 20px;
+}
+
+.cash-tracking-password-form {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 15px;
+}
+
+.cash-tracking-password-input {
+  width: 200px;
+  padding: 10px;
+  background-color: var(--color-input-background);
+  color: var(--color-text-light);
+  border: 1px solid var(--color-primary);
+  border-radius: 3px;
+  font-size: 1rem;
+  font-weight: 500;
+}
+
+.cash-tracking-password-input:focus {
+  border-color: var(--color-primary-dark);
+  outline: none;
+  background-color: var(--color-input-hover);
+}
+
+.cash-tracking-password-buttons {
+  display: flex;
+  gap: 10px;
+}
+
+.cash-tracking-password-submit {
+  padding: 10px 20px;
+  background-color: var(--color-success);
+  color: #ffffff;
+  border: none;
+  border-radius: 3px;
+  font-size: 1rem;
+  cursor: pointer;
+}
+
+.cash-tracking-password-submit:hover {
+  background-color: var(--color-success-dark);
+}
+
+.cash-tracking-password-cancel {
+  padding: 10px 20px;
+  background-color: var(--color-text-muted);
+  color: #ffffff;
+  border: none;
+  border-radius: 3px;
+  font-size: 1rem;
+  cursor: pointer;
+}
+
+.cash-tracking-password-cancel:hover {
+  background-color: var(--color-border-dark);
 }
 
 /* Responsive adjustments */
@@ -391,5 +484,25 @@
   .cash-tracking-edit-btn,
   .cash-tracking-delete-btn {
     padding: 6px;
+  }
+
+  .cash-tracking-password-container {
+    padding: 15px;
+  }
+
+  .cash-tracking-password-input {
+    width: 100%;
+    max-width: 200px;
+  }
+
+  .cash-tracking-password-buttons {
+    flex-direction: column;
+    width: 100%;
+    max-width: 200px;
+  }
+
+  .cash-tracking-password-submit,
+  .cash-tracking-password-cancel {
+    width: 100%;
   }
 }

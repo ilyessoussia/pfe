@@ -94,6 +94,27 @@ const DriverPaymentDashboard = () => {
   const [filterMonth, setFilterMonth] = useState(new Date().toISOString().slice(0, 7));
   const [filterDriver, setFilterDriver] = useState("all");
   const [lastUpdated, setLastUpdated] = useState(new Date().toLocaleString());
+  const [password, setPassword] = useState('');
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+
+  const handlePasswordSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      const { data, error } = await supabase.rpc('validate_cash_password', { input_password: password });
+      if (error) throw error;
+      if (data) {
+        setIsAuthenticated(true);
+        setError('');
+      } else {
+        setError('Mot de passe incorrect.');
+        setPassword('');
+      }
+    } catch (err) {
+      console.error("Error validating password:", err);
+      setError('Erreur lors de la validation du mot de passe.');
+      setPassword('');
+    }
+  };
 
   const fetchData = useCallback(async () => {
     try {
@@ -185,7 +206,6 @@ const DriverPaymentDashboard = () => {
       });
 
       setDrivers(formattedDrivers);
-      setAdvances(advancesData);
       setLastUpdated(new Date().toLocaleString());
     } catch (err) {
       console.error("Fetch data error:", err);
@@ -196,8 +216,10 @@ const DriverPaymentDashboard = () => {
   }, [filterMonth]);
 
   useEffect(() => {
-    fetchData();
-  }, [filterMonth, fetchData]);
+    if (isAuthenticated) {
+      fetchData();
+    }
+  }, [fetchData, isAuthenticated]);
 
   const handleRefresh = () => {
     fetchData();
@@ -340,6 +362,42 @@ const DriverPaymentDashboard = () => {
     (typeof driver.name === "string" && driver.name.toLowerCase().includes(filterDriver.toLowerCase()))
   );
 
+  // Render password prompt if not authenticated
+  if (!isAuthenticated) {
+    return (
+      <div className="driver-payment-password-container">
+        <h2 className="driver-payment-password-title">Accès à la Gestion des Paiements</h2>
+        <p className="driver-payment-password-text">
+          Veuillez entrer le mot de passe pour accéder à cette fonctionnalité.
+        </p>
+        {error && <p className="driver-payment-error-message">{error}</p>}
+        <form onSubmit={handlePasswordSubmit} className="driver-payment-password-form">
+          <input
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder="Mot de passe"
+            className="driver-payment-password-input"
+            autoFocus
+          />
+          <div className="driver-payment-password-buttons">
+            <button type="submit" className="driver-payment-password-submit">
+              Valider
+            </button>
+            <button
+              type="button"
+              className="driver-payment-password-cancel"
+              onClick={() => window.location.href = '/fleet/dashboard'}
+            >
+              Annuler
+            </button>
+          </div>
+        </form>
+      </div>
+    );
+  }
+
+  // Render main content if authenticated
   return (
     <div className="dashboard-container">
       <aside className="sidebar">

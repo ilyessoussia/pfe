@@ -18,7 +18,28 @@ const DailyCashTracking = () => {
   const [filterType, setFilterType] = useState("today");
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   const [editingRows, setEditingRows] = useState({});
+  const [password, setPassword] = useState('');
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const tableRef = useRef(null);
+
+  const handlePasswordSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      const { data, error } = await supabase.rpc('validate_cash_password', { input_password: password });
+      if (error) throw error;
+      if (data) {
+        setIsAuthenticated(true);
+        setError('');
+      } else {
+        setError('Mot de passe incorrect.');
+        setPassword('');
+      }
+    } catch (err) {
+      console.error("Error validating password:", err);
+      setError('Erreur lors de la validation du mot de passe.');
+      setPassword('');
+    }
+  };
 
   const fetchEntries = useCallback(async () => {
     try {
@@ -67,8 +88,10 @@ const DailyCashTracking = () => {
   }, [filterType, selectedDate]);
 
   useEffect(() => {
-    fetchEntries();
-  }, [fetchEntries]);
+    if (isAuthenticated) {
+      fetchEntries();
+    }
+  }, [fetchEntries, isAuthenticated]);
 
   const handleInputChange = (id, field, value, isNew = false) => {
     if (isNew) {
@@ -139,10 +162,9 @@ const DailyCashTracking = () => {
         const updates = await Promise.all(amounts.map(async ({ field, entity, type }) => {
           const amount = parseFloat(entry[field]) || 0;
           const existingAmount = parseFloat(existingEntry[field]) || 0;
-          const relatedId = existingEntry.relatedIds.find((id, index) => 
+          const relatedId = existingEntry.relatedIds.find((id, index) =>
             amounts[index].field === field && existingAmount > 0
           );
-          
           if (amount > 0 && !relatedId) {
             const { data, error } = await supabase
               .from('cash_entries')
@@ -201,9 +223,15 @@ const DailyCashTracking = () => {
   };
 
   const deleteEntry = async (id) => {
+    const entry = entries.find((e) => e.id === id);
+    const today = new Date().toISOString().split('T')[0];
+    if (entry.date !== today) {
+      setError("Les entrées des jours précédents ne peuvent pas être supprimées.");
+      setTimeout(() => setError(""), 3000);
+      return;
+    }
     if (!window.confirm("Voulez-vous supprimer cette entrée ?")) return;
     try {
-      const entry = entries.find((e) => e.id === id);
       const { error } = await supabase
         .from('cash_entries')
         .delete()
@@ -224,6 +252,12 @@ const DailyCashTracking = () => {
   };
 
   const toggleEdit = (id, entry) => {
+    const today = new Date().toISOString().split('T')[0];
+    if (entry.date !== today) {
+      setError("Les entrées des jours précédents ne peuvent pas être modifiées.");
+      setTimeout(() => setError(""), 3000);
+      return;
+    }
     if (editingRows[id]) {
       saveEntry(entry).then((success) => {
         if (success) {
@@ -416,6 +450,42 @@ const DailyCashTracking = () => {
   const snttTotal = totals.snttInflow - totals.snttOutflow;
   const totalOfTotals = chbTotal + snttTotal;
 
+  // Render password prompt if not authenticated
+  if (!isAuthenticated) {
+    return (
+      <div className="cash-tracking-password-container">
+        <h2 className="cash-tracking-password-title">Accès au Suivi de Caisse</h2>
+        <p className="cash-tracking-password-text">
+          Veuillez entrer le mot de passe pour accéder à cette fonctionnalité.
+        </p>
+        {error && <p className="cash-tracking-error-message">{error}</p>}
+        <form onSubmit={handlePasswordSubmit} className="cash-tracking-password-form">
+          <input
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder="Mot de passe"
+            className="cash-tracking-password-input"
+            autoFocus
+          />
+          <div className="cash-tracking-password-buttons">
+            <button type="submit" className="cash-tracking-password-submit">
+              Valider
+            </button>
+            <button
+              type="button"
+              className="cash-tracking-password-cancel"
+              onClick={() => window.location.href = '/fleet/dashboard'}
+            >
+              Annuler
+            </button>
+          </div>
+        </form>
+      </div>
+    );
+  }
+
+  // Render main content if authenticated
   return (
     <div className="cash-tracking-container">
       <aside className="sidebar">
@@ -436,7 +506,7 @@ const DailyCashTracking = () => {
         </nav>
         <div className="cash-tracking-sidebar-footer">
           <p>Version 1.2.0</p>
-          <p>© 2025 </p>
+          <p>© 2025</p>
         </div>
       </aside>
 
@@ -512,86 +582,92 @@ const DailyCashTracking = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {entries.map((entry) => (
-                    <tr key={entry.id} data-id={entry.id}>
-                      <td>
-                        <input
-                          type="text"
-                          value={entry.description}
-                          onChange={(e) => handleInputChange(entry.id, 'description', e.target.value)}
-                          onKeyDown={(e) => handleKeyDown(e, entry.id, 'description')}
-                          placeholder="ex: Alimentation de caisse"
-                          disabled={!editingRows[entry.id]}
-                        />
-                      </td>
-                      <td>
-                        <input
-                          type="number"
-                          value={entry.chbOutflow || ''}
-                          onChange={(e) => handleInputChange(entry.id, 'chbOutflow', e.target.value)}
-                          onKeyDown={(e) => handleKeyDown(e, entry.id, 'chbOutflow')}
-                          placeholder="0.00"
-                          step="0.01"
-                          min="0"
-                          className="expense-input"
-                          disabled={!editingRows[entry.id]}
-                        />
-                      </td>
-                      <td>
-                        <input
-                          type="number"
-                          value={entry.chbInflow || ''}
-                          onChange={(e) => handleInputChange(entry.id, 'chbInflow', e.target.value)}
-                          onKeyDown={(e) => handleKeyDown(e, entry.id, 'chbInflow')}
-                          placeholder="0.00"
-                          step="0.01"
-                          min="0"
-                          className="income-input"
-                          disabled={!editingRows[entry.id]}
-                        />
-                      </td>
-                      <td>
-                        <input
-                          type="number"
-                          value={entry.snttOutflow || ''}
-                          onChange={(e) => handleInputChange(entry.id, 'snttOutflow', e.target.value)}
-                          onKeyDown={(e) => handleKeyDown(e, entry.id, 'snttOutflow')}
-                          placeholder="0.00"
-                          step="0.01"
-                          min="0"
-                          className="expense-input"
-                          disabled={!editingRows[entry.id]}
-                        />
-                      </td>
-                      <td>
-                        <input
-                          type="number"
-                          value={entry.snttInflow || ''}
-                          onChange={(e) => handleInputChange(entry.id, 'snttInflow', e.target.value)}
-                          onKeyDown={(e) => handleKeyDown(e, entry.id, 'snttInflow')}
-                          placeholder="0.00"
-                          step="0.01"
-                          min="0"
-                          className="income-input"
-                          disabled={!editingRows[entry.id]}
-                        />
-                      </td>
-                      <td>
-                        <button
-                          className={`cash-tracking-edit-btn ${editingRows[entry.id] ? 'save' : 'edit'}`}
-                          onClick={() => toggleEdit(entry.id, entry)}
-                        >
-                          {editingRows[entry.id] ? '✅' : '🖌️'}
-                        </button>
-                        <button
-                          className="cash-tracking-delete-btn"
-                          onClick={() => deleteEntry(entry.id)}
-                        >
-                          🗑️
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
+                  {entries.map((entry) => {
+                    const today = new Date().toISOString().split('T')[0];
+                    const isEditable = entry.date === today;
+                    return (
+                      <tr key={entry.id} data-id={entry.id} data-editable={isEditable}>
+                        <td>
+                          <input
+                            type="text"
+                            value={entry.description}
+                            onChange={(e) => handleInputChange(entry.id, 'description', e.target.value)}
+                            onKeyDown={(e) => handleKeyDown(e, entry.id, 'description')}
+                            placeholder="ex: Alimentation de caisse"
+                            disabled={!editingRows[entry.id] || !isEditable}
+                          />
+                        </td>
+                        <td>
+                          <input
+                            type="number"
+                            value={entry.chbOutflow || ''}
+                            onChange={(e) => handleInputChange(entry.id, 'chbOutflow', e.target.value)}
+                            onKeyDown={(e) => handleKeyDown(e, entry.id, 'chbOutflow')}
+                            placeholder="0.00"
+                            step="0.01"
+                            min="0"
+                            className="expense-input"
+                            disabled={!editingRows[entry.id] || !isEditable}
+                          />
+                        </td>
+                        <td>
+                          <input
+                            type="number"
+                            value={entry.chbInflow || ''}
+                            onChange={(e) => handleInputChange(entry.id, 'chbInflow', e.target.value)}
+                            onKeyDown={(e) => handleKeyDown(e, entry.id, 'chbInflow')}
+                            placeholder="0.00"
+                            step="0.01"
+                            min="0"
+                            className="income-input"
+                            disabled={!editingRows[entry.id] || !isEditable}
+                          />
+                        </td>
+                        <td>
+                          <input
+                            type="number"
+                            value={entry.snttOutflow || ''}
+                            onChange={(e) => handleInputChange(entry.id, 'snttOutflow', e.target.value)}
+                            onKeyDown={(e) => handleKeyDown(e, entry.id, 'snttOutflow')}
+                            placeholder="0.00"
+                            step="0.01"
+                            min="0"
+                            className="expense-input"
+                            disabled={!editingRows[entry.id] || !isEditable}
+                          />
+                        </td>
+                        <td>
+                          <input
+                            type="number"
+                            value={entry.snttInflow || ''}
+                            onChange={(e) => handleInputChange(entry.id, 'snttInflow', e.target.value)}
+                            onKeyDown={(e) => handleKeyDown(e, entry.id, 'snttInflow')}
+                            placeholder="0.00"
+                            step="0.01"
+                            min="0"
+                            className="income-input"
+                            disabled={!editingRows[entry.id] || !isEditable}
+                          />
+                        </td>
+                        <td>
+                          <button
+                            className={`cash-tracking-edit-btn ${editingRows[entry.id] ? 'save' : 'edit'}`}
+                            onClick={() => toggleEdit(entry.id, entry)}
+                            disabled={!isEditable}
+                          >
+                            {editingRows[entry.id] ? '✅' : '🖌️'}
+                          </button>
+                          <button
+                            className="cash-tracking-delete-btn"
+                            onClick={() => deleteEntry(entry.id)}
+                            disabled={!isEditable}
+                          >
+                            🗑️
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
                   <tr>
                     <td>
                       <input

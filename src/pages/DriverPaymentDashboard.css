@@ -363,6 +363,96 @@
   background: var(--color-primary-light);
 }
 
+.driver-payment-password-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  background-color: var(--color-background);
+  padding: 20px;
+}
+
+.driver-payment-password-title {
+  font-size: 1.8rem;
+  color: var(--color-primary);
+  font-weight: 600;
+  margin-bottom: 10px;
+}
+
+.driver-payment-password-text {
+  font-size: 1rem;
+  color: var(--color-text-light);
+  margin-bottom: 20px;
+}
+
+.driver-payment-password-form {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 15px;
+}
+
+.driver-payment-password-input {
+  width: 200px;
+  padding: 10px;
+  background-color: var(--color-input-background);
+  color: var(--color-text-light);
+  border: 1px solid var(--color-primary);
+  border-radius: 3px;
+  font-size: 1rem;
+  font-weight: 500;
+}
+
+.driver-payment-password-input:focus {
+  border-color: var(--color-primary-dark);
+  outline: none;
+  background-color: var(--color-input-hover);
+}
+
+.driver-payment-password-buttons {
+  display: flex;
+  gap: 10px;
+}
+
+.driver-payment-password-submit {
+  padding: 10px 20px;
+  background-color: var(--color-success);
+  color: #ffffff;
+  border: none;
+  border-radius: 3px;
+  font-size: 1rem;
+  cursor: pointer;
+}
+
+.driver-payment-password-submit:hover {
+  background-color: var(--color-success-dark);
+}
+
+.driver-payment-password-cancel {
+  padding: 10px 20px;
+  background-color: var(--color-text-muted);
+  color: #ffffff;
+  border: none;
+  border-radius: 3px;
+  font-size: 1rem;
+  cursor: pointer;
+}
+
+.driver-payment-password-cancel:hover {
+  background-color: var(--color-border-dark);
+}
+
+.driver-payment-error-message {
+  color: var(--color-error);
+  font-size: 0.9rem;
+  padding: 10px;
+  background-color: var(--color-error-bg);
+  border-radius: 3px;
+  margin-bottom: 20px;
+  border: 1px solid var(--color-error);
+}
+
 /* Responsive adjustments for zoom and small screens */
 @media (max-width: 768px), (max-zoom: 1.5) {
   .payment-table {
