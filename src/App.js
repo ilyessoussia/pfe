@@ -1,8 +1,8 @@
 import React from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import Home from "./Home";
-import ProductDetail from "./ProductDetail";
-import Solutions from "./Solutions";
+import ProductDetail from "./siteweb/ProductDetail";
+import Solutions from "./siteweb/Solutions";
 import Login from "./pages/Login";
 import Fleet from "./pages/FleetDashboard";
 import TruckDetails from "./pages/TruckDetails";

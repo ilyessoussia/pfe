@@ -5,12 +5,12 @@ import "swiper/css";
 import "swiper/css/navigation";
 import "swiper/css/pagination";
 import { Navigation, FreeMode } from "swiper/modules";
-import Navbar from "./components/Navbar";
-import Hero from "./components/Hero";
-import Footer from "./components/Footer";
+import Navbar from "../components/Navbar";
+import Hero from "../components/Hero";
+import Footer from "../components/Footer";
 import "./ProductDetail.css";
-import "./App.css";
-import { supabase } from "./supabase";
+import "../App.css";
+import { supabase } from "../supabase";
 
 const ProductDetail = () => {
   const { id } = useParams();

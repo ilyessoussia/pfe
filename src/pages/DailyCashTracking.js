@@ -5,13 +5,7 @@ import { supabase } from "../supabase";
 
 const DailyCashTracking = () => {
   const [entries, setEntries] = useState([]);
-  const [newEntry, setNewEntry] = useState({
-    description: "",
-    chbOutflow: "",
-    chbInflow: "",
-    snttOutflow: "",
-    snttInflow: "",
-  });
+  const [newEntry, setNewEntry] = useState({ description: "", chbOutflow: "", chbInflow: "", snttOutflow: "", snttInflow: "" });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [successMessage, setSuccessMessage] = useState("");
@@ -21,6 +15,15 @@ const DailyCashTracking = () => {
   const [password, setPassword] = useState('');
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const tableRef = useRef(null);
+
+  const normalizeDate = (date) => {
+    try {
+      return date ? new Date(date).toISOString().split('T')[0] : new Date().toISOString().split('T')[0];
+    } catch (err) {
+      console.error("Date normalization error:", err);
+      return new Date().toISOString().split('T')[0];
+    }
+  };
 
   const handlePasswordSubmit = async (e) => {
     e.preventDefault();
@@ -46,15 +49,17 @@ const DailyCashTracking = () => {
       setLoading(true);
       let query = supabase.from('cash_entries').select('*').order('created_at', { ascending: true });
       if (filterType === "today") {
-        const today = new Date().toISOString().split('T')[0];
+        const today = normalizeDate(new Date());
         query = query.eq('date', today);
       } else if (filterType === "specific" && selectedDate) {
         query = query.eq('date', selectedDate);
       }
       const { data, error } = await query;
       if (error) throw error;
+      console.log("Raw entries:", data.map(e => ({ id: e.id, date: e.date })));
       const formattedEntries = data.reduce((acc, entry) => {
-        const existing = acc.find((e) => e.description === entry.description && e.date === entry.date);
+        const entryDate = normalizeDate(entry.date);
+        const existing = acc.find((e) => e.description === entry.description && e.date === entryDate);
         const amount = parseFloat(entry.amount) || 0;
         if (existing) {
           if (entry.entity === 'CHB') {
@@ -71,7 +76,7 @@ const DailyCashTracking = () => {
             chbOutflow: entry.entity === 'CHB' && entry.type === 'outflow' ? amount : 0,
             snttInflow: entry.entity === 'SNTT' && entry.type === 'inflow' ? amount : 0,
             snttOutflow: entry.entity === 'SNTT' && entry.type === 'outflow' ? amount : 0,
-            date: entry.date,
+            date: entryDate,
             createdAt: new Date(entry.created_at),
             relatedIds: [entry.id],
           });
@@ -126,20 +131,14 @@ const DailyCashTracking = () => {
       return false;
     }
     try {
-      const today = selectedDate || new Date().toISOString().split('T')[0];
+      const today = selectedDate || normalizeDate(new Date());
       if (isNew) {
         if (nonEmptyAmounts.length === 0) return false;
         const { field, entity, type } = nonEmptyAmounts[0];
         const amount = parseFloat(entry[field]);
         const { data, error } = await supabase
           .from('cash_entries')
-          .insert([{
-            date: today,
-            entity,
-            type,
-            amount,
-            description: entry.description,
-          }])
+          .insert([{ date: today, entity, type, amount, description: entry.description }])
           .select();
         if (error) throw error;
         setEntries((prev) => [
@@ -168,13 +167,7 @@ const DailyCashTracking = () => {
           if (amount > 0 && !relatedId) {
             const { data, error } = await supabase
               .from('cash_entries')
-              .insert([{
-                date: entry.date,
-                entity,
-                type,
-                amount,
-                description: entry.description,
-              }])
+              .insert([{ date: entry.date, entity, type, amount, description: entry.description }])
               .select();
             if (error) throw error;
             return { id: data[0].id, field };
@@ -224,7 +217,7 @@ const DailyCashTracking = () => {
 
   const deleteEntry = async (id) => {
     const entry = entries.find((e) => e.id === id);
-    const today = new Date().toISOString().split('T')[0];
+    const today = normalizeDate(new Date());
     if (entry.date !== today) {
       setError("Les entrées des jours précédents ne peuvent pas être supprimées.");
       setTimeout(() => setError(""), 3000);
@@ -252,8 +245,10 @@ const DailyCashTracking = () => {
   };
 
   const toggleEdit = (id, entry) => {
-    const today = new Date().toISOString().split('T')[0];
-    if (entry.date !== today) {
+    const today = normalizeDate(new Date());
+    const isEditable = entry.date === today;
+    console.log(`Toggle edit: id=${id}, date=${entry.date}, today=${today}, isEditable=${isEditable}, editing=${editingRows[id]}`);
+    if (!isEditable) {
       setError("Les entrées des jours précédents ne peuvent pas être modifiées.");
       setTimeout(() => setError(""), 3000);
       return;
@@ -305,142 +300,13 @@ const DailyCashTracking = () => {
   };
 
   const printTable = () => {
-    const todayEntries = entries.filter(
-      (entry) => entry.date === new Date().toISOString().split('T')[0]
-    );
+    const todayEntries = entries.filter((entry) => entry.date === normalizeDate(new Date()));
     const totals = calculateTotals();
     const chbTotal = totals.chbInflow - totals.chbOutflow;
     const snttTotal = totals.snttInflow - totals.snttOutflow;
     const totalOfTotals = chbTotal + snttTotal;
-
     const printWindow = window.open('', '_blank');
-    printWindow.document.write(`
-      <html>
-        <head>
-          <title>Journal de Caisse - ${new Date().toLocaleDateString('fr-FR', {
-            weekday: 'long',
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric',
-          })}</title>
-          <style>
-            body {
-              font-family: Arial, sans-serif;
-              margin: 20px;
-            }
-            h1 {
-              text-align: center;
-              font-size: 24px;
-              margin-bottom: 10px;
-            }
-            h2 {
-              text-align: center;
-              font-size: 18px;
-              margin-bottom: 20px;
-            }
-            table {
-              width: 100%;
-              border-collapse: collapse;
-              margin-bottom: 20px;
-            }
-            th, td {
-              border: 1px solid #000;
-              padding: 8px;
-              text-align: left;
-            }
-            th {
-              background-color: #f2f2f2;
-              font-weight: bold;
-            }
-            .expense-value {
-              color: red;
-            }
-            .income-value {
-              color: green;
-            }
-            .total-row {
-              font-weight: bold;
-            }
-            .combined-total-row {
-              font-weight: bold;
-            }
-            .total-of-totals-row td {
-              font-weight: bold;
-              font-size: 16px;
-            }
-            @media print {
-              body {
-                margin: 0;
-              }
-              table {
-                page-break-inside: auto;
-              }
-              tr {
-                page-break-inside: avoid;
-                page-break-after: auto;
-              }
-            }
-          </style>
-        </head>
-        <body>
-          <h1>Journal de Caisse</h1>
-          <h2>${new Date().toLocaleDateString('fr-FR', {
-            weekday: 'long',
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric',
-          })}</h2>
-          <table>
-            <thead>
-              <tr>
-                <th>Description</th>
-                <th>CHB (−)</th>
-                <th>CHB (+)</th>
-                <th>SNTT (−)</th>
-                <th>SNTT (+)</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${todayEntries.map((entry) => `
-                <tr>
-                  <td>${entry.description || ''}</td>
-                  <td>${entry.chbOutflow ? `${parseFloat(entry.chbOutflow).toFixed(2)} TND` : ''}</td>
-                  <td>${entry.chbInflow ? `${parseFloat(entry.chbInflow).toFixed(2)} TND` : ''}</td>
-                  <td>${entry.snttOutflow ? `${parseFloat(entry.snttOutflow).toFixed(2)} TND` : ''}</td>
-                  <td>${entry.snttInflow ? `${parseFloat(entry.snttInflow).toFixed(2)} TND` : ''}</td>
-                </tr>
-              `).join('')}
-            </tbody>
-            <tfoot>
-              <tr class="total-row">
-                <td>Total</td>
-                <td class="expense-value">${totals.chbOutflow.toFixed(2)} TND</td>
-                <td class="income-value">${totals.chbInflow.toFixed(2)} TND</td>
-                <td class="expense-value">${totals.snttOutflow.toFixed(2)} TND</td>
-                <td class="income-value">${totals.snttInflow.toFixed(2)} TND</td>
-              </tr>
-              <tr class="combined-total-row">
-                <td>Total CHB + SNTT</td>
-                <td class="${chbTotal >= 0 ? 'income-value' : 'expense-value'}">
-                  ${chbTotal.toFixed(2)} TND
-                </td>
-                <td></td>
-                <td class="${snttTotal >= 0 ? 'income-value' : 'expense-value'}">
-                  ${snttTotal.toFixed(2)} TND
-                </td>
-                <td></td>
-              </tr>
-              <tr class="total-of-totals-row">
-                <td>Total Net</td>
-                <td colspan="4" class="${totalOfTotals >= 0 ? 'income-value' : 'expense-value'}">
-                  ${totalOfTotals.toFixed(2)} TND
-                </td>
-              </tr>
-            </tfoot>
-          </table>
-        </body>
-      </html>
-    `);
+    printWindow.document.write(`<html><head><title>Journal de Caisse - ${new Date().toLocaleDateString('fr-FR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</title><style>body{font-family:Arial,sans-serif;margin:20px;}h1{text-align:center;font-size:24px;margin-bottom:10px;}h2{text-align:center;font-size:18px;margin-bottom:20px;}table{width:100%;border-collapse:collapse;margin-bottom:20px;}th,td{border:1px solid #000;padding:8px;text-align:left;}th{background-color:#f2f2f2;font-weight:bold;}.expense-value{color:red;}.income-value{color:green;}.total-row{font-weight:bold;}.combined-total-row{font-weight:bold;}.total-of-totals-row td{font-weight:bold;font-size:16px;}@media print{body{margin:0;}table{page-break-inside:auto;}tr{page-break-inside:avoid;page-break-after:auto;}}</style></head><body><h1>Journal de Caisse</h1><h2>${new Date().toLocaleDateString('fr-FR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</h2><table><thead><tr><th>Description</th><th>CHB (−)</th><th>CHB (+)</th><th>SNTT (−)</th><th>SNTT (+)</th></tr></thead><tbody>${todayEntries.map((entry) => `<tr><td>${entry.description || ''}</td><td>${entry.chbOutflow ? `${parseFloat(entry.chbOutflow).toFixed(2)} TND` : ''}</td><td>${entry.chbInflow ? `${parseFloat(entry.chbInflow).toFixed(2)} TND` : ''}</td><td>${entry.snttOutflow ? `${parseFloat(entry.snttOutflow).toFixed(2)} TND` : ''}</td><td>${entry.snttInflow ? `${parseFloat(entry.snttInflow).toFixed(2)} TND` : ''}</td></tr>`).join('')}</tbody><tfoot><tr class="total-row"><td>Total</td><td class="expense-value">${totals.chbOutflow.toFixed(2)} TND</td><td class="income-value">${totals.chbInflow.toFixed(2)} TND</td><td class="expense-value">${totals.snttOutflow.toFixed(2)} TND</td><td class="income-value">${totals.snttInflow.toFixed(2)} TND</td></tr><tr class="combined-total-row"><td>Total CHB + SNTT</td><td class="${chbTotal >= 0 ? 'income-value' : 'expense-value'}">${chbTotal.toFixed(2)} TND</td><td></td><td class="${snttTotal >= 0 ? 'income-value' : 'expense-value'}">${snttTotal.toFixed(2)} TND</td><td></td></tr><tr class="total-of-totals-row"><td>Total Net</td><td colspan="4" class="${totalOfTotals >= 0 ? 'income-value' : 'expense-value'}">${totalOfTotals.toFixed(2)} TND</td></tr></tfoot></table></body></html>`);
     printWindow.document.close();
     printWindow.focus();
   };
@@ -450,320 +316,9 @@ const DailyCashTracking = () => {
   const snttTotal = totals.snttInflow - totals.snttOutflow;
   const totalOfTotals = chbTotal + snttTotal;
 
-  // Render password prompt if not authenticated
-  if (!isAuthenticated) {
-    return (
-      <div className="cash-tracking-password-container">
-        <h2 className="cash-tracking-password-title">Accès au Suivi de Caisse</h2>
-        <p className="cash-tracking-password-text">
-          Veuillez entrer le mot de passe pour accéder à cette fonctionnalité.
-        </p>
-        {error && <p className="cash-tracking-error-message">{error}</p>}
-        <form onSubmit={handlePasswordSubmit} className="cash-tracking-password-form">
-          <input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder="Mot de passe"
-            className="cash-tracking-password-input"
-            autoFocus
-          />
-          <div className="cash-tracking-password-buttons">
-            <button type="submit" className="cash-tracking-password-submit">
-              Valider
-            </button>
-            <button
-              type="button"
-              className="cash-tracking-password-cancel"
-              onClick={() => window.location.href = '/fleet/dashboard'}
-            >
-              Annuler
-            </button>
-          </div>
-        </form>
-      </div>
-    );
-  }
+  if (!isAuthenticated) return (<div className="cash-tracking-password-container"><h2 className="cash-tracking-password-title">Accès au Suivi de Caisse</h2><p className="cash-tracking-password-text">Veuillez entrer le mot de passe pour accéder à cette fonctionnalité.</p>{error && <p className="cash-tracking-error-message">{error}</p>}<form onSubmit={handlePasswordSubmit} className="cash-tracking-password-form"><input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Mot de passe" className="cash-tracking-password-input" autoFocus/><div className="cash-tracking-password-buttons"><button type="submit" className="cash-tracking-password-submit">Valider</button><button type="button" className="cash-tracking-password-cancel" onClick={() => window.location.href='/fleet/dashboard'}>Annuler</button></div></form></div>);
 
-  // Render main content if authenticated
-  return (
-    <div className="cash-tracking-container">
-      <aside className="sidebar">
-        <h2 className="cash-tracking-fleet-title">Système de Gestion & Contrôle</h2>
-        <nav>
-          <ul>
-            <li><Link to="/fleet/dashboard">📊 Gestion de Flotte</Link></li>
-            <li className="active"><Link to="/cash-tracking">💵 Gestion de Caisse</Link></li>
-            <li><Link to="/parc">🔧 Gestion des Pièces</Link></li>
-            <li><Link to="/fleet/stock-carburant">⛽ Stock Carburant</Link></li>
-            <li><Link to="/stock">📦 Gestion de Stock</Link></li>
-            <li><Link to="/schedule">🗓️ Gestion des Programmes</Link></li>
-            <li><Link to="/maintenance">🛠️ Maintenance</Link></li>
-            <li><Link to="/trailers">🚛 Gestion des Remorques</Link></li>
-            <li><Link to="/incidents">🚨 Gestion des Incidents</Link></li>
-            <li><Link to="/driver-payments">💰 Gestion de Paiement des Chauffeurs</Link></li>
-          </ul>
-        </nav>
-        <div className="cash-tracking-sidebar-footer">
-          <p>Version 1.2.0</p>
-          <p>© 2025</p>
-        </div>
-      </aside>
-
-      <main className="cash-tracking-content">
-        <header className="cash-tracking-header">
-          <h1>💵 Suivi Quotidien de Caisse</h1>
-          <div className="cash-tracking-filter">
-            <label htmlFor="filterType">Filtrer par :</label>
-            <select
-              id="filterType"
-              value={filterType}
-              onChange={(e) => setFilterType(e.target.value)}
-            >
-              <option value="today">Aujourd'hui</option>
-              <option value="specific">Date spécifique</option>
-              <option value="all">Toutes les entrées</option>
-            </select>
-            {filterType === "specific" && (
-              <input
-                type="date"
-                value={selectedDate}
-                onChange={(e) => setSelectedDate(e.target.value)}
-                placeholder="xx/xx/xxxx"
-              />
-            )}
-            <button
-              className="cash-tracking-edit-btn"
-              onClick={fetchEntries}
-              style={{ marginLeft: '10px' }}
-            >
-              🔄 Refresh
-            </button>
-            <button
-              className="cash-tracking-edit-btn"
-              onClick={printTable}
-              style={{ marginLeft: '10px' }}
-            >
-              Print Table
-            </button>
-          </div>
-        </header>
-
-        {successMessage && (
-          <div className="cash-tracking-success-message">{successMessage}</div>
-        )}
-        {error && <div className="cash-tracking-error-message">{error}</div>}
-
-        <section className="cash-tracking-list-section">
-          <h2>
-            Journal de Caisse -{' '}
-            {filterType === 'all'
-              ? 'Toutes les dates'
-              : new Date(selectedDate || Date.now()).toLocaleDateString('fr-FR', {
-                  weekday: 'long',
-                  year: 'numeric',
-                  month: 'long',
-                  day: 'numeric',
-                })}
-          </h2>
-          {loading ? (
-            <div className="cash-tracking-loading">Chargement des entrées...</div>
-          ) : (
-            <div className="cash-tracking-table-container">
-              <table className="cash-tracking-table" ref={tableRef}>
-                <thead>
-                  <tr>
-                    <th>Description</th>
-                    <th>CHB (−)</th>
-                    <th>CHB (+)</th>
-                    <th>SNTT (−)</th>
-                    <th>SNTT (+)</th>
-                    <th>Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {entries.map((entry) => {
-                    const today = new Date().toISOString().split('T')[0];
-                    const isEditable = entry.date === today;
-                    return (
-                      <tr key={entry.id} data-id={entry.id} data-editable={isEditable}>
-                        <td>
-                          <input
-                            type="text"
-                            value={entry.description}
-                            onChange={(e) => handleInputChange(entry.id, 'description', e.target.value)}
-                            onKeyDown={(e) => handleKeyDown(e, entry.id, 'description')}
-                            placeholder="ex: Alimentation de caisse"
-                            disabled={!editingRows[entry.id] || !isEditable}
-                          />
-                        </td>
-                        <td>
-                          <input
-                            type="number"
-                            value={entry.chbOutflow || ''}
-                            onChange={(e) => handleInputChange(entry.id, 'chbOutflow', e.target.value)}
-                            onKeyDown={(e) => handleKeyDown(e, entry.id, 'chbOutflow')}
-                            placeholder="0.00"
-                            step="0.01"
-                            min="0"
-                            className="expense-input"
-                            disabled={!editingRows[entry.id] || !isEditable}
-                          />
-                        </td>
-                        <td>
-                          <input
-                            type="number"
-                            value={entry.chbInflow || ''}
-                            onChange={(e) => handleInputChange(entry.id, 'chbInflow', e.target.value)}
-                            onKeyDown={(e) => handleKeyDown(e, entry.id, 'chbInflow')}
-                            placeholder="0.00"
-                            step="0.01"
-                            min="0"
-                            className="income-input"
-                            disabled={!editingRows[entry.id] || !isEditable}
-                          />
-                        </td>
-                        <td>
-                          <input
-                            type="number"
-                            value={entry.snttOutflow || ''}
-                            onChange={(e) => handleInputChange(entry.id, 'snttOutflow', e.target.value)}
-                            onKeyDown={(e) => handleKeyDown(e, entry.id, 'snttOutflow')}
-                            placeholder="0.00"
-                            step="0.01"
-                            min="0"
-                            className="expense-input"
-                            disabled={!editingRows[entry.id] || !isEditable}
-                          />
-                        </td>
-                        <td>
-                          <input
-                            type="number"
-                            value={entry.snttInflow || ''}
-                            onChange={(e) => handleInputChange(entry.id, 'snttInflow', e.target.value)}
-                            onKeyDown={(e) => handleKeyDown(e, entry.id, 'snttInflow')}
-                            placeholder="0.00"
-                            step="0.01"
-                            min="0"
-                            className="income-input"
-                            disabled={!editingRows[entry.id] || !isEditable}
-                          />
-                        </td>
-                        <td>
-                          <button
-                            className={`cash-tracking-edit-btn ${editingRows[entry.id] ? 'save' : 'edit'}`}
-                            onClick={() => toggleEdit(entry.id, entry)}
-                            disabled={!isEditable}
-                          >
-                            {editingRows[entry.id] ? '✅' : '🖌️'}
-                          </button>
-                          <button
-                            className="cash-tracking-delete-btn"
-                            onClick={() => deleteEntry(entry.id)}
-                            disabled={!isEditable}
-                          >
-                            🗑️
-                          </button>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                  <tr>
-                    <td>
-                      <input
-                        type="text"
-                        value={newEntry.description}
-                        onChange={(e) => handleInputChange(null, 'description', e.target.value, true)}
-                        onKeyDown={(e) => handleKeyDown(e, null, 'description', true)}
-                        placeholder="ex: Alimentation de caisse"
-                      />
-                    </td>
-                    <td>
-                      <input
-                        type="number"
-                        value={newEntry.chbOutflow}
-                        onChange={(e) => handleInputChange(null, 'chbOutflow', e.target.value, true)}
-                        onKeyDown={(e) => handleKeyDown(e, null, 'chbOutflow', true)}
-                        placeholder="0.00"
-                        step="0.01"
-                        min="0"
-                        className="expense-input"
-                      />
-                    </td>
-                    <td>
-                      <input
-                        type="number"
-                        value={newEntry.chbInflow}
-                        onChange={(e) => handleInputChange(null, 'chbInflow', e.target.value, true)}
-                        onKeyDown={(e) => handleKeyDown(e, null, 'chbInflow', true)}
-                        placeholder="0.00"
-                        step="0.01"
-                        min="0"
-                        className="income-input"
-                      />
-                    </td>
-                    <td>
-                      <input
-                        type="number"
-                        value={newEntry.snttOutflow}
-                        onChange={(e) => handleInputChange(null, 'snttOutflow', e.target.value, true)}
-                        onKeyDown={(e) => handleKeyDown(e, null, 'snttOutflow', true)}
-                        placeholder="0.00"
-                        step="0.01"
-                        min="0"
-                        className="expense-input"
-                      />
-                    </td>
-                    <td>
-                      <input
-                        type="number"
-                        value={newEntry.snttInflow}
-                        onChange={(e) => handleInputChange(null, 'snttInflow', e.target.value, true)}
-                        onKeyDown={(e) => handleKeyDown(e, null, 'snttInflow', true)}
-                        placeholder="0.00"
-                        step="0.01"
-                        min="0"
-                        className="income-input"
-                      />
-                    </td>
-                    <td></td>
-                  </tr>
-                </tbody>
-                <tfoot>
-                  <tr className="cash-tracking-total-row">
-                    <td>Total</td>
-                    <td className="expense-value">{totals.chbOutflow.toFixed(2)} TND</td>
-                    <td className="income-value">{totals.chbInflow.toFixed(2)} TND</td>
-                    <td className="expense-value">{totals.snttOutflow.toFixed(2)} TND</td>
-                    <td className="income-value">{totals.snttInflow.toFixed(2)} TND</td>
-                    <td></td>
-                  </tr>
-                  <tr className="cash-tracking-combined-total-row">
-                    <td>Total Net</td>
-                    <td className={chbTotal >= 0 ? 'income-value' : 'expense-value'}>
-                      {chbTotal.toFixed(2)} TND
-                    </td>
-                    <td></td>
-                    <td className={snttTotal >= 0 ? 'income-value' : 'expense-value'}>
-                      {snttTotal.toFixed(2)} TND
-                    </td>
-                    <td></td>
-                    <td></td>
-                  </tr>
-                  <tr className="cash-tracking-total-of-totals-row">
-                    <td>Total CHB + SNTT</td>
-                    <td colSpan="5" className={totalOfTotals >= 0 ? 'income-value' : 'expense-value'}>
-                      {totalOfTotals.toFixed(2)} TND
-                    </td>
-                  </tr>
-                </tfoot>
-              </table>
-            </div>
-          )}
-        </section>
-      </main>
-    </div>
-  );
+  return (<div className="cash-tracking-container"><aside className="sidebar"><h2 className="cash-tracking-fleet-title">Système de Gestion & Contrôle</h2><nav><ul><li><Link to="/fleet/dashboard">📊 Gestion de Flotte</Link></li><li className="active"><Link to="/cash-tracking">💵 Gestion de Caisse</Link></li><li><Link to="/parc">🔧 Gestion des Pièces</Link></li><li><Link to="/fleet/stock-carburant">⛽ Stock Carburant</Link></li><li><Link to="/stock">📦 Gestion de Stock</Link></li><li><Link to="/schedule">🗓️ Gestion des Programmes</Link></li><li><Link to="/maintenance">🛠️ Maintenance</Link></li><li><Link to="/trailers">🚛 Gestion des Remorques</Link></li><li><Link to="/incidents">🚨 Gestion des Incidents</Link></li><li><Link to="/driver-payments">💰 Gestion de Paiement des Chauffeurs</Link></li></ul></nav><div className="cash-tracking-sidebar-footer"><p>Version 1.2.0</p><p>© 2025</p></div></aside><main className="cash-tracking-content"><header className="cash-tracking-header"><h1>💵 Suivi Quotidien de Caisse</h1><div className="cash-tracking-filter"><label htmlFor="filterType">Filtrer par :</label><select id="filterType" value={filterType} onChange={(e) => setFilterType(e.target.value)}><option value="today">Aujourd'hui</option><option value="specific">Date spécifique</option><option value="all">Toutes les entrées</option></select>{filterType === "specific" && <input type="date" value={selectedDate} onChange={(e) => setSelectedDate(e.target.value)} placeholder="xx/xx/xxxx"/>}<button className="cash-tracking-edit-btn" onClick={fetchEntries} style={{marginLeft:'10px'}}>🔄 Refresh</button><button className="cash-tracking-edit-btn" onClick={printTable} style={{marginLeft:'10px'}}>Print Table</button></div></header>{successMessage && <div className="cash-tracking-success-message">{successMessage}</div>}{error && <div className="cash-tracking-error-message">{error}</div>}<section className="cash-tracking-list-section"><h2>Journal de Caisse - {filterType === 'all' ? 'Toutes les dates' : new Date(selectedDate || Date.now()).toLocaleDateString('fr-FR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</h2>{loading ? <div className="cash-tracking-loading">Chargement des entrées...</div> : <div className="cash-tracking-table-container"><table className="cash-tracking-table" ref={tableRef}><thead><tr><th>Description</th><th>CHB (−)</th><th>CHB (+)</th><th>SNTT (−)</th><th>SNTT (+)</th><th>Actions</th></tr></thead><tbody>{entries.map((entry) => {const today = normalizeDate(new Date());const isEditable = entry.date === today;return (<tr key={entry.id} data-id={entry.id} data-editable={isEditable}><td><input type="text" value={entry.description} onChange={(e) => handleInputChange(entry.id, 'description', e.target.value)} onKeyDown={(e) => handleKeyDown(e, entry.id, 'description')} placeholder="ex: Alimentation de caisse" disabled={!editingRows[entry.id] || !isEditable}/></td><td><input type="number" value={entry.chbOutflow || ''} onChange={(e) => handleInputChange(entry.id, 'chbOutflow', e.target.value)} onKeyDown={(e) => handleKeyDown(e, entry.id, 'chbOutflow')} placeholder="0.00" step="0.01" min="0" className="expense-input" disabled={!editingRows[entry.id] || !isEditable}/></td><td><input type="number" value={entry.chbInflow || ''} onChange={(e) => handleInputChange(entry.id, 'chbInflow', e.target.value)} onKeyDown={(e) => handleKeyDown(e, entry.id, 'chbInflow')} placeholder="0.00" step="0.01" min="0" className="income-input" disabled={!editingRows[entry.id] || !isEditable}/></td><td><input type="number" value={entry.snttOutflow || ''} onChange={(e) => handleInputChange(entry.id, 'snttOutflow', e.target.value)} onKeyDown={(e) => handleKeyDown(e, entry.id, 'snttOutflow')} placeholder="0.00" step="0.01" min="0" className="expense-input" disabled={!editingRows[entry.id] || !isEditable}/></td><td><input type="number" value={entry.snttInflow || ''} onChange={(e) => handleInputChange(entry.id, 'snttInflow', e.target.value)} onKeyDown={(e) => handleKeyDown(e, entry.id, 'snttInflow')} placeholder="0.00" step="0.01" min="0" className="income-input" disabled={!editingRows[entry.id] || !isEditable}/></td><td><button className={`cash-tracking-edit-btn ${editingRows[entry.id] ? 'save' : 'edit'}`} onClick={() => toggleEdit(entry.id, entry)} disabled={!isEditable}>{editingRows[entry.id] ? '✅' : '🖌️'}</button><button className="cash-tracking-delete-btn" onClick={() => deleteEntry(entry.id)} disabled={!isEditable}>🗑️</button></td></tr>);})}<tr><td><input type="text" value={newEntry.description} onChange={(e) => handleInputChange(null, 'description', e.target.value, true)} onKeyDown={(e) => handleKeyDown(e, null, 'description', true)} placeholder="ex: Alimentation de caisse"/></td><td><input type="number" value={newEntry.chbOutflow} onChange={(e) => handleInputChange(null, 'chbOutflow', e.target.value, true)} onKeyDown={(e) => handleKeyDown(e, null, 'chbOutflow', true)} placeholder="0.00" step="0.01" min="0" className="expense-input"/></td><td><input type="number" value={newEntry.chbInflow} onChange={(e) => handleInputChange(null, 'chbInflow', e.target.value, true)} onKeyDown={(e) => handleKeyDown(e, null, 'chbInflow', true)} placeholder="0.00" step="0.01" min="0" className="income-input"/></td><td><input type="number" value={newEntry.snttOutflow} onChange={(e) => handleInputChange(null, 'snttOutflow', e.target.value, true)} onKeyDown={(e) => handleKeyDown(e, null, 'snttOutflow', true)} placeholder="0.00" step="0.01" min="0" className="expense-input"/></td><td><input type="number" value={newEntry.snttInflow} onChange={(e) => handleInputChange(null, 'snttInflow', e.target.value, true)} onKeyDown={(e) => handleKeyDown(e, null, 'snttInflow', true)} placeholder="0.00" step="0.01" min="0" className="income-input"/></td><td></td></tr></tbody><tfoot><tr className="cash-tracking-total-row"><td>Total</td><td className="expense-value">{totals.chbOutflow.toFixed(2)} TND</td><td className="income-value">{totals.chbInflow.toFixed(2)} TND</td><td className="expense-value">{totals.snttOutflow.toFixed(2)} TND</td><td className="income-value">{totals.snttInflow.toFixed(2)} TND</td><td></td></tr><tr className="cash-tracking-combined-total-row"><td>Total Net</td><td className={chbTotal >= 0 ? 'income-value' : 'expense-value'}>{chbTotal.toFixed(2)} TND</td><td></td><td className={snttTotal >= 0 ? 'income-value' : 'expense-value'}>{snttTotal.toFixed(2)} TND</td><td></td><td></td></tr><tr className="cash-tracking-total-of-totals-row"><td>Total CHB + SNTT</td><td colSpan="5" className={totalOfTotals >= 0 ? 'income-value' : 'expense-value'}>{totalOfTotals.toFixed(2)} TND</td></tr></tfoot></table></div>}</section></main></div>);
 };
 
 export default DailyCashTracking;
