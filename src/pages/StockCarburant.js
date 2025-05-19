@@ -4,7 +4,7 @@ import { supabase } from "../supabase";
 import "./StockCarburant.css";
 
 const StockCarburant = () => {
-  const [tankLevel, setTankLevel] = useState(null);
+  const [tankLevel, setTankLevel] = useState(0);
   const [tankCapacity] = useState(35000.0);
   const [showRestockModal, setShowRestockModal] = useState(false);
   const [newRestock, setNewRestock] = useState({
@@ -26,11 +26,16 @@ const StockCarburant = () => {
         .select('current_level')
         .single();
       if (error) {
+        if (error.code === 'PGRST116') {
+          console.log("No tank data found, setting level to 0");
+          setTankLevel(0);
+          return;
+        }
         console.error("Supabase fetch tank level error:", error);
         throw error;
       }
       console.log("Fetched tank level:", data.current_level);
-      setTankLevel(parseFloat(data.current_level));
+      setTankLevel(parseFloat(data.current_level) || 0);
     } catch (err) {
       console.error("Error fetching tank level:", err);
       setFetchError(`Erreur lors du chargement du niveau du réservoir: ${err.message}`);
@@ -101,7 +106,6 @@ const StockCarburant = () => {
 
   const handleDeleteTransaction = async (id, amount) => {
     try {
-      // Fetch current tank data
       const { data: tankData, error: tankFetchError } = await supabase
         .from('fuel_tank')
         .select('id, current_level')
@@ -111,7 +115,6 @@ const StockCarburant = () => {
         throw tankFetchError;
       }
 
-      // Update tank level by subtracting the deleted restock amount
       const newTankLevel = tankData.current_level - amount;
       if (newTankLevel < 0) {
         throw new Error("La suppression rendrait le niveau du réservoir négatif");
@@ -126,7 +129,6 @@ const StockCarburant = () => {
         throw tankUpdateError;
       }
 
-      // Delete the transaction
       const { error: deleteError } = await supabase
         .from('fuel_tank_transactions')
         .delete()
@@ -136,7 +138,6 @@ const StockCarburant = () => {
         throw deleteError;
       }
 
-      // Update local state
       setTransactions(transactions.filter(transaction => transaction.id !== id));
       setTankLevel(newTankLevel);
       alert("Transaction supprimée avec succès !");
@@ -168,7 +169,7 @@ const StockCarburant = () => {
         { event: 'UPDATE', schema: 'public', table: 'fuel_tank' },
         (payload) => {
           console.log("Tank level updated:", payload.new.current_level);
-          setTankLevel(parseFloat(payload.new.current_level));
+          setTankLevel(parseFloat(payload.new.current_level) || 0);
         }
       )
       .subscribe();
@@ -237,20 +238,35 @@ const StockCarburant = () => {
       setRestockError("La date ne peut pas être dans le futur");
       return;
     }
-    if (tankLevel !== null && (tankLevel + amount) > tankCapacity) {
+    if (tankLevel + amount > tankCapacity) {
       setRestockError(`Le réservoir dépasserait sa capacité de ${tankCapacity} L`);
       return;
     }
     try {
       setRestockLoading(true);
 
-      const { data: tankData, error: tankFetchError } = await supabase
+      let tankData;
+      const { data: fetchData, error: tankFetchError } = await supabase
         .from('fuel_tank')
         .select('id, current_level')
         .single();
-      if (tankFetchError) {
+      if (tankFetchError && tankFetchError.code === 'PGRST116') {
+        console.log("No tank found, creating new tank with level 0");
+        const { data: newTank, error: insertError } = await supabase
+          .from('fuel_tank')
+          .insert([{ current_level: 0, updated_at: new Date().toISOString() }])
+          .select()
+          .single();
+        if (insertError) {
+          console.error("Error creating tank:", insertError);
+          throw insertError;
+        }
+        tankData = newTank;
+      } else if (tankFetchError) {
         console.error("Error fetching tank:", tankFetchError);
         throw tankFetchError;
+      } else {
+        tankData = fetchData;
       }
 
       const newTankLevel = tankData.current_level + amount;
@@ -273,8 +289,8 @@ const StockCarburant = () => {
           created_at: new Date().toISOString(),
         }]);
       if (transactionError) {
-        console.error("Supabase insert transaction error:", transactionError);
-        throw transactionError;
+          console.error("Supabase insert transaction error:", transactionError);
+          throw transactionError;
       }
 
       setTankLevel(newTankLevel);
@@ -349,19 +365,17 @@ const StockCarburant = () => {
           <div className="main-content">
             <section className="tank-section">
               <div className="tank-status">
-                <div className="tank-visual" style={{ '--tank-level': tankLevel !== null ? (tankLevel / tankCapacity) * 100 : 0 }}>
+                <div className="tank-visual" style={{ '--tank-level': (tankLevel / tankCapacity) * 100 }}>
                   <div className="tank-liquid"></div>
                 </div>
                 <div className="tank-info">
                   <h2>Niveau du Réservoir</h2>
                   <p>Capacité: {tankCapacity.toFixed(2)} L</p>
                   <p>
-                    Niveau actuel: {tankLevel !== null ? `${tankLevel.toFixed(2)} L` : "Chargement..."}
-                    {tankLevel !== null && (
-                      <span> ({((tankLevel / tankCapacity) * 100).toFixed(1)}%)</span>
-                    )}
+                    Niveau actuel: {tankLevel.toFixed(2)} L
+                    <span> ({((tankLevel / tankCapacity) * 100).toFixed(1)}%)</span>
                   </p>
-                  {tankLevel !== null && tankLevel < 5000 && (
+                  {tankLevel < 5000 && (
                     <p className="low-fuel-warning">⚠️ Niveau de carburant faible !</p>
                   )}
                   <button className="restock-tank-btn" onClick={handleOpenRestockModal}>
@@ -373,8 +387,8 @@ const StockCarburant = () => {
             <section className="history-section">
               <h2>Historique des Réapprovisionnements</h2>
               <button className="refresh-btn" onClick={handleRefresh} title="Rafraîchir les données">
-            🔄 Rafraîchir
-          </button>
+                🔄 Rafraîchir
+              </button>
               {transactionsError && <div className="stock-carburant-error-message">{transactionsError}</div>}
               {transactions.length === 0 ? (
                 <p className="no-history">Aucun réapprovisionnement enregistré.</p>
@@ -414,7 +428,7 @@ const StockCarburant = () => {
             <div className="fuel-activities-header">
               <h2>Activités de Carburant Récentes</h2>
               <button onClick={() => setShowFuelActivities(!showFuelActivities)}>
-                {showFuelActivities ? "X" : "Afficher"}
+                {showFuelActivities ? "↑ Masquer" : "↓ Afficher"}
               </button>
             </div>
             {showFuelActivities && (
@@ -461,11 +475,9 @@ const StockCarburant = () => {
                 <div className="form-group">
                   <label htmlFor="amount">
                     Quantité ajoutée (L)
-                    {tankLevel !== null && (
-                      <span className="hint">
-                        (Capacité restante: {(tankCapacity - tankLevel).toFixed(2)} L)
-                      </span>
-                    )}
+                    <span className="hint">
+                      (Capacité restante: {(tankCapacity - tankLevel).toFixed(2)} L)
+                    </span>
                   </label>
                   <input
                     type="number"

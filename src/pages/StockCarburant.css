@@ -43,7 +43,7 @@
 }
 
 * {
-  box-sizing: border-box; /* Ensure padding/margins don't cause overflow */
+  box-sizing: border-box;
 }
 
 .stock-carburant-container {
@@ -112,14 +112,14 @@
 
 .stock-carburant-content {
   flex: 1;
-  padding: 0; /* No padding to maximize space */
+  padding: 0;
   background-color: var(--color-content-background);
   color: var(--color-text-light);
 }
 
 .stock-carburant-header {
-  padding: 10px; /* Minimal padding for header */
-  margin-bottom: 10px; /* Minimal margin */
+  padding: 10px;
+  margin-bottom: 10px;
 }
 
 .stock-carburant-header h1 {
@@ -142,29 +142,29 @@
 
 .dashboard-grid {
   display: grid;
-  grid-template-columns: 1fr 300px; /* Main-content fills remaining space, recent-fuel-activities fixed at 300px */
-  grid-template-rows: auto; /* Rows size by content */
-  gap: 10px; /* Small spacing between main-content and recent-fuel-activities */
-  width: 100%; /* Fill stock-carburant-content */
-  align-content: start; /* Prevent stretching */
+  grid-template-columns: 1fr 300px;
+  grid-template-rows: auto;
+  gap: 10px;
+  width: 100%;
+  align-content: start;
 }
 
 .main-content {
   display: flex;
   flex-direction: column;
-  gap: 0; /* No spacing between tank and history */
-  width: 100%; /* Fill grid column */
-  margin: 0 0 0 10px; /* Small left margin for sidebar spacing */
+  gap: 0;
+  width: 100%;
+  margin: 0 0 0 10px;
 }
 
 .tank-section {
   background-color: var(--color-section-background);
   border-radius: 5px;
-  padding: 25px; /* Internal padding preserved */
+  padding: 25px;
   box-shadow: 0 4px 6px var(--color-shadow-light);
   border: 1px solid var(--color-border-dark);
-  width: 100%; /* Full width of main-content */
-  margin: 0; /* No margins */
+  width: 100%;
+  margin: 0;
 }
 
 .tank-status {
@@ -347,11 +347,11 @@
 .history-section {
   background-color: var(--color-section-background);
   border-radius: 5px;
-  padding: 25px; /* Internal padding preserved */
+  padding: 25px;
   box-shadow: 0 4px 6px var(--color-shadow-light);
   border: 1px solid var(--color-border-dark);
-  width: 100%; /* Full width of main-content */
-  margin: 0; /* No margins */
+  width: 100%;
+  margin: 0;
 }
 
 .history-section h2 {
@@ -414,19 +414,19 @@
 .recent-fuel-activities {
   background: var(--color-section-background);
   border-radius: 5px;
-  padding: 25px; /* Internal padding preserved */
+  padding: 25px;
   box-shadow: 0 4px 6px var(--color-shadow-light);
   border: 1px solid var(--color-border-dark);
-  width: 100%; /* Fill grid column */
-  max-width: 300px; /* Fixed width */
-  align-self: stretch; /* Match main-content height */
-  overflow-y: auto; /* Allow scrolling */
-  margin: 0; /* No external margins */
+  width: 100%;
+  max-width: 300px;
+  align-self: stretch;
+  overflow-y: auto;
+  margin: 0;
   transition: all 0.3s;
 }
 
 .recent-fuel-activities.collapsed {
-  max-height: 40px;
+  max-height: 150px; /* Increased to fit header */
   overflow: hidden;
 }
 
@@ -435,6 +435,7 @@
   justify-content: space-between;
   align-items: center;
   margin-bottom: 15px;
+  min-height: 40px; /* Ensure header is fully visible */
 }
 
 .fuel-activities-header h2 {
@@ -442,14 +443,26 @@
   color: var(--color-primary);
   font-weight: 500;
   margin: 0;
+  line-height: 1.2; /* Prevent title cutoff */
 }
 
 .fuel-activities-header button {
-  background: none;
-  border: none;
+  background: var(--color-button-background);
+  border: 1px solid var(--color-border-dark);
   color: var(--color-primary);
   cursor: pointer;
-  font-size: 0.8rem;
+  font-size: 0.9rem;
+  padding: 6px 12px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  transition: all 0.3s;
+}
+
+.fuel-activities-header button:hover {
+  background: var(--color-button-hover);
+  border-color: var(--color-primary);
 }
 
 .fuel-activities-list {
@@ -508,12 +521,12 @@
   }
 
   .stock-carburant-content {
-    padding: 0; /* No padding */
+    padding: 0;
   }
 
   .stock-carburant-header {
-    padding: 8px; /* Minimal padding */
-    margin-bottom: 8px; /* Minimal margin */
+    padding: 8px;
+    margin-bottom: 8px;
   }
 
   .stock-carburant-error-message {
@@ -521,30 +534,33 @@
   }
 
   .dashboard-grid {
-    grid-template-columns: 1fr; /* Stack vertically */
-    grid-template-rows: auto auto auto; /* Rows for tank, history, activities */
-    gap: 8px; /* Small spacing between sections */
-    width: 100%; /* Full width */
+    grid-template-columns: 1fr;
+    grid-template-rows: auto auto auto;
+    gap: 8px;
+    width: 100%;
   }
 
   .main-content {
-    gap: 0; /* No spacing */
-    width: 100%; /* Full width */
-    margin: 0; /* No margins on mobile */
+    gap: 0;
+    width: 100%;
+    margin: 0;
   }
 
   .recent-fuel-activities {
-    width: 100%; /* Full width */
-    max-width: 100%; /* Override fixed width */
-    align-self: auto; /* Reset height */
-    max-height: 150px; /* Original mobile height */
-    margin: 0; /* No margins */
+    width: 100%;
+    max-width: 100%;
+    align-self: auto;
+    max-height: 150px; /* Adjusted for mobile */
+  }
+
+  .recent-fuel-activities.collapsed {
+    max-height: 50px; /* Adjusted for mobile */
   }
 
   .tank-section,
   .history-section {
-    width: 100%; /* Full width */
-    margin: 0; /* No margins */
+    width: 100%;
+    margin: 0;
   }
 
   .tank-status {
@@ -567,5 +583,18 @@
   .delete-history-btn {
     padding: 6px 10px;
     font-size: 0.8em;
+  }
+
+  .fuel-activities-header {
+    min-height: 30px; /* Smaller header for mobile */
+  }
+
+  .fuel-activities-header h2 {
+    font-size: 1.2em; /* Smaller title for mobile */
+  }
+
+  .fuel-activities-header button {
+    font-size: 0.8rem;
+    padding: 4px 8px;
   }
 }
