@@ -80,8 +80,8 @@ section {
   text-decoration: none;
   color: var(--text-dark);
   transition: var(--transition);
-  font-weight: 500;
-  font-size: 0.95rem;
+  font-weight: 600;
+  font-size: 1.3rem;
   text-transform: uppercase;
   letter-spacing: 1px;
   padding: 0.5rem 0;

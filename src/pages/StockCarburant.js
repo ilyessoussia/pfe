@@ -5,7 +5,7 @@ import "./StockCarburant.css";
 
 const StockCarburant = () => {
   const [tankLevel, setTankLevel] = useState(0);
-  const [tankCapacity] = useState(35000.0);
+  const [tankCapacity] = useState(30000.0);
   const [showRestockModal, setShowRestockModal] = useState(false);
   const [newRestock, setNewRestock] = useState({
     amount: "",

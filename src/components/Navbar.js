@@ -4,7 +4,7 @@ import "../App.css";
 
 const Navbar = () => (
   <nav className="navbar">
-    <div className="logo">SNTT</div>
+    <div className="logo">CHB / SNTT</div>
     <div className="nav-links-container">
       <ul className="nav-links">
         <li><Link to="/">Accueil</Link></li>
