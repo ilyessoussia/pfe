@@ -243,6 +243,18 @@
   transition: all 0.3s;
   min-height: 44px;
 }
+.fleet-management-delete-btn {
+  background-color: #dc3545;
+  color: white;
+  border: none;
+  padding: 5px 10px;
+  margin: 0 5px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+.fleet-management-delete-btn:hover {
+  background-color: #c82333;
+}
 
 .fleet-management-filter-options select:focus {
   border-color: var(--color-primary-dark);
