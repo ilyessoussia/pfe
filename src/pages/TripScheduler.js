@@ -493,7 +493,7 @@ const TripScheduler = () => {
     }
   };
 
-  // Get trips for the current 4-day window
+  // Get trips for the current 4-day window, sorted by color
   const getDisplayedTrips = () => {
     if (!currentStartDate) return {};
     const endDate = new Date(currentStartDate);
@@ -505,12 +505,28 @@ const TripScheduler = () => {
       return tripDate >= currentStartDate && tripDate <= endDate;
     });
 
-    return filteredTrips.reduce((acc, trip) => {
+    // Group trips by date
+    const groupedByDate = filteredTrips.reduce((acc, trip) => {
       const date = trip.rawDate.split('T')[0];
       if (!acc[date]) acc[date] = [];
       acc[date].push(trip);
       return acc;
     }, {});
+
+    // Sort trips within each date by color priority: red (#FECACA), blue (#BFDBFE), then others
+    Object.keys(groupedByDate).forEach((date) => {
+      groupedByDate[date].sort((a, b) => {
+        const colorPriority = {
+          '#FECACA': 1, // Red first
+          '#BFDBFE': 2, // Blue second
+        };
+        const aPriority = colorPriority[a.color] || 3;
+        const bPriority = colorPriority[b.color] || 3;
+        return aPriority - bPriority;
+      });
+    });
+
+    return groupedByDate;
   };
 
   const groupedTrips = getDisplayedTrips();
@@ -690,7 +706,7 @@ const TripScheduler = () => {
                 }}
               >
                 ✕
-              </button>
+                </button>
               <section className="trip-scheduler-form-section">
                 <h2>Planifier un Nouveau Voyage</h2>
                 <form onSubmit={handleSubmit} className="trip-scheduler-form">

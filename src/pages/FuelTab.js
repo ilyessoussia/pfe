@@ -15,7 +15,7 @@ const FuelTab = ({ onFuelAdded }) => {
   const [newRefuel, setNewRefuel] = useState({
     kilometers: "",
     liters: "",
-    fuelPrice: "2.205",
+    fuelPrice: "1.898",
     cost: "",
     date: new Date().toISOString().split('T')[0],
     lastKilometrage: "",
@@ -322,7 +322,7 @@ const FuelTab = ({ onFuelAdded }) => {
     setNewRefuel({
       kilometers: "",
       liters: "",
-      fuelPrice: "2.205",
+      fuelPrice: "1.898",
       cost: "",
       date: new Date().toISOString().split('T')[0],
       lastKilometrage: lastFuelEntry?.kilometers ? lastFuelEntry.kilometers.toString() : "",
@@ -704,7 +704,7 @@ const FuelTab = ({ onFuelAdded }) => {
                     name="fuelPrice"
                     value={newRefuel.fuelPrice}
                     onChange={handleInputChange}
-                    placeholder="ex: 2.205"
+                    placeholder="ex: 1.898"
                     step="0.001"
                     required
                   />

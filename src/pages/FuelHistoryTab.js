@@ -76,7 +76,7 @@ const FuelHistoryTab = ({ fuelHistory, onFuelAdded }) => {
             raw_date: entry.raw_date || entry.rawDate,
             kilometers: entry.kilometers != null ? parseFloat(entry.kilometers) : 0,
             liters: entry.liters != null ? parseFloat(entry.liters) : 0,
-            fuel_price: entry.fuel_price != null ? parseFloat(entry.fuel_price) : 2.205,
+            fuel_price: entry.fuel_price != null ? parseFloat(entry.fuel_price) : 1.898,
             cost: entry.cost != null ? parseFloat(entry.cost) : 0,
             timestamp: entry.timestamp || (entry.raw_date ? parseDate(entry.raw_date).getTime() : 0),
             distance_traveled:
@@ -194,7 +194,7 @@ const FuelHistoryTab = ({ fuelHistory, onFuelAdded }) => {
       truck_id: entry.truck_id || entry.truckId,
       kilometers: entry.kilometers != null ? parseFloat(entry.kilometers) : 0,
       liters: entry.liters != null ? parseFloat(entry.liters) : 0,
-      fuel_price: entry.fuel_price != null ? parseFloat(entry.fuel_price) : 2.205,
+      fuel_price: entry.fuel_price != null ? parseFloat(entry.fuel_price) : 1.898,
       cost: entry.cost != null ? parseFloat(entry.cost) : 0,
       raw_date: entry.raw_date || entry.rawDate || new Date().toISOString().split('T')[0],
     };
@@ -221,7 +221,7 @@ const FuelHistoryTab = ({ fuelHistory, onFuelAdded }) => {
     const { name, value } = e.target;
     if (name === "liters") {
       const liters = parseFloat(value) || 0;
-      const fuelPrice = parseFloat(editRefuel.fuelPrice) || 2.205;
+      const fuelPrice = parseFloat(editRefuel.fuelPrice) || 1.898;
       const calculatedCost = (liters * fuelPrice).toFixed(2);
       setEditRefuel({
         ...editRefuel,
