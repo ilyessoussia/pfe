@@ -19,6 +19,8 @@ const FuelTab = ({ onFuelAdded }) => {
     cost: "",
     date: new Date().toISOString().split('T')[0],
     lastKilometrage: "",
+    isExternal: false,
+    stationName: "",
   });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -126,6 +128,8 @@ const FuelTab = ({ onFuelAdded }) => {
           consumption: parseFloat(entry.consumption) || 0,
           cost_per_km: parseFloat(entry.cost_per_km) || 0,
           liters_per_100km: parseFloat(entry.liters_per_100km) || 0,
+          is_external: entry.is_external || false,
+          station_name: entry.station_name || "",
         }));
       console.log("Formatted fuel history:", formattedHistory);
       setLocalHistory(formattedHistory);
@@ -164,6 +168,8 @@ const FuelTab = ({ onFuelAdded }) => {
             consumption: parseFloat(data[0].consumption) || 0,
             cost_per_km: parseFloat(data[0].cost_per_km) || 0,
             liters_per_100km: parseFloat(data[0].liters_per_100km) || 0,
+            is_external: data[0].is_external || false,
+            station_name: data[0].station_name || "",
           };
           setLastFuelEntry(lastEntry);
           setNewRefuel((prev) => ({
@@ -184,7 +190,6 @@ const FuelTab = ({ onFuelAdded }) => {
     fetchFuelHistory();
   }, [id, fetchFuelHistory]);
 
-  // Generate monthOptions dynamically from localHistory
   useEffect(() => {
     const frenchMonths = [
       "janvier", "février", "mars", "avril", "mai", "juin",
@@ -192,7 +197,6 @@ const FuelTab = ({ onFuelAdded }) => {
     ];
     const monthsSet = new Set();
     
-    // Extract unique year-month pairs from localHistory
     localHistory.forEach((entry) => {
       if (entry.raw_date) {
         const date = parseDate(entry.raw_date);
@@ -204,7 +208,6 @@ const FuelTab = ({ onFuelAdded }) => {
       }
     });
 
-    // Convert to monthOptions format
     const options = Array.from(monthsSet)
       .map((yearMonth) => {
         const [year, month] = yearMonth.split('-').map(Number);
@@ -215,7 +218,6 @@ const FuelTab = ({ onFuelAdded }) => {
       })
       .sort((a, b) => a.value.localeCompare(b.value));
 
-    // If no data, add current month as default
     if (options.length === 0) {
       const now = new Date();
       const year = now.getFullYear();
@@ -228,7 +230,6 @@ const FuelTab = ({ onFuelAdded }) => {
 
     setMonthOptions(options);
 
-    // Set selectedMonth to the most recent month with data or current month
     const mostRecentMonth = options.length > 0 ? options[options.length - 1].value : selectedMonth;
     if (!options.some(option => option.value === selectedMonth)) {
       setSelectedMonth(mostRecentMonth);
@@ -322,20 +323,30 @@ const FuelTab = ({ onFuelAdded }) => {
     setNewRefuel({
       kilometers: "",
       liters: "",
-      fuelPrice: "1.898",
+      fuelPrice: newRefuel.isExternal ? "" : "1.898",
       cost: "",
       date: new Date().toISOString().split('T')[0],
       lastKilometrage: lastFuelEntry?.kilometers ? lastFuelEntry.kilometers.toString() : "",
+      isExternal: false,
+      stationName: "",
     });
   };
 
   const handleCloseModal = () => {
     setShowModal(false);
+    setError("");
   };
 
   const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    if (name === "liters" || name === "fuelPrice") {
+    const { name, value, type, checked } = e.target;
+    if (type === "checkbox") {
+      setNewRefuel((prev) => ({
+        ...prev,
+        isExternal: checked,
+        fuelPrice: checked ? "" : "1.898",
+        stationName: checked ? prev.stationName : "",
+      }));
+    } else if (name === "liters" || name === "fuelPrice") {
       const liters = name === "liters" ? parseFloat(value) || 0 : parseFloat(newRefuel.liters) || 0;
       const price = name === "fuelPrice" ? parseFloat(value) || 0 : parseFloat(newRefuel.fuelPrice) || 0;
       const calculatedCost = (liters * price).toFixed(2);
@@ -370,7 +381,11 @@ const FuelTab = ({ onFuelAdded }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!newRefuel.kilometers || !newRefuel.liters || !newRefuel.cost || !newRefuel.fuelPrice) {
-      setError("Tous les champs sont obligatoires");
+      setError("Tous les champs obligatoires doivent être remplis");
+      return;
+    }
+    if (newRefuel.isExternal && !newRefuel.stationName) {
+      setError("Le nom de la station est requis pour les pleins externes");
       return;
     }
     const kilometers = parseFloat(newRefuel.kilometers);
@@ -397,20 +412,6 @@ const FuelTab = ({ onFuelAdded }) => {
     try {
       setLoading(true);
 
-      // Check tank level
-      const { data: tankData, error: tankFetchError } = await supabase
-        .from('fuel_tank')
-        .select('id, current_level')
-        .single();
-      if (tankFetchError) {
-        console.error("Error fetching tank:", tankFetchError);
-        throw tankFetchError;
-      }
-      if (tankData.current_level < liters) {
-        setError(`Stock carburant insuffisant: ${tankData.current_level.toFixed(2)} L disponibles`);
-        return;
-      }
-
       const metrics = calculateMetrics(
         { kilometers, liters, cost },
         lastFuelEntry
@@ -427,6 +428,8 @@ const FuelTab = ({ onFuelAdded }) => {
         cost_per_km: parseFloat(metrics.costPerKm),
         liters_per_100km: parseFloat(metrics.litersPer100km),
         created_at: new Date().toISOString(),
+        is_external: newRefuel.isExternal,
+        station_name: newRefuel.isExternal ? newRefuel.stationName : null,
       };
 
       // Insert fuel_history record
@@ -439,29 +442,44 @@ const FuelTab = ({ onFuelAdded }) => {
         throw fuelError;
       }
 
-      // Update tank level and log transaction
-      const newTankLevel = tankData.current_level - liters;
-      const { error: tankUpdateError } = await supabase
-        .from('fuel_tank')
-        .update({ current_level: newTankLevel, updated_at: new Date().toISOString() })
-        .eq('id', tankData.id);
-      if (tankUpdateError) {
-        console.error("Supabase update tank error:", tankUpdateError);
-        throw tankUpdateError;
-      }
+      // Update tank level and log transaction only for internal refuels
+      if (!newRefuel.isExternal) {
+        const { data: tankData, error: tankFetchError } = await supabase
+          .from('fuel_tank')
+          .select('id, current_level')
+          .single();
+        if (tankFetchError) {
+          console.error("Error fetching tank:", tankFetchError);
+          throw tankFetchError;
+        }
+        if (tankData.current_level < liters) {
+          setError(`Stock carburant insuffisant: ${tankData.current_level.toFixed(2)} L disponibles`);
+          return;
+        }
 
-      const { error: transactionError } = await supabase
-        .from('fuel_tank_transactions')
-        .insert([{
-          tank_id: tankData.id,
-          amount: -liters,
-          type: 'refuel',
-          truck_id: id,
-          created_at: new Date().toISOString(),
-        }]);
-      if (transactionError) {
-        console.error("Supabase insert transaction error:", transactionError);
-        throw transactionError;
+        const newTankLevel = tankData.current_level - liters;
+        const { error: tankUpdateError } = await supabase
+          .from('fuel_tank')
+          .update({ current_level: newTankLevel, updated_at: new Date().toISOString() })
+          .eq('id', tankData.id);
+        if (tankUpdateError) {
+          console.error("Supabase update tank error:", tankUpdateError);
+          throw tankUpdateError;
+        }
+
+        const { error: transactionError } = await supabase
+          .from('fuel_tank_transactions')
+          .insert([{
+            tank_id: tankData.id,
+            amount: -liters,
+            type: 'refuel',
+            truck_id: id,
+            created_at: new Date().toISOString(),
+          }]);
+        if (transactionError) {
+          console.error("Supabase insert transaction error:", transactionError);
+          throw transactionError;
+        }
       }
 
       const newEntry = {
@@ -477,6 +495,8 @@ const FuelTab = ({ onFuelAdded }) => {
         consumption: parseFloat(metrics.consumption),
         cost_per_km: parseFloat(metrics.costPerKm),
         liters_per_100km: parseFloat(metrics.litersPer100km),
+        is_external: newRefuel.isExternal,
+        station_name: newRefuel.isExternal ? newRefuel.stationName : "",
       };
       setLocalHistory((prev) => [...prev, newEntry].sort((a, b) => parseDate(a.raw_date) - parseDate(b.raw_date)));
       setLastFuelEntry(newEntry);
@@ -695,6 +715,32 @@ const FuelTab = ({ onFuelAdded }) => {
                   required
                 />
               </div>
+              <div className="form-group">
+                <label htmlFor="isExternal">
+                  <input
+                    type="checkbox"
+                    id="isExternal"
+                    name="isExternal"
+                    checked={newRefuel.isExternal}
+                    onChange={handleInputChange}
+                  />
+                  Plein effectué à une station externe
+                </label>
+              </div>
+              {newRefuel.isExternal && (
+                <div className="form-group">
+                  <label htmlFor="stationName">Nom de la station</label>
+                  <input
+                    type="text"
+                    id="stationName"
+                    name="stationName"
+                    value={newRefuel.stationName}
+                    onChange={handleInputChange}
+                    placeholder="ex: Station Total Tunis"
+                    required
+                  />
+                </div>
+              )}
               <div className="form-row">
                 <div className="form-group half">
                   <label htmlFor="fuelPrice">Prix par litre (TND)</label>
