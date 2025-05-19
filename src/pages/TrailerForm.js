@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { supabase } from "../supabase";
 
-
 const TrailerForm = ({ trailer, onClose }) => {
   const isEditing = !!trailer;
   const [formData, setFormData] = useState({
@@ -15,6 +14,7 @@ const TrailerForm = ({ trailer, onClose }) => {
     last_technical_inspection: "",
     next_technical_inspection: "",
     description: "",
+    is_active: true,
   });
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState(null);
@@ -33,15 +33,16 @@ const TrailerForm = ({ trailer, onClose }) => {
         last_technical_inspection: trailer.last_technical_inspection || "",
         next_technical_inspection: trailer.next_technical_inspection || "",
         description: trailer.description || "",
+        is_active: trailer.is_active !== undefined ? trailer.is_active : true,
       });
     }
   }, [trailer, isEditing]);
 
   const handleInputChange = (e) => {
-    const { name, value } = e.target;
+    const { name, value, type, checked } = e.target;
     setFormData(prev => ({
       ...prev,
-      [name]: name === "ptac" ? (value === "" ? "" : parseFloat(value) || "") : value,
+      [name]: type === "checkbox" ? checked : name === "ptac" ? (value === "" ? "" : parseFloat(value) || "") : value,
     }));
   };
 
@@ -79,6 +80,7 @@ const TrailerForm = ({ trailer, onClose }) => {
         last_technical_inspection: formData.last_technical_inspection || null,
         next_technical_inspection: formData.next_technical_inspection || null,
         description: formData.description || null,
+        is_active: formData.is_active,
       };
 
       if (isEditing) {
@@ -112,6 +114,7 @@ const TrailerForm = ({ trailer, onClose }) => {
           last_technical_inspection: "",
           next_technical_inspection: "",
           description: "",
+          is_active: true,
         });
         onClose();
       }, 2000);
@@ -255,6 +258,16 @@ const TrailerForm = ({ trailer, onClose }) => {
               onChange={handleInputChange}
               rows="4"
               placeholder="ex: Remorque frigorifique, état neuf"
+            />
+          </div>
+          <div className="form-group">
+            <label htmlFor="is_active">Statut Actif</label>
+            <input
+              type="checkbox"
+              id="is_active"
+              name="is_active"
+              checked={formData.is_active}
+              onChange={handleInputChange}
             />
           </div>
           <div className="form-actions">

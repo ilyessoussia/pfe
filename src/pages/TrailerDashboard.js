@@ -9,24 +9,29 @@ const TrailerDashboard = () => {
   const [showForm, setShowForm] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [success, setSuccess] = useState(null);
   const [lastUpdated, setLastUpdated] = useState(new Date().toLocaleString());
+  const [searchTerm, setSearchTerm] = useState("");
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(null);
 
   const fetchTrailers = async () => {
     try {
       setLoading(true);
       const { data, error } = await supabase
         .from('trailers')
-        .select('id, immatriculation, ptac, insurance_expiry_date, next_technical_inspection')
+        .select('id, vin, immatriculation, ptac, insurance_expiry_date, next_technical_inspection, is_active')
         .order('immatriculation', { ascending: true });
 
       if (error) throw error;
 
       const formattedTrailers = data.map(trailer => ({
         id: trailer.id,
+        vin: trailer.vin || "Non spécifié",
         immatriculation: trailer.immatriculation || "Non spécifié",
         ptac: trailer.ptac ? `${trailer.ptac} kg` : "Non spécifié",
         insurance_expiry_date: trailer.insurance_expiry_date ? new Date(trailer.insurance_expiry_date).toLocaleDateString('fr-FR') : "Non spécifiée",
         next_technical_inspection: trailer.next_technical_inspection ? new Date(trailer.next_technical_inspection).toLocaleDateString('fr-FR') : "Non spécifiée",
+        is_active: trailer.is_active,
       }));
 
       setTrailers(formattedTrailers);
@@ -45,6 +50,34 @@ const TrailerDashboard = () => {
 
   const handleRefresh = () => {
     fetchTrailers();
+  };
+
+  const handleSearch = (e) => {
+    setSearchTerm(e.target.value);
+  };
+
+  const filteredTrailers = trailers.filter(trailer =>
+    trailer.immatriculation.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    trailer.vin.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const handleDelete = async (trailerId) => {
+    try {
+      const { error } = await supabase
+        .from('trailers')
+        .delete()
+        .eq('id', trailerId);
+
+      if (error) throw error;
+
+      setShowDeleteConfirm(null);
+      setSuccess("Remorque supprimée avec succès !");
+      fetchTrailers();
+      setTimeout(() => setSuccess(null), 2000);
+    } catch (err) {
+      console.error("Error deleting trailer:", err);
+      setError("Échec de la suppression de la remorque.");
+    }
   };
 
   return (
@@ -96,6 +129,13 @@ const TrailerDashboard = () => {
             <p className="last-updated">Mise à jour: {lastUpdated}</p>
           </div>
           <div className="header-actions">
+            <input
+              type="text"
+              placeholder="Rechercher par VIN ou Immatriculation"
+              value={searchTerm}
+              onChange={handleSearch}
+              className="search-bar"
+            />
             <button className="refresh-btn" onClick={handleRefresh} disabled={loading}>
               {loading ? "🔄" : "Actualiser🔄"}
             </button>
@@ -116,29 +156,63 @@ const TrailerDashboard = () => {
         )}
 
         {error && <div className="error-message">{error}</div>}
+        {success && <div className="success-message">{success}</div>}
+
+        {showDeleteConfirm && (
+          <div className="modal-overlay">
+            <div className="modal-content delete-confirm">
+              <h3>Confirmer la suppression</h3>
+              <p>Êtes-vous sûr de vouloir supprimer la remorque {trailers.find(t => t.id === showDeleteConfirm)?.immatriculation} ?</p>
+              <div className="form-actions">
+                <button
+                  className="cancel-btn"
+                  onClick={() => setShowDeleteConfirm(null)}
+                >
+                  Annuler
+                </button>
+                <button
+                  className="delete-btn"
+                  onClick={() => handleDelete(showDeleteConfirm)}
+                >
+                  Supprimer
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         <section className="trailer-section">
           {loading ? (
             <div className="loading">Chargement...</div>
-          ) : trailers.length > 0 ? (
+          ) : filteredTrailers.length > 0 ? (
             <div className="trailer-boxes">
-              {trailers.map(trailer => (
-                <Link
-                  key={trailer.id}
-                  to={`/trailers/${trailer.id}`}
-                  className="trailer-box"
-                >
-                  <h3>🚚 {trailer.immatriculation}</h3>
-                  <div className="trailer-details">
-                    <p><strong>PTAC:</strong> {trailer.ptac}</p>
-                    <p><strong>Expiration Assurance:</strong> {trailer.insurance_expiry_date}</p>
-                    <p><strong>Prochain Contrôle:</strong> {trailer.next_technical_inspection}</p>
-                  </div>
-                </Link>
+              {filteredTrailers.map(trailer => (
+                <div key={trailer.id} className="trailer-box-wrapper">
+                  <Link
+                    to={`/trailers/${trailer.id}`}
+                    className="trailer-box"
+                  >
+                    <h3>🚚 {trailer.immatriculation}</h3>
+                    <div className="trailer-details">
+                      <p><strong>VIN:</strong> {trailer.vin}</p>
+                      <p><strong>PTAC:</strong> {trailer.ptac}</p>
+                      <p><strong>Expiration Assurance:</strong> {trailer.insurance_expiry_date}</p>
+                      <p><strong>Prochain Contrôle:</strong> {trailer.next_technical_inspection}</p>
+                      <p><strong>Statut:</strong> {trailer.is_active ? "Actif" : "Inactif"}</p>
+                    </div>
+                  </Link>
+                  <button
+                    className="delete-icon"
+                    onClick={() => setShowDeleteConfirm(trailer.id)}
+                    aria-label={`Supprimer la remorque ${trailer.immatriculation}`}
+                  >
+                    🗑️
+                  </button>
+                </div>
               ))}
             </div>
           ) : (
-            <div className="no-trailers">Aucune remorque.</div>
+            <div className="no-trailers">Aucune remorque trouvée.</div>
           )}
         </section>
       </main>

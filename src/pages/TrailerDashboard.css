@@ -27,24 +27,18 @@
   background-color: var(--color-background);
 }
 
-
-
 .fleet-title {
   color: var(--color-primary);
   font-weight: 500;
 }
 
-
-
-
-
 .sidebar-footer {
-    margin-top: auto;
-    padding-top: 16px;
-    border-top: 1px solid var(--color-table-border);
-    font-size: 0.85rem;
-    color: var(--color-text-muted);
-    text-align: center;
+  margin-top: auto;
+  padding-top: 16px;
+  border-top: 1px solid var(--color-table-border);
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+  text-align: center;
 }
 
 .dashboard-content {
@@ -63,7 +57,7 @@
 }
 
 .dashboard-header h1 {
- margin: 0;
+  margin: 0;
   font-size: 2rem;
   color: var(--color-primary);
   font-weight: 600;
@@ -77,6 +71,21 @@
 .header-actions {
   display: flex;
   gap: 15px;
+  align-items: center;
+}
+
+.search-bar {
+  padding: 10px;
+  border: 2px solid var(--color-border-dark);
+  border-radius: 6px;
+  font-size: 1rem;
+  width: 200px;
+}
+
+.search-bar:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 5px var(--color-primary-light);
 }
 
 .refresh-btn, .add-trailer {
@@ -105,6 +114,12 @@
   margin-bottom: 20px;
 }
 
+.success-message {
+  color: var(--color-green);
+  font-weight: 500;
+  margin-bottom: 20px;
+}
+
 .trailer-section {
   background-color: var(--color-section-background);
   border-radius: 5px;
@@ -116,6 +131,10 @@
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
   gap: 15px;
+}
+
+.trailer-box-wrapper {
+  position: relative;
 }
 
 .trailer-box {
@@ -152,6 +171,81 @@
   color: var(--color-primary);
 }
 
+.delete-icon {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: none;
+  border: none;
+  font-size: 1.2rem;
+  cursor: pointer;
+  color: var(--color-red);
+  transition: all 0.2s;
+}
+
+.delete-icon:hover {
+  color: var(--color-red);
+  transform: scale(1.2);
+}
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modal-content.delete-confirm {
+  background: var(--color-white);
+  padding: 20px;
+  border-radius: 8px;
+  max-width: 400px;
+  width: 100%;
+  text-align: center;
+}
+
+.delete-confirm h3 {
+  color: var(--color-red);
+  margin-bottom: 15px;
+}
+
+.delete-confirm p {
+  margin-bottom: 20px;
+}
+
+.delete-btn {
+  background: var(--color-red);
+  color: var(--color-white);
+  border: none;
+  padding: 10px 20px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.delete-btn:hover {
+  background: #c53030;
+}
+
+.cancel-btn {
+  background: var(--color-button-background);
+  border: 2px solid var(--color-primary-light);
+  padding: 10px 20px;
+  border-radius: 6px;
+  cursor: pointer;
+  margin-right: 10px;
+}
+
+.cancel-btn:hover {
+  background: var(--color-button-hover);
+}
+
 .loading, .no-trailers {
   font-size: 1.2rem;
   color: var(--color-text-muted);
@@ -179,7 +273,13 @@
 
   .header-actions {
     width: 100%;
+    flex-wrap: wrap;
     justify-content: flex-end;
+  }
+
+  .search-bar {
+    width: 100%;
+    margin-bottom: 10px;
   }
 
   .trailer-boxes {
