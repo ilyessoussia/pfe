@@ -19,11 +19,10 @@ const TrailerDetails = () => {
     raw_date: "",
     technicien: "",
     cout: "",
-    status: "scheduled", // Changed from "planned" to "scheduled"
+    status: "scheduled",
   });
   const [formError, setFormError] = useState(null);
   const [formSuccess, setFormSuccess] = useState(null);
-  const today = new Date().toISOString().split("T")[0];
 
   useEffect(() => {
     const fetchTrailerData = async () => {
@@ -74,7 +73,7 @@ const TrailerDetails = () => {
           type: record.type,
           technicien: record.technicien || "Non spécifié",
           cout: record.cout ? `${record.cout} TND` : "Non spécifié",
-          status: record.status || "scheduled", // Normalize to "scheduled"
+          status: record.status || "scheduled",
         }));
 
         console.log("Fetched trailer maintenances:", maintenanceList); // Debug log
@@ -124,7 +123,7 @@ const TrailerDetails = () => {
         type: maintenanceForm.type,
         technicien: maintenanceForm.technicien || null,
         cout: maintenanceForm.cout ? parseFloat(maintenanceForm.cout) : null,
-        status: "scheduled", // Explicitly set to "scheduled"
+        status: maintenanceForm.status, // Use form status
       };
 
       console.log("Inserting maintenance:", newMaintenance); // Debug log
