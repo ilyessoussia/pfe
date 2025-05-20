@@ -144,7 +144,7 @@ assignments);
       const alerts = [];
       trucksData.forEach(truck => {
         const fuelEntry = fuelByTruck[truck.id];
-        if (fuelEntry && fuelEntry.litersPer100km > 30) {
+        if (fuelEntry && fuelEntry.litersPer100km > 40) {
           alerts.push({
             type: "fuel",
             message: `Consommation élevée pour ${truck.immatriculation}`,

@@ -95,7 +95,6 @@ const TrailerDetails = () => {
   const validateMaintenanceForm = () => {
     const errors = [];
     if (!maintenanceForm.raw_date) errors.push("Date est requise");
-    else if (new Date(maintenanceForm.raw_date) < new Date(today)) errors.push("La date ne peut pas être dans le passé");
     if (!maintenanceForm.type) errors.push("Type de maintenance est requis");
     if (!maintenanceForm.technicien) errors.push("Technicien est requis");
     if (maintenanceForm.cout && parseFloat(maintenanceForm.cout) <= 0) errors.push("Coût doit être un nombre positif");
@@ -426,7 +425,6 @@ const TrailerDetails = () => {
                 name="raw_date"
                 value={maintenanceForm.raw_date}
                 onChange={handleMaintenanceInputChange}
-                min={today}
                 required
               />
             </div>

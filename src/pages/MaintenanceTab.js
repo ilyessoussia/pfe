@@ -144,7 +144,6 @@ const MaintenanceTab = ({ maintenanceHistory: initialMaintenanceHistory = [], on
   const validateForm = () => {
     const errors = [];
     if (!formData.date) errors.push("Date est requise");
-    else if (new Date(formData.date) < new Date(today)) errors.push("La date ne peut pas être dans le passé");
     if (!formData.type) errors.push("Type de maintenance est requis");
     if (!formData.kilometrage || formData.kilometrage <= 0) errors.push("Kilométrage doit être un nombre positif");
     if (!formData.technicien) errors.push("Technicien est requis");
@@ -659,7 +658,6 @@ const MaintenanceTab = ({ maintenanceHistory: initialMaintenanceHistory = [], on
                   name="date"
                   value={formData.date}
                   onChange={handleInputChange}
-                  min={today}
                   required
                   aria-required="true"
                 />
