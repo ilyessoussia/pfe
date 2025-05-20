@@ -45,11 +45,11 @@ const TripScheduler = () => {
   const truckListRef = useRef(null);
 
   const colorOptions = [
-    { value: "#374151", label: "Gris" },
     { value: "#1E3A8A", label: "Bleu" },
-    { value: "#15803D", label: "Vert" },
     { value: "#B91C1C", label: "Rouge" },
+    { value: "#15803D", label: "Vert" },
     { value: "#6B21A8", label: "Violet" },
+     { value: "#374151", label: "Gris" },
   ];
 
   useEffect(() => {
@@ -71,12 +71,13 @@ const TripScheduler = () => {
           .from('trips')
           .select('*');
         if (tripsError) throw tripsError;
+
         const today = new Date();
-        today.setHours(0, 0, 0, 0);
+        today.setUTCHours(0, 0, 0, 0);
         const formattedTrips = tripsData
           .map(trip => {
             const tripDate = new Date(trip.date);
-            tripDate.setHours(0, 0, 0, 0);
+            tripDate.setUTCHours(0, 0, 0, 0);
             return {
               id: trip.id,
               truckId: trip.truck_id,
@@ -90,13 +91,18 @@ const TripScheduler = () => {
               createdAt: new Date(trip.created_at),
             };
           })
-          .filter(trip => new Date(trip.rawDate) >= today);
+          .filter(trip => {
+            const tripDate = new Date(trip.rawDate);
+            tripDate.setUTCHours(0, 0, 0, 0);
+            return tripDate >= today;
+          });
+
         setTrips(formattedTrips);
 
         if (formattedTrips.length > 0) {
           const futureDates = formattedTrips.map(trip => new Date(trip.rawDate));
           const maxTripDate = new Date(Math.max(...futureDates));
-          maxTripDate.setHours(0, 0, 0, 0);
+          maxTripDate.setUTCHours(0, 0, 0, 0);
           setMaxDate(maxTripDate);
         } else {
           setMaxDate(today);
@@ -180,9 +186,9 @@ const TripScheduler = () => {
       return;
     }
     const tripDate = new Date(formData.date);
-    tripDate.setHours(0, 0, 0, 0);
+    tripDate.setUTCHours(0, 0, 0, 0);
     const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    today.setUTCHours(0, 0, 0, 0);
     if (tripDate < today) {
       setError("La date du voyage doit être aujourd'hui ou dans le futur.");
       document.getElementById("date").focus();
@@ -217,7 +223,7 @@ const TripScheduler = () => {
       };
       setTrips((prev) => [...prev, newTrip]);
       const newTripDate = new Date(newTrip.rawDate);
-      newTripDate.setHours(0, 0, 0, 0);
+      newTripDate.setUTCHours(0, 0, 0, 0);
       if (!maxDate || newTripDate > maxDate) {
         setMaxDate(newTripDate);
       }
@@ -252,9 +258,9 @@ const TripScheduler = () => {
       return;
     }
     const tripDate = new Date(editFormData.date);
-    tripDate.setHours(0, 0, 0, 0);
+    tripDate.setUTCHours(0, 0, 0, 0);
     const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    today.setUTCHours(0, 0, 0, 0);
     if (tripDate < today) {
       setError("La date du voyage doit être aujourd'hui ou dans le futur.");
       document.getElementById("editDate").focus();
@@ -298,10 +304,14 @@ const TripScheduler = () => {
           : t
       );
       const futureDates = updatedTrips
-        .map(trip => new Date(trip.rawDate))
+        .map(trip => {
+          const date = new Date(trip.rawDate);
+          date.setUTCHours(0, 0, 0, 0);
+          return date;
+        })
         .filter(date => date >= today);
       const newMaxDate = futureDates.length > 0 ? new Date(Math.max(...futureDates)) : today;
-      newMaxDate.setHours(0, 0, 0, 0);
+      newMaxDate.setUTCHours(0, 0, 0, 0);
       setMaxDate(newMaxDate);
       setEditFormData({ id: "", truckId: "", destination: "", date: "", cargo: "", description: "", status: "scheduled", color: "#374151" });
       setTruckSearch("");
@@ -356,14 +366,17 @@ const TripScheduler = () => {
         if (error) throw error;
         setTrips((prev) => prev.filter((t) => t.id !== tripId));
         const today = new Date();
-        today.setHours(0, 0, 0, 0);
+        today.setUTCHours(0, 0, 0, 0);
         if (trips.length > 1) {
           const remainingTrips = trips.filter(t => t.id !== tripId);
           const futureDates = remainingTrips
             .map(trip => new Date(trip.rawDate))
-            .filter(date => date >= today);
+            .filter(date => {
+              date.setUTCHours(0, 0, 0, 0);
+              return date >= today;
+            });
           const newMaxDate = futureDates.length > 0 ? new Date(Math.max(...futureDates)) : today;
-          newMaxDate.setHours(0, 0, 0, 0);
+          newMaxDate.setUTCHours(0, 0, 0, 0);
           setMaxDate(newMaxDate);
         } else {
           setMaxDate(today);
@@ -387,14 +400,17 @@ const TripScheduler = () => {
         if (error) throw error;
         setTrips((prev) => prev.filter((t) => t.id !== tripId));
         const today = new Date();
-        today.setHours(0, 0, 0, 0);
+        today.setUTCHours(0, 0, 0, 0);
         if (trips.length > 1) {
           const remainingTrips = trips.filter(t => t.id !== tripId);
           const futureDates = remainingTrips
             .map(trip => new Date(trip.rawDate))
-            .filter(date => date >= today);
+            .filter(date => {
+              date.setUTCHours(0, 0, 0, 0);
+              return date >= today;
+            });
           const newMaxDate = futureDates.length > 0 ? new Date(Math.max(...futureDates)) : today;
-          newMaxDate.setHours(0, 0, 0, 0);
+          newMaxDate.setUTCHours(0, 0, 0, 0);
           setMaxDate(newMaxDate);
         } else {
           setMaxDate(today);
@@ -409,7 +425,6 @@ const TripScheduler = () => {
   };
 
   const openAddTripModal = (date = null) => {
-    // Use the provided date string directly to avoid timezone issues
     const formattedDate = date || new Date().toISOString().split('T')[0];
     setFormData({
       truckId: "",
@@ -459,42 +474,34 @@ const TripScheduler = () => {
     }));
   };
 
-
-
-    const getDisplayedDays = () => {
+  const getDisplayedDays = () => {
     const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    
-    // Calculate the start date for the current page
-    let startDate = new Date(today);
-    startDate.setDate(today.getDate() + page * 4);
-    
-    // Ensure startDate is not before today
-    if (startDate < today) {
-      startDate = new Date(today);
-    }
+    today.setUTCHours(0, 0, 0, 0);
+
+    const startDate = new Date(today);
+    startDate.setUTCDate(today.getUTCDate() + page * 4);
 
     const days = [];
     for (let i = 0; i < 4; i++) {
       const day = new Date(startDate);
-      day.setDate(startDate.getDate() + i);
-      
-      // Only add days that are today or in the future
+      day.setUTCDate(startDate.getUTCDate() + i);
       if (day >= today) {
-        days.push(day.toISOString().split('T')[0]);
+        const year = day.getUTCFullYear();
+        const month = String(day.getUTCMonth() + 1).padStart(2, '0');
+        const dayOfMonth = String(day.getUTCDate()).padStart(2, '0');
+        days.push(`${year}-${month}-${dayOfMonth}`);
       }
     }
-    
-    // If we're on page 0 and have less than 4 days (because we filtered out past days),
-    // fill the remaining slots with future days
+
     if (page === 0 && days.length < 4) {
       const remainingDays = 4 - days.length;
-      const lastDay = days.length > 0 ? new Date(days[days.length - 1]) : today;
-      
       for (let i = 1; i <= remainingDays; i++) {
-        const nextDay = new Date(lastDay);
-        nextDay.setDate(lastDay.getDate() + i);
-        days.push(nextDay.toISOString().split('T')[0]);
+        const nextDay = new Date(today);
+        nextDay.setUTCDate(today.getUTCDate() + days.length + i - 1);
+        const year = nextDay.getUTCFullYear();
+        const month = String(nextDay.getUTCMonth() + 1).padStart(2, '0');
+        const dayOfMonth = String(nextDay.getUTCDate()).padStart(2, '0');
+        days.push(`${year}-${month}-${dayOfMonth}`);
       }
     }
 
@@ -506,20 +513,20 @@ const TripScheduler = () => {
     if (displayedDays.length === 0) return {};
 
     const startDate = new Date(displayedDays[0]);
-    startDate.setHours(0, 0, 0, 0);
-    
+    startDate.setUTCHours(0, 0, 0, 0);
     const endDate = new Date(displayedDays[displayedDays.length - 1]);
-    endDate.setHours(23, 59, 59, 999);
+    endDate.setUTCHours(23, 59, 59, 999);
 
     const sortedTrips = [...trips].sort((a, b) => new Date(a.rawDate) - new Date(b.rawDate));
     const filteredTrips = sortedTrips.filter((trip) => {
       const tripDate = new Date(trip.rawDate);
-      tripDate.setHours(0, 0, 0, 0);
+      tripDate.setUTCHours(0, 0, 0, 0);
       return tripDate >= startDate && tripDate <= endDate;
     });
 
     const groupedByDate = filteredTrips.reduce((acc, trip) => {
-      const date = new Date(trip.rawDate).toISOString().split('T')[0];
+      const tripDate = new Date(trip.rawDate);
+      const date = `${tripDate.getUTCFullYear()}-${String(tripDate.getUTCMonth() + 1).padStart(2, '0')}-${String(tripDate.getUTCDate()).padStart(2, '0')}`;
       if (!acc[date]) acc[date] = [];
       acc[date].push(trip);
       return acc;
@@ -529,7 +536,7 @@ const TripScheduler = () => {
       '#B91C1C': 1,
       '#1E3A8A': 2,
     };
-    
+
     Object.keys(groupedByDate).forEach((date) => {
       groupedByDate[date].sort((a, b) => {
         const aPriority = colorPriority[a.color] || 3;
@@ -549,14 +556,10 @@ const TripScheduler = () => {
 
   const handleNextDays = () => {
     const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    
-    // Calculate the start date of the next page
+    today.setUTCHours(0, 0, 0, 0);
     const nextStartDate = new Date(today);
-    nextStartDate.setDate(today.getDate() + (page + 1) * 4);
-    
-    // Only allow navigation if there are trips beyond the current page
-    if (maxDate && nextStartDate <= maxDate) {
+    nextStartDate.setUTCDate(today.getUTCDate() + (page + 1) * 4);
+    if (!maxDate || nextStartDate <= maxDate) {
       setPage(prev => prev + 1);
     }
   };
@@ -564,12 +567,11 @@ const TripScheduler = () => {
   const groupedTrips = getGroupedTrips();
   const displayedDays = getDisplayedDays();
   const today = new Date();
-  today.setHours(0, 0, 0, 0);
+  today.setUTCHours(0, 0, 0, 0);
   const nextStartDate = new Date(today);
-  nextStartDate.setDate(today.getDate() + (page + 1) * 4);
+  nextStartDate.setUTCDate(today.getUTCDate() + (page + 1) * 4);
   const canGoPrev = page > 0;
   const canGoNext = maxDate && nextStartDate <= maxDate;
-
 
   return (
     <div className="trip-scheduler-container">
@@ -591,7 +593,7 @@ const TripScheduler = () => {
         </nav>
         <div className="trip-scheduler-sidebar-footer">
           <p>Version 1.2.0</p>
-          <p>© 2025 </p>
+          <p>© 2025</p>
         </div>
       </aside>
 
@@ -733,9 +735,9 @@ const TripScheduler = () => {
 
         {showAddTripModal && (
           <div className="modal-overlay">
-            <div className="trip-scheduler-modal-content">
+            <div className="modal-content">
               <button
-                className="trip-scheduler-modal-close"
+                className="modal-close"
                 onClick={() => {
                   setShowAddTripModal(false);
                   setFormData({ truckId: "", destination: "", date: "", cargo: "", description: "", status: "scheduled", color: "#374151" });
@@ -744,7 +746,8 @@ const TripScheduler = () => {
                   setError(null);
                 }}
               >
-                ✕
+                
+                X
               </button>
               <section className="trip-scheduler-form-section">
                 <h2>Planifier un Nouveau Voyage</h2>
