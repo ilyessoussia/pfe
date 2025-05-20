@@ -135,6 +135,10 @@
 
 .trailer-box-wrapper {
   position: relative;
+  /* Ensure wrapper constrains card size */
+  min-height: 250px;
+  display: flex;
+  flex-direction: column;
 }
 
 .trailer-box {
@@ -143,10 +147,15 @@
   background-color: var(--color-white);
   border: 2px solid var(--color-border-dark);
   border-radius: 8px;
-  padding: 20px;
+  padding: 40px 20px 20px 20px; /* Increased top padding to clear delete icon */
   text-decoration: none;
   color: var(--color-text-light);
   transition: all 0.2s;
+  /* Fix card height for consistency */
+  min-height: 250px;
+  max-height: 250px;
+  flex: 1;
+  overflow: hidden; /* Prevent content from overflowing */
 }
 
 .trailer-box:hover {
@@ -157,14 +166,26 @@
 
 .trailer-box h3 {
   margin: 0 0 10px;
-  font-size: 1.4rem;
+  font-size: 1.3rem; /* Slightly smaller font to fit more text */
   font-weight: 600;
   color: var(--color-primary);
+  /* Allow wrapping for complete titles */
+  white-space: normal;
+  line-height: 1.4; /* Improve readability for wrapped text */
+}
+
+.trailer-details {
+  flex: 1;
+  overflow: hidden; /* Hide overflow content */
 }
 
 .trailer-details p {
   margin: 5px 0;
-  font-size: 1rem;
+  font-size: 0.95rem; /* Smaller font for better fit */
+  /* Truncate long text */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .trailer-details p strong {
@@ -173,18 +194,22 @@
 
 .delete-icon {
   position: absolute;
-  top: 10px;
+  top: 5px; /* Moved higher to avoid title overlap */
   right: 10px;
-  background: none;
+  background: rgba(255, 255, 255, 0.8); /* Semi-transparent background */
   border: none;
   font-size: 1.2rem;
   cursor: pointer;
   color: var(--color-red);
   transition: all 0.2s;
+  padding: 4px; /* Small padding for better click area */
+  border-radius: 4px; /* Rounded corners */
+  z-index: 10; /* Ensure icon is above content */
 }
 
 .delete-icon:hover {
   color: var(--color-red);
+  background: var(--color-button-hover); /* Subtle hover effect */
   transform: scale(1.2);
 }
 
@@ -284,5 +309,26 @@
 
   .trailer-boxes {
     grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  }
+
+  .trailer-box {
+    min-height: 220px; /* Smaller for mobile */
+    max-height: 220px;
+    padding: 35px 15px 15px 15px; /* Adjusted top padding */
+  }
+
+  .trailer-box h3 {
+    font-size: 1.1rem; /* Smaller title on mobile */
+    line-height: 1.3;
+  }
+
+  .trailer-details p {
+    font-size: 0.9rem; /* Smaller text on mobile */
+  }
+
+  .delete-icon {
+    top: 5px; /* Consistent positioning */
+    right: 8px;
+    font-size: 1.1rem; /* Slightly smaller for mobile */
   }
 }

@@ -45,8 +45,8 @@ const TripScheduler = () => {
   const truckListRef = useRef(null);
 
   const colorOptions = [
+     { value: "#B91C1C", label: "Rouge" },
     { value: "#1E3A8A", label: "Bleu" },
-    { value: "#B91C1C", label: "Rouge" },
     { value: "#15803D", label: "Vert" },
     { value: "#6B21A8", label: "Violet" },
      { value: "#374151", label: "Gris" },

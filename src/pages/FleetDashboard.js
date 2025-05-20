@@ -74,9 +74,7 @@ const FleetDashboard = () => {
           trailer_immatriculation: assignment.trailers.immatriculation,
         };
       });
-      setTruckTrailerAssignments(
-
-assignments);
+      setTruckTrailerAssignments(assignments);
 
       // Fetch fuel records
       const { data: fuelData, error: fuelError } = await supabase
@@ -102,7 +100,7 @@ assignments);
       // Fetch maintenance records
       const { data: maintenanceData, error: maintenanceError } = await supabase
         .from('maintenance_records')
-        .select('truck_id, next_oil_change, date')
+        .select('truck_id, next_oil_change, date, status')
         .order('date', { ascending: false });
 
       if (maintenanceError) throw maintenanceError;
@@ -153,7 +151,7 @@ assignments);
           });
         }
         const maintenance = maintenanceData.find(
-          m => m.truck_id === truck.id && new Date(m.date) < new Date()
+          m => m.truck_id === truck.id && new Date(m.date) < new Date() && m.status !== "completed"
         );
         if (maintenance) {
           alerts.push({
@@ -239,8 +237,8 @@ assignments);
 
   const handleAssignTrailer = (truckId, e) => {
     e.stopPropagation();
-    e.preventDefault(); // Additional safeguard to prevent any default behavior
-    console.log("Opening trailer modal for truck ID:", truckId); // Debugging
+    e.preventDefault();
+    console.log("Opening trailer modal for truck ID:", truckId);
     setSelectedTruckId(truckId);
     setSelectedTrailerId(truckTrailerAssignments[truckId]?.trailer_id || "");
     setShowTrailerModal(true);
@@ -597,7 +595,7 @@ assignments);
                         <button
                           className="assign-trailer-btn"
                           onClick={(e) => handleAssignTrailer(truck.id, e)}
-                          type="button" // Explicitly set to prevent form submission
+                          type="button"
                         >
                           {truck.trailerImmatriculation ? "Modifier Remorque" : "Ajouter Remorque"}
                         </button>
