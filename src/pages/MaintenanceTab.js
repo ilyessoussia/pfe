@@ -27,7 +27,6 @@ const MaintenanceTab = ({ maintenanceHistory: initialMaintenanceHistory = [], on
   const [showConfirmComplete, setShowConfirmComplete] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [recordsPerPage] = useState(10);
-  const today = new Date().toISOString().split("T")[0];
 
   const fetchMaintenanceData = useCallback(async () => {
     try {
@@ -161,7 +160,7 @@ const MaintenanceTab = ({ maintenanceHistory: initialMaintenanceHistory = [], on
     const today = new Date();
     const diffTime = maintenanceDate - today;
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    return diffDays > 0 ? `${diffDays} jours` : "Aujourd'hui";
+    return diffDays > 0 ? `${diffDays} jours` : diffDays < 0 ? "Passé" : "Aujourd'hui";
   };
 
   const handleCompleteMaintenance = async (maintenance) => {
@@ -296,7 +295,7 @@ const MaintenanceTab = ({ maintenanceHistory: initialMaintenanceHistory = [], on
       date: maintenance.rawDate,
       type: maintenance.type,
       kilometrage: maintenance.kilometrage,
-      technicien: maintenance.technicien,
+      technicen: maintenance.technicien,
       cout: maintenance.cout.toString(),
       status: maintenance.status,
       nextOilChange: maintenance.nextOilChange || "",
@@ -433,7 +432,9 @@ const MaintenanceTab = ({ maintenanceHistory: initialMaintenanceHistory = [], on
                     <div className="maintenance-card-header">
                       <h4>{maintenance.type}</h4>
                       <span className="maintenance-date">{formatDateForDisplay(maintenance.date)}</span>
-                    </div>
+                    </
+
+div>
                     <div className="maintenance-card-details">
                       <p><strong>Kilométrage:</strong> {maintenance.kilometrage} km</p>
                       <p><strong>Technicien:</strong> {maintenance.technicien}</p>
