@@ -7,10 +7,12 @@ import Footer from "./components/Footer";
 import Chatbot from "./siteweb/Chatbot";
 import about1 from "./pictures/about1.jpg";
 import about2 from "./pictures/about2.jpg";
-import imgcam1 from "./pictures/imagecam2.jpeg"
+import imgcam1 from "./pictures/imagecam2.jpeg";
+import imgcam2 from "./pictures/imagecam4.jpeg";
 
-
-
+// Icons for Values and Clients sections
+import { FaGem, FaHandshake, FaLeaf, FaHeadset } from 'react-icons/fa';
+import { FaBuilding, FaBriefcase, FaGlobe, FaUser } from 'react-icons/fa';
 
 const AboutUs = () => (
   <section className="about-us" id="presentation">
@@ -19,19 +21,25 @@ const AboutUs = () => (
       <div className="about-background" style={{ backgroundImage: `url(${about2})` }}>
         <div className="about-overlay">
           <div className="about-content">
-            <p>
-              CHB et SNTT forment un partenariat de confiance depuis 1995, spécialisé dans la fourniture de matériaux de construction de haute qualité et des services de transport fiables. CHB excelle dans la livraison de produits haut de gamme pour des projets à grande échelle, tandis que SNTT garantit des solutions de transport rapides et efficaces, assurant durabilité et efficacité dans chaque projet.
+            <p className="about-paragraph">
+              CHB et SNTT forment un partenariat de confiance depuis 2005, spécialisé dans la fourniture de matériaux de construction de haute qualité et des services de transport fiables. CHB excelle dans la livraison de produits haut de gamme pour des projets à grande échelle, tandis que SNTT garantit des solutions de transport rapides et efficaces, assurant durabilité et efficacité dans chaque projet.
             </p>
           </div>
           <img src={about1} alt="Chantier de construction" className="about-secondary-img" />
         </div>
       </div>
       <div className="sntt-section">
-        <h3>SNTT : Notre Partenaire en Transport</h3>
-        <p>
-          SNTT est une entreprise de transport de premier plan, dédiée à la livraison rapide et sécurisée de matériaux de construction. Avec une flotte moderne et une expertise logistique, SNTT soutient les projets de CHB et d'autres clients en offrant des solutions sur mesure pour répondre aux besoins spécifiques de chaque chantier.
-        </p>
-        <img src={imgcam1} alt="SNTT Transportation" className="sntt-img" />
+        <div className="about-background" style={{ backgroundImage: `url(${imgcam2})` }}>
+          <div className="about-overlay">
+            <div className="about-content">
+              <h3>SNTT : Notre Partenaire en Transport</h3>
+              <p className="about-paragraph">
+                SNTT est une entreprise de transport de premier plan, dédiée à la livraison rapide et sécurisée de matériaux de construction. Avec une flotte moderne et une expertise logistique, SNTT soutient les projets de CHB et d'autres clients en offrant des solutions sur mesure pour répondre aux besoins spécifiques de chaque chantier.
+              </p>
+              <img src={imgcam1} alt="SNTT Transportation" className="sntt-img" />
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   </section>
@@ -80,22 +88,22 @@ const Values = () => (
       <h2 className="section-title">Nos Valeurs</h2>
       <div className="values-content">
         <div className="value-item">
-          <img src="https://via.placeholder.com/60" alt="Quality Icon" className="value-item-img" />
+          <FaGem className="value-item-icon" />
           <h3>Qualité</h3>
           <p>Nous ne faisons jamais de compromis sur la qualité de nos produits et services.</p>
         </div>
         <div className="value-item">
-          <img src="https://via.placeholder.com/60" alt="Integrity Icon" className="value-item-img" />
+          <FaHandshake className="value-item-icon" />
           <h3>Intégrité</h3>
           <p>Nous maintenons les plus hauts standards d'honnêteté et d'éthique dans toutes nos activités.</p>
         </div>
         <div className="value-item">
-          <img src="https://via.placeholder.com/60" alt="Sustainability Icon" className="value-item-img" />
+          <FaLeaf className="value-item-icon" />
           <h3>Durabilité</h3>
           <p>Nous nous engageons à minimiser notre impact environnemental et à promouvoir des pratiques durables.</p>
         </div>
         <div className="value-item">
-          <img src="https://via.placeholder.com/60" alt="Customer Service Icon" className="value-item-img" />
+          <FaHeadset className="value-item-icon" />
           <h3>Service client</h3>
           <p>Nous plaçons la satisfaction de nos clients au cœur de tout ce que nous faisons.</p>
         </div>
@@ -111,10 +119,9 @@ const Clients = () => (
       <p className="section-text">
         CHB et SNTT sont fiers de collaborer avec un large éventail d'organisations prestigieuses :
       </p>
-      <img src="https://via.placeholder.com/600x200" alt="Clients Banner" className="clients-banner-img" />
       <div className="clients-grid">
         <div className="client-category">
-          <img src="https://via.placeholder.com/80" alt="Public Sector Icon" className="client-category-img" />
+          <FaBuilding className="client-category-icon" />
           <h3>Secteur public</h3>
           <ul className="client-list">
             <li>Ministère de l’Équipement et de l’Habitat</li>
@@ -125,7 +132,7 @@ const Clients = () => (
           </ul>
         </div>
         <div className="client-category">
-          <img src="https://via.placeholder.com/80" alt="Private Sector Icon" className="client-category-img" />
+          <FaBriefcase className="client-category-icon" />
           <h3>Secteur privé</h3>
           <ul className="client-list">
             <li>Entreprises de construction</li>
@@ -137,7 +144,7 @@ const Clients = () => (
           </ul>
         </div>
         <div className="client-category">
-          <img src="https://via.placeholder.com/80" alt="International Partners Icon" className="client-category-img" />
+          <FaGlobe className="client-category-icon" />
           <h3>Partenaires internationaux</h3>
           <ul className="client-list">
             <li>Entreprises étrangères du secteur BTP</li>
@@ -147,7 +154,7 @@ const Clients = () => (
           </ul>
         </div>
         <div className="client-category">
-          <img src="https://via.placeholder.com/80" alt="Individual Clients Icon" className="client-category-img" />
+          <FaUser className="client-category-icon" />
           <h3>Clients particuliers</h3>
           <ul className="client-list">
             <li>Auto-constructeurs</li>

@@ -20,6 +20,18 @@ const ProductDetail = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  // Lock scroll when product detail is open
+  useEffect(() => {
+    if (location.pathname !== "/products") {
+      const scrollPosition = window.scrollY;
+      document.body.style.overflow = 'hidden';
+      return () => {
+        document.body.style.overflow = 'auto';
+        window.scrollTo(0, scrollPosition);
+      };
+    }
+  }, [location.pathname]);
+
   // Fetch products and set up real-time subscription
   useEffect(() => {
     const fetchProducts = async () => {
@@ -81,35 +93,44 @@ const ProductDetail = () => {
         <Navbar />
         <Hero />
         <section className="product-categories" id="products">
-          <h2>Catégories de Produits</h2>
-          {loading ? (
-            <p>Chargement des produits...</p>
-          ) : error ? (
-            <p>{error}</p>
-          ) : (
-            <Swiper
-              slidesPerView="auto"
-              spaceBetween={15}
-              centeredSlides={true}
-              freeMode={true}
-              navigation
-              modules={[FreeMode, Navigation]}
-              className="product-swiper"
-            >
-              {products.map((product) => (
-                <SwiperSlide key={product.id} className="product-card">
-                  <Link to={`/product/${product.id}`}>
-                    <img
-                      src={product.image_url || "https://via.placeholder.com/140"}
-                      alt={product.name}
-                      className="product-image"
-                    />
-                    <h3 className="product-name">{product.name}</h3>
-                  </Link>
-                </SwiperSlide>
-              ))}
-            </Swiper>
-          )}
+          <div className="container">
+            <h2 className="section-title">Nos Produits</h2>
+            <p className="section-text">
+              Découvrez notre gamme de matériaux de construction de haute qualité, conçus pour répondre aux besoins de vos projets, qu'ils soient grands ou petits. Chaque produit est sélectionné pour sa durabilité et sa performance.
+            </p>
+            <img
+              src="https://www.clarisdesignbuild.com/wp-content/uploads/2023/10/Untitled-1500-%C3%97-800-px-52.jpg"
+              alt="Construction Materials Banner"
+              className="products-banner-img"
+            />
+            {loading ? (
+              <p className="loading-text">Chargement des produits...</p>
+            ) : error ? (
+              <p className="error-text">{error}</p>
+            ) : (
+              <Swiper
+                slidesPerView="auto"
+                spaceBetween={20}
+                freeMode={true}
+                navigation
+                modules={[FreeMode, Navigation]}
+                className="product-swiper"
+              >
+                {products.map((product) => (
+                  <SwiperSlide key={product.id} className="product-card">
+                    <Link to={`/product/${product.id}`}>
+                      <img
+                        src={product.image_url || "https://via.placeholder.com/160"}
+                        alt={product.name}
+                        className="product-image"
+                      />
+                      <h3 className="product-name">{product.name}</h3>
+                    </Link>
+                  </SwiperSlide>
+                ))}
+              </Swiper>
+            )}
+          </div>
         </section>
         <Footer />
       </>
@@ -119,7 +140,7 @@ const ProductDetail = () => {
   const product = products.find((p) => p.id === parseInt(id));
 
   if (!product) {
-    return <div>Produit non trouvé</div>;
+    return <div className="error-text">Produit non trouvé</div>;
   }
 
   const handleClose = () => {
@@ -138,7 +159,7 @@ const ProductDetail = () => {
           </div>
           <div className="detail-body">
             <img
-              src={product.image_url || "https://via.placeholder.com/140"}
+              src={product.image_url || "https://via.placeholder.com/160"}
               alt={product.name}
               className="detail-image"
             />
