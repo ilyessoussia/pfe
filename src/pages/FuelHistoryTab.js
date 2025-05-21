@@ -85,6 +85,7 @@ const FuelHistoryTab = ({ fuelHistory, onFuelAdded }) => {
             cost_per_km: entry.cost_per_km != null ? parseFloat(entry.cost_per_km) : 0,
             liters_per_100km:
               entry.liters_per_100km != null ? parseFloat(entry.liters_per_100km) : 0,
+            voyage: entry.voyage || "non spécifié", // Added voyage field
           };
           if (!normalizedEntry.raw_date) {
             console.warn(`Entry at index ${index} missing date:`, normalizedEntry);
@@ -161,6 +162,7 @@ const FuelHistoryTab = ({ fuelHistory, onFuelAdded }) => {
           consumption: metrics.consumption,
           costPerKm: metrics.costPerKm,
           litersPer100km: metrics.litersPer100km,
+          voyage: entry.voyage, // Added voyage field
         });
         grouped[monthYearKey].totalCost += parseFloat(entry.cost) || 0;
         grouped[monthYearKey].totalMileage += parseFloat(metrics.distanceTraveled) || 0;
@@ -197,6 +199,7 @@ const FuelHistoryTab = ({ fuelHistory, onFuelAdded }) => {
       fuel_price: entry.fuel_price != null ? parseFloat(entry.fuel_price) : 1.898,
       cost: entry.cost != null ? parseFloat(entry.cost) : 0,
       raw_date: entry.raw_date || entry.rawDate || new Date().toISOString().split('T')[0],
+      voyage: entry.voyage || "non spécifié", // Added voyage field
     };
 
     setEditRefuel({
@@ -207,6 +210,7 @@ const FuelHistoryTab = ({ fuelHistory, onFuelAdded }) => {
       fuelPrice: safeEntry.fuel_price.toString(),
       cost: safeEntry.cost.toString(),
       date: safeEntry.raw_date,
+      voyage: safeEntry.voyage, // Added voyage field
     });
     setShowEditModal(true);
     setError("");
@@ -228,7 +232,7 @@ const FuelHistoryTab = ({ fuelHistory, onFuelAdded }) => {
         liters: value,
         cost: calculatedCost,
       });
-    } else if (name === "kilometers" || name === "date") {
+    } else {
       setEditRefuel({
         ...editRefuel,
         [name]: value,
@@ -284,6 +288,7 @@ const FuelHistoryTab = ({ fuelHistory, onFuelAdded }) => {
         cost_per_km: parseFloat(metrics.costPerKm),
         liters_per_100km: parseFloat(metrics.litersPer100km),
         updated_at: new Date().toISOString(),
+        voyage: editRefuel.voyage || "non spécifié", // Added voyage field
       };
       const { error } = await supabase
         .from('fuel_history')
@@ -352,6 +357,7 @@ const FuelHistoryTab = ({ fuelHistory, onFuelAdded }) => {
                                 Distance: +{parseFloat(entry.distanceTraveled).toFixed(0)} km
                               </p>
                             )}
+                            <p className="voyage">Voyage: {entry.voyage}</p> {/* Added voyage display */}
                           </div>
                           <div className="fuel-consumption">
                             <h4>{parseFloat(entry.consumption)?.toFixed(2) || "N/A"} km/L</h4>
@@ -428,6 +434,17 @@ const FuelHistoryTab = ({ fuelHistory, onFuelAdded }) => {
                   placeholder="ex: 65.5"
                   step="0.01"
                   required
+                />
+              </div>
+              <div className="form-group">
+                <label htmlFor="editVoyage">Dernière destination</label>
+                <input
+                  type="text"
+                  id="editVoyage"
+                  name="voyage"
+                  value={editRefuel.voyage}
+                  onChange={handleInputChange}
+                  placeholder="ex: Tunis - Sfax"
                 />
               </div>
               <div className="form-row">

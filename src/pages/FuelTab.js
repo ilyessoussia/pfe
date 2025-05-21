@@ -21,6 +21,7 @@ const FuelTab = ({ onFuelAdded }) => {
     lastKilometrage: "",
     isExternal: false,
     stationName: "",
+    voyage: "", // Added voyage field
   });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -130,6 +131,7 @@ const FuelTab = ({ onFuelAdded }) => {
           liters_per_100km: parseFloat(entry.liters_per_100km) || 0,
           is_external: entry.is_external || false,
           station_name: entry.station_name || "",
+          voyage: entry.voyage || "non spécifié", // Added voyage field
         }));
       console.log("Formatted fuel history:", formattedHistory);
       setLocalHistory(formattedHistory);
@@ -170,6 +172,7 @@ const FuelTab = ({ onFuelAdded }) => {
             liters_per_100km: parseFloat(data[0].liters_per_100km) || 0,
             is_external: data[0].is_external || false,
             station_name: data[0].station_name || "",
+            voyage: data[0].voyage || "non spécifié", // Added voyage field
           };
           setLastFuelEntry(lastEntry);
           setNewRefuel((prev) => ({
@@ -329,6 +332,7 @@ const FuelTab = ({ onFuelAdded }) => {
       lastKilometrage: lastFuelEntry?.kilometers ? lastFuelEntry.kilometers.toString() : "",
       isExternal: false,
       stationName: "",
+      voyage: "", // Added voyage field
     });
   };
 
@@ -430,6 +434,7 @@ const FuelTab = ({ onFuelAdded }) => {
         created_at: new Date().toISOString(),
         is_external: newRefuel.isExternal,
         station_name: newRefuel.isExternal ? newRefuel.stationName : null,
+        voyage: newRefuel.voyage || "non spécifié", // Added voyage field
       };
 
       // Insert fuel_history record
@@ -497,6 +502,7 @@ const FuelTab = ({ onFuelAdded }) => {
         liters_per_100km: parseFloat(metrics.litersPer100km),
         is_external: newRefuel.isExternal,
         station_name: newRefuel.isExternal ? newRefuel.stationName : "",
+        voyage: newRefuel.voyage || "non spécifié", // Added voyage field
       };
       setLocalHistory((prev) => [...prev, newEntry].sort((a, b) => parseDate(a.raw_date) - parseDate(b.raw_date)));
       setLastFuelEntry(newEntry);
@@ -713,6 +719,17 @@ const FuelTab = ({ onFuelAdded }) => {
                   placeholder="ex: 65.5"
                   step="0.01"
                   required
+                />
+              </div>
+              <div className="form-group">
+                <label htmlFor="voyage">Dernière destination</label>
+                <input
+                  type="text"
+                  id="voyage"
+                  name="voyage"
+                  value={newRefuel.voyage}
+                  onChange={handleInputChange}
+                  placeholder="ex: Tunis - Sfax"
                 />
               </div>
               <div className="form-group">
