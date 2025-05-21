@@ -18,6 +18,7 @@ import TrailerDetails from "./pages/TrailerDetails";
 import DriverPaymentDashboard from "./pages/DriverPaymentDashboard";
 import StockCarburant from "./pages/StockCarburant";
 import DailyCashTracking from './pages/DailyCashTracking';
+import FleetChatbot from './pages/FleetChatbot';
 
 const App = () => (
   <AuthProvider>
@@ -116,6 +117,14 @@ const App = () => (
             </ProtectedRoute>
           }
         />
+             <Route
+          path="/chatbot"
+          element={
+            <ProtectedRoute>
+              <FleetChatbot />
+            </ProtectedRoute>
+          }
+        />
         <Route
           path="//cash-tracking"
           element={
@@ -124,6 +133,7 @@ const App = () => (
             </ProtectedRoute>
           }
         />
+        
       </Routes>
     </Router>
   </AuthProvider>

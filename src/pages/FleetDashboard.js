@@ -6,7 +6,6 @@ import { supabase } from "../supabase";
 import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
-import FleetChatbot from "./FleetChatbot";
 
 // Fix Leaflet marker icon issue
 delete L.Icon.Default.prototype._getIconUrl;
@@ -386,6 +385,9 @@ const FleetDashboard = () => {
             <li>
               <Link to="/driver-payments">💰 Gestion de Paiement des Chauffeurs</Link>
             </li>
+            <li>
+              <Link to="/chatbot">🤖 Système de Reporting</Link>
+            </li>
           </ul>
         </nav>
         <div className="sidebar-footer">
@@ -648,7 +650,6 @@ const FleetDashboard = () => {
           </section>
         </div>
       </main>
-      <FleetChatbot />
     </div>
   );
 };

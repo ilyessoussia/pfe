@@ -1,10 +1,9 @@
 import React from "react";
 import { Link } from "react-router-dom";
-import "./App.css";
+import "./Home.css";
 import Navbar from "./components/Navbar";
 import Hero from "./components/Hero";
 import Footer from "./components/Footer";
-import Chatbot from "./siteweb/Chatbot";
 import about1 from "./pictures/about1.jpg";
 import about2 from "./pictures/about2.jpg";
 import imgcam1 from "./pictures/imagecam2.jpeg";
@@ -15,7 +14,7 @@ import { FaGem, FaHandshake, FaLeaf, FaHeadset } from 'react-icons/fa';
 import { FaBuilding, FaBriefcase, FaGlobe, FaUser } from 'react-icons/fa';
 
 const AboutUs = () => (
-  <section className="about-us" id="presentation">
+  <section className="about-us section" id="presentation">
     <div className="container">
       <h2 className="section-title">À Propos de Nous</h2>
       <div className="about-background" style={{ backgroundImage: `url(${about2})` }}>
@@ -46,7 +45,7 @@ const AboutUs = () => (
 );
 
 const Mission = () => (
-  <section className="mission-section" id="mission">
+  <section className="mission-section section" id="mission">
     <div className="container">
       <h2 className="section-title">Notre Mission</h2>
       <div className="mission-container">
@@ -83,7 +82,7 @@ const Mission = () => (
 );
 
 const Values = () => (
-  <section className="values" id="values">
+  <section className="values section" id="values">
     <div className="container">
       <h2 className="section-title">Nos Valeurs</h2>
       <div className="values-content">
@@ -113,7 +112,7 @@ const Values = () => (
 );
 
 const Clients = () => (
-  <section className="clients-section" id="clients">
+  <section className="clients-section section" id="clients">
     <div className="container">
       <h2 className="section-title">Nos clients</h2>
       <p className="section-text">
@@ -172,12 +171,13 @@ const Home = () => (
   <>
     <Navbar />
     <Hero />
-    <AboutUs />
-    <Mission />
-    <Values />
-    <Clients />
-    <Footer />
-    <Chatbot />
+    <main className="home-content">
+      <AboutUs />
+      <Mission />
+      <Values />
+      <Clients />
+      <Footer />
+    </main>
   </>
 );
 

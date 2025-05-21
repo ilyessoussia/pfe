@@ -166,8 +166,11 @@ const MaintenanceOverview = () => {
               <Link to="/incidents">🚨 Gestion des Incidents</Link>
             </li>
             <li>
-              <Link to="/driver-payments">💰 Gestion de Paiement des Chauffeurs</Link>
+              <Link to="/driver-payments">💰 Gestion des salaires </Link>
             </li>
+            <li>
+                          <Link to="/chatbot">🤖 Système de Reporting</Link>
+                        </li>
           </ul>
         </nav>
         <div className="maintenance-overview-sidebar-footer">

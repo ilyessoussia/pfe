@@ -3,7 +3,6 @@ import Navbar from "../components/Navbar";
 import Hero from "../components/Hero";
 import Footer from "../components/Footer";
 import './Solutions.css';
-import '../App.css';
 import camion1 from "../pictures/PLATEAU.png";
 import camion2 from "../pictures/SEMI-GRUE.png";
 import camion3 from "../pictures/iveco-s-way.png";

@@ -1,5 +1,5 @@
 import React from "react";
-import "../App.css";
+import "../Home.css";
 import back1 from "../pictures/back1.png";
 
 const Hero = () => (
