@@ -93,15 +93,11 @@ const ProductDetail = () => {
         <Hero />
         <section className="product-categories" id="products">
           <div className="container">
-            <h2 className="section-title">Nos Produits</h2>
+            <h2 className="section-title">Nos Articles</h2>
             <p className="section-text">
               Découvrez notre gamme de matériaux de construction de haute qualité, conçus pour répondre aux besoins de vos projets, qu'ils soient grands ou petits. Chaque produit est sélectionné pour sa durabilité et sa performance.
             </p>
-            <img
-              src="https://www.clarisdesignbuild.com/wp-content/uploads/2023/10/Untitled-1500-%C3%97-800-px-52.jpg"
-              alt="Construction Materials Banner"
-              className="products-banner-img"
-            />
+
             {loading ? (
               <p className="loading-text">Chargement des produits...</p>
             ) : error ? (
@@ -129,6 +125,11 @@ const ProductDetail = () => {
                 ))}
               </Swiper>
             )}
+              <img
+              src="https://www.clarisdesignbuild.com/wp-content/uploads/2023/10/Untitled-1500-%C3%97-800-px-52.jpg"
+              alt="Construction Materials Banner"
+              className="products-banner-img"
+            />
           </div>
         </section>
         <Footer />

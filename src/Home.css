@@ -622,13 +622,13 @@ body {
   background-color: var(--white);
   text-align: center;
   z-index: auto; /* Ensure no stacking conflict */
+    padding: 6rem 2rem;
 }
 
 .values-content {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
   gap: 35px;
-  max-width: 1200px;
   margin: 0 auto;
 }
 

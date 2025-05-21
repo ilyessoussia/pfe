@@ -454,48 +454,231 @@
 }
 
 /* Responsive adjustments for zoom and small screens */
-@media (max-width: 768px), (max-zoom: 1.5) {
-  .payment-table {
-    overflow-x: auto;
+
+
+/* Small screens (mobiles, <=768px) */
+@media (max-width: 768px), (max-zoom: 2) {
+  .dashboard-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .dashboard-header h1 {
+    font-size: 1.6rem;
+  }
+
+  .payment-filter {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  .payment-filter h2 {
+    font-size: 1.1rem;
+  }
+
+  .total-drivers {
+    font-size: 0.9rem;
   }
 
   .payment-table th,
   .payment-table td {
-    padding: 8px 10px;
-    font-size: 0.9rem; /* Slightly smaller for zoom */
-    min-width: 60px; /* Further reduce min-width */
+    padding: 4px 5px;
+    font-size: 0.65rem;
+    min-width: 20px;
   }
 
-  .payment-table th:nth-child(2),
-  .payment-table td:nth-child(2) {
-    min-width: 120px;
+  .payment-table th:last-child,
+  .payment-table td:last-child {
+    min-width: 50px;
+  }
+
+  .payment-table th:nth-child(5), /* A compte */
+  .payment-table td:nth-child(5),
+  .payment-table th:nth-child(7), /* Déductions */
+  .payment-table td:nth-child(7) {
+    display: none;
   }
 
   .action-btn {
-    padding: 8px 12px;
-    font-size: 0.85rem;
+    padding: 1px 2px;
+    font-size: 0.5rem;
   }
 
-  .filter-controls {
-    flex-wrap: wrap;
-    gap: 6px;
+  .actions-container {
+    max-width: 45px;
   }
 
-  .header-actions {
-    flex-wrap: wrap;
+  .modal-content {
+    max-width: 95%;
+    padding: 10px;
+  }
+
+  .modal-header h3 {
+    font-size: 1.2rem;
+  }
+
+  .form-group label {
+    font-size: 0.8rem;
+  }
+
+  .form-group input {
+    font-size: 0.8rem;
+    padding: 5px 6px;
+  }
+
+  .driver-payment-password-title {
+    font-size: 1.5rem;
+  }
+
+  .driver-payment-password-text {
+    font-size: 0.9rem;
+  }
+
+  .driver-payment-password-input {
+    max-width: 100%;
+  }
+
+  .driver-payment-password-buttons {
+    flex-direction: column;
     gap: 8px;
   }
 
-  .history-edit-btn,
-  .history-delete-btn {
+  .driver-payment-password-submit,
+  .driver-payment-password-cancel {
+    width: 100%;
     padding: 6px 10px;
     font-size: 0.8rem;
+  }
+}
+
+/* Very small screens (e.g., <=480px) */
+@media (max-width: 480px), (max-zoom: 3) {
+  .fleet-title {
+    font-size: 1.3rem;
+  }
+
+  .sidebar {
+    padding: 12px;
+  }
+
+  .sidebar nav ul li a {
+    font-size: 0.9rem;
+    padding: 6px 10px;
+  }
+
+  .dashboard-content {
+    padding: 12px;
+  }
+
+  .dashboard-header h1 {
+    font-size: 1.4rem;
+  }
+
+  .last-updated {
+    font-size: 0.8rem;
+  }
+
+  .payment-filter h2 {
+    font-size: 1rem;
+  }
+
+  .total-drivers {
+    font-size: 0.85rem;
+  }
+
+  .search-bar,
+  .month-filter {
+    font-size: 0.8rem;
+    padding: 5px 6px;
+  }
+
+  .payment-table th,
+  .payment-table td {
+    padding: 3px 4px;
+    font-size: 0.6rem;
+    min-width: 15px;
+  }
+
+  .payment-table th:last-child,
+  .payment-table td:last-child {
+    min-width: 40px;
+  }
+
+  .payment-table th:nth-child(4), /* Salaire de Base */
+  .payment-table td:nth-child(4) {
+    display: none;
+  }
+
+  .action-btn {
+    padding: 1px 2px;
+    font-size: 0.45rem;
+  }
+
+  .actions-container {
+    max-width: 35px;
   }
 
   .add-driver,
   .refresh-btn {
-    padding: 10px 20px;
-    font-size: 0.95rem;
+    padding: 5px 8px;
+    font-size: 0.8rem;
+  }
+
+  .modal-content {
+    max-width: 98%;
+    padding: 8px;
+  }
+
+  .modal-header h3 {
+    font-size: 1.1rem;
+  }
+
+  .close-modal-btn {
+    font-size: 1.3rem;
+  }
+
+  .form-group label {
+    font-size: 0.75rem;
+  }
+
+  .form-group input {
+    font-size: 0.75rem;
+    padding: 4px 5px;
+  }
+
+  .save-btn,
+  .close-btn {
+    font-size: 0.8rem;
+    padding: 5px 8px;
+  }
+
+  .history-edit-btn,
+  .history-delete-btn {
+    padding: 1px 3px;
+    font-size: 0.55rem;
+  }
+
+  .driver-payment-password-container {
+    padding: 12px;
+  }
+
+  .driver-payment-password-title {
+    font-size: 1.3rem;
+  }
+
+  .driver-payment-password-text {
+    font-size: 0.85rem;
+  }
+
+  .driver-payment-password-input {
+    font-size: 0.8rem;
+    padding: 5px 6px;
+  }
+
+  .driver-payment-error-message {
+    font-size: 0.75rem;
+    padding: 6px;
   }
 }
 
