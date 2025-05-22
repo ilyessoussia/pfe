@@ -26,7 +26,7 @@ const TruckDetails = () => {
       
       const { data: fuelData, error: fuelError } = await supabase
         .from('fuel_history')
-        .select('*')
+        .select('id, truck_id, raw_date, kilometers, liters, fuel_price, cost, distance_traveled, consumption, cost_per_km, liters_per_100km, voyage')
         .eq('truck_id', id)
         .order('raw_date', { ascending: false });
       
@@ -55,6 +55,7 @@ const TruckDetails = () => {
         consumption: parseFloat(record.consumption) || 0,
         costPerKm: parseFloat(record.cost_per_km) || 0,
         litersPer100km: parseFloat(record.liters_per_100km) || 0,
+        voyage: typeof record.voyage === 'string' ? record.voyage : "", // Include voyage
       }));
       
       console.log("Processed fuel data:", formattedFuelData);
@@ -435,8 +436,6 @@ const TruckDetails = () => {
         {activeTab === "apercu" && truck && (
           <div className="overview-content">
             <section className="truck-info">
-              
-
               <div className="truck-details">
                 <div className="section-header">
                   <h3>🚛 Détails du Camion</h3>

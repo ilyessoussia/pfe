@@ -44,7 +44,6 @@ const FuelHistoryTab = ({ fuelHistory, onFuelAdded }) => {
         console.warn(
           `Negative distance detected: current=${kilometers}, previous=${prevKilometers}`
         );
-        // Use absolute value to allow display, but flag for data correction
         distanceTraveled = Math.abs(distanceTraveled);
       }
     }
@@ -62,6 +61,16 @@ const FuelHistoryTab = ({ fuelHistory, onFuelAdded }) => {
   // Process history for grouping
   useEffect(() => {
     console.log("FuelHistoryTab received fuelHistory:", JSON.stringify(fuelHistory, null, 2));
+    // Log entries with missing or undefined voyage
+    fuelHistory?.forEach((entry, index) => {
+      if (!entry?.voyage) {
+        console.warn(
+          `Entry at index ${index} (ID: ${entry?.id}) has missing or undefined voyage. ` +
+          `Expected a string value from database. Entry:`,
+          JSON.stringify(entry, null, 2)
+        );
+      }
+    });
     if (fuelHistory && fuelHistory.length > 0) {
       const validHistory = fuelHistory
         .map((entry, index) => {
@@ -85,7 +94,7 @@ const FuelHistoryTab = ({ fuelHistory, onFuelAdded }) => {
             cost_per_km: entry.cost_per_km != null ? parseFloat(entry.cost_per_km) : 0,
             liters_per_100km:
               entry.liters_per_100km != null ? parseFloat(entry.liters_per_100km) : 0,
-            voyage: entry.voyage || "non spécifié", // Added voyage field
+            voyage: typeof entry.voyage === 'string' ? entry.voyage : "",
           };
           if (!normalizedEntry.raw_date) {
             console.warn(`Entry at index ${index} missing date:`, normalizedEntry);
@@ -94,7 +103,6 @@ const FuelHistoryTab = ({ fuelHistory, onFuelAdded }) => {
           return normalizedEntry;
         })
         .filter((entry) => entry != null)
-        // Sort by raw_date ascending
         .sort((a, b) => {
           const dateA = parseDate(a.raw_date);
           const dateB = parseDate(b.raw_date);
@@ -115,7 +123,6 @@ const FuelHistoryTab = ({ fuelHistory, onFuelAdded }) => {
         const year = entryDate.getFullYear();
         const monthYearKey = `${month}/${year}`;
         const previousEntry = index > 0 ? array[index - 1] : null;
-        // Prefer database metrics if distance_traveled is valid
         const metrics =
           entry.distance_traveled > 0
             ? {
@@ -162,7 +169,7 @@ const FuelHistoryTab = ({ fuelHistory, onFuelAdded }) => {
           consumption: metrics.consumption,
           costPerKm: metrics.costPerKm,
           litersPer100km: metrics.litersPer100km,
-          voyage: entry.voyage, // Added voyage field
+          voyage: entry.voyage || "Non spécifié",
         });
         grouped[monthYearKey].totalCost += parseFloat(entry.cost) || 0;
         grouped[monthYearKey].totalMileage += parseFloat(metrics.distanceTraveled) || 0;
@@ -199,7 +206,7 @@ const FuelHistoryTab = ({ fuelHistory, onFuelAdded }) => {
       fuel_price: entry.fuel_price != null ? parseFloat(entry.fuel_price) : 1.898,
       cost: entry.cost != null ? parseFloat(entry.cost) : 0,
       raw_date: entry.raw_date || entry.rawDate || new Date().toISOString().split('T')[0],
-      voyage: entry.voyage || "non spécifié", // Added voyage field
+      voyage: typeof entry.voyage === 'string' ? entry.voyage : "",
     };
 
     setEditRefuel({
@@ -210,7 +217,7 @@ const FuelHistoryTab = ({ fuelHistory, onFuelAdded }) => {
       fuelPrice: safeEntry.fuel_price.toString(),
       cost: safeEntry.cost.toString(),
       date: safeEntry.raw_date,
-      voyage: safeEntry.voyage, // Added voyage field
+      voyage: safeEntry.voyage,
     });
     setShowEditModal(true);
     setError("");
@@ -288,7 +295,7 @@ const FuelHistoryTab = ({ fuelHistory, onFuelAdded }) => {
         cost_per_km: parseFloat(metrics.costPerKm),
         liters_per_100km: parseFloat(metrics.litersPer100km),
         updated_at: new Date().toISOString(),
-        voyage: editRefuel.voyage || "non spécifié", // Added voyage field
+        voyage: editRefuel.voyage || "",
       };
       const { error } = await supabase
         .from('fuel_history')
@@ -357,7 +364,7 @@ const FuelHistoryTab = ({ fuelHistory, onFuelAdded }) => {
                                 Distance: +{parseFloat(entry.distanceTraveled).toFixed(0)} km
                               </p>
                             )}
-                            <p className="voyage">Voyage: {entry.voyage}</p> {/* Added voyage display */}
+                            <p className="voyage">Voyage: {entry.voyage}</p>
                           </div>
                           <div className="fuel-consumption">
                             <h4>{parseFloat(entry.consumption)?.toFixed(2) || "N/A"} km/L</h4>
