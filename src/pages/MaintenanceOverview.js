@@ -12,6 +12,7 @@ const MaintenanceOverview = () => {
   const [success, setSuccess] = useState(null);
   const [filter, setFilter] = useState("scheduled");
   const [showConfirmComplete, setShowConfirmComplete] = useState(null);
+  const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
     const fetchData = async () => {
@@ -129,10 +130,18 @@ const MaintenanceOverview = () => {
     }
   };
 
-  const filteredMaintenances =
-    filter === "all"
-      ? maintenances
-      : maintenances.filter((m) => m.status === filter);
+  const filteredMaintenances = maintenances
+    .filter((m) => filter === "all" || m.status === filter)
+    .filter((m) => {
+      if (!searchQuery) return true;
+      const vehicle = m.vehicleType === "Camion"
+        ? trucks.find((t) => t.id === m.vehicleId)
+        : trailers.find((t) => t.id === m.vehicleId);
+      return (
+        m.type.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (vehicle?.immatriculation || "").toLowerCase().includes(searchQuery.toLowerCase())
+      );
+    });
 
   return (
     <div className="maintenance-overview-container">
@@ -169,8 +178,8 @@ const MaintenanceOverview = () => {
               <Link to="/driver-payments">💰 Gestion des salaires </Link>
             </li>
             <li>
-                          <Link to="/chatbot">🤖 Système de Reporting</Link>
-                        </li>
+              <Link to="/chatbot">🤖 Système de Reporting</Link>
+            </li>
           </ul>
         </nav>
         <div className="maintenance-overview-sidebar-footer">
@@ -189,16 +198,23 @@ const MaintenanceOverview = () => {
 
         <section className="maintenance-overview-filter-section">
           <h2>Maintenances</h2>
+          <div className="maintenance-overview-search-bar">
+            <input
+              type="text"
+              placeholder="Rechercher par type ou immatriculation..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              aria-label="Rechercher les maintenances"
+            />
+          </div>
           <div className="maintenance-overview-filter-buttons">
-            {[ "scheduled", "completed"].map((status) => (
+            {["scheduled", "completed"].map((status) => (
               <button
                 key={status}
                 className={filter === status ? "active" : ""}
                 onClick={() => setFilter(status)}
               >
-                {status === "scheduled"
-                  ? "Planifiées"
-                  : "Terminées"}
+                {status === "scheduled" ? "Planifiées" : "Terminées"}
               </button>
             ))}
           </div>
@@ -222,9 +238,11 @@ const MaintenanceOverview = () => {
                         : "status-completed"
                     }`}
                   >
+                    <div className="vehicle-immatriculation">
+                      {vehicle?.immatriculation || "Inconnu"}
+                    </div>
                     <h3>{maintenance.type}</h3>
                     <p><strong>Type:</strong> {maintenance.vehicleType}</p>
-                    <p><strong>{maintenance.vehicleType}:</strong> {vehicle?.immatriculation || "Inconnu"}</p>
                     <p><strong>Date:</strong> {maintenance.date}</p>
                     <p><strong>Kilométrage:</strong> {maintenance.kilometrage}</p>
                     <p><strong>Technicien:</strong> {maintenance.technicien}</p>

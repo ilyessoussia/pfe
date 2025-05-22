@@ -193,7 +193,7 @@ header h1 {
 /* Edit button styling */
 .edit-btn {
   padding: 0.4rem 0.8rem;
-  background-color: var(--color-button-background);
+  background-color: var(--color-black);
   border: 2px solid var(--color-primary-light);
   border-radius: 6px;
   cursor: pointer;

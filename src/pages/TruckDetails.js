@@ -55,7 +55,7 @@ const TruckDetails = () => {
         consumption: parseFloat(record.consumption) || 0,
         costPerKm: parseFloat(record.cost_per_km) || 0,
         litersPer100km: parseFloat(record.liters_per_100km) || 0,
-        voyage: typeof record.voyage === 'string' ? record.voyage : "", // Include voyage
+        voyage: typeof record.voyage === 'string' ? record.voyage : "",
       }));
       
       console.log("Processed fuel data:", formattedFuelData);
@@ -246,7 +246,7 @@ const TruckDetails = () => {
         .from('trucks')
         .update({
           numero_serie: editedTruck.numeroSerie || null,
-          immatriculation: editedTruck.immatriculation,
+          immatriculation: editedTruck.immatriculation || null,
           modele: editedTruck.modele,
           annee_fabrication: editedTruck.anneeFabrication ? parseInt(editedTruck.anneeFabrication) : null,
           type_carburant: editedTruck.typeCarburant,
@@ -452,6 +452,15 @@ const TruckDetails = () => {
                 {isEditing && editSection === "truck" ? (
                   <form className="edit-form">
                     <div className="form-group">
+                      <label>Immatriculation:</label>
+                      <input 
+                        type="text" 
+                        name="immatriculation" 
+                        value={editedTruck?.immatriculation || ""} 
+                        onChange={handleInputChange}
+                      />
+                    </div>
+                    <div className="form-group">
                       <label>Modèle:</label>
                       <input 
                         type="text" 
@@ -572,6 +581,7 @@ const TruckDetails = () => {
                   </form>
                 ) : (
                   <>
+                    <p><strong>Immatriculation:</strong> {truck.immatriculation || "Non spécifié"}</p>
                     <p><strong>Modèle:</strong> {truck.modele || "Non spécifié"}</p>
                     <p><strong>Année:</strong> {truck.anneeFabrication || "Non spécifiée"}</p>
                     <p><strong>VIN:</strong> {truck.numeroSerie || "Non spécifié"}</p>
@@ -713,7 +723,6 @@ const TruckDetails = () => {
               </div>
             </section>
           </div>
-          
         )}
 
         {activeTab === "carburant" && (

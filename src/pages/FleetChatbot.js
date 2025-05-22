@@ -33,8 +33,17 @@ const FleetChatbot = () => {
   // Fetch trucks and drivers for dropdowns
   useEffect(() => {
     const fetchData = async () => {
-      const { data: truckData } = await supabase.from("trucks").select("immatriculation").order("immatriculation");
-      const { data: driverData } = await supabase.from("drivers").select("name").order("name");
+      const { data: truckData, error: truckError } = await supabase
+        .from("trucks")
+        .select("id, immatriculation")
+        .order("immatriculation");
+      if (truckError) console.error("Truck fetch error:", truckError);
+      console.log("Fetched trucks:", truckData);
+      const { data: driverData, error: driverError } = await supabase
+        .from("drivers")
+        .select("name")
+        .order("name");
+      if (driverError) console.error("Driver fetch error:", driverError);
       setTrucks(truckData || []);
       setDrivers(driverData || []);
     };
@@ -815,6 +824,120 @@ const FleetChatbot = () => {
         return `Historique pour ${driver.name} (${periodLabel}):\n${tableHeader}${tableRows}${tableFooter}`;
       },
     },
+    daily_fuel_consumption: {
+      handler: async (params, isChart) => {
+        const date = params.dates[0] ? normalizeDate(params.dates[0]) : normalizeDate(new Date());
+        
+        // Fetch fuel history entries for the selected date
+        const { data: fuelData, error: fuelError } = await supabase
+          .from("fuel_history")
+          .select("id, raw_date, liters, cost, distance_traveled, liters_per_100km, voyage, truck_id")
+          .eq("raw_date", date)
+          .order("raw_date", { ascending: false });
+        if (fuelError) throw fuelError;
+
+        console.log("Fuel history truck_ids:", fuelData?.map(entry => entry.truck_id) || []);
+
+        if (!fuelData || fuelData.length === 0) {
+          return `Aucun plein de carburant trouvé pour le ${date}.`;
+        }
+
+        // Create a map of truck_id to immatriculation for quick lookup
+        const truckMap = new Map(trucks.map(truck => [truck.id, truck.immatriculation]));
+        console.log("Truck map:", Array.from(truckMap.entries()));
+
+        // Format entries, mapping truck_id to immatriculation
+        const formattedEntries = fuelData.map((entry) => ({
+          immatriculation: truckMap.get(entry.truck_id) || "Inconnu",
+          date: new Date(entry.raw_date).toLocaleDateString("fr-FR"),
+          liters: parseFloat(entry.liters) || 0,
+          cost: parseFloat(entry.cost) || 0,
+          distanceTraveled: parseFloat(entry.distance_traveled) || 0,
+          litersPer100km: parseFloat(entry.liters_per_100km) || 0,
+          voyage: typeof entry.voyage === "string" ? entry.voyage : "Non spécifié",
+        }));
+
+        // Log entries to check if any valid trucks were found
+        console.log("Formatted entries:", formattedEntries);
+
+        if (formattedEntries.every(entry => entry.immatriculation === "Inconnu")) {
+          return `Aucun camion valide trouvé pour le ${date}. Vérifiez que les truck_id dans fuel_history correspondent aux id dans trucks.`;
+        }
+
+        const tableHeader = `
+<table class="report-table">
+  <thead>
+    <tr>
+      <th>Camion</th>
+      <th>Date</th>
+      <th>Litres</th>
+      <th>Coût (TND)</th>
+      <th>Distance (km)</th>
+      <th>L/100km</th>
+      <th>Voyage</th>
+    </tr>
+  </thead>
+  <tbody>
+`;
+        const tableRows = formattedEntries
+          .map(
+            (entry) => `
+    <tr>
+      <td>${entry.immatriculation}</td>
+      <td>${entry.date}</td>
+      <td>${entry.liters.toFixed(2)}</td>
+      <td>${entry.cost.toFixed(2)}</td>
+      <td>${entry.distanceTraveled.toFixed(2)}</td>
+      <td>${entry.litersPer100km.toFixed(2)}</td>
+      <td>${entry.voyage}</td>
+    </tr>
+`
+          )
+          .join("");
+        const tableFooter = `
+  </tbody>
+</table>
+`;
+
+        return `Consommation quotidienne de carburant pour ${date}:\n${tableHeader}${tableRows}${tableFooter}`;
+
+        /* 
+        // Alternative: Use this query after adding foreign key to fuel_history.truck_id
+        const { data: fuelData, error: fuelError } = await supabase
+          .from("fuel_history")
+          .select(`
+            id,
+            raw_date,
+            liters,
+            cost,
+            distance_traveled,
+            liters_per_100km,
+            voyage,
+            truck_id,
+            trucks (
+              immatriculation
+            )
+          `)
+          .eq("raw_date", date)
+          .order("raw_date", { ascending: false });
+        if (fuelError) throw fuelError;
+
+        if (!fuelData || fuelData.length === 0) {
+          return `Aucun plein de carburant trouvé pour le ${date}.`;
+        }
+
+        const formattedEntries = fuelData.map((entry) => ({
+          immatriculation: entry.trucks?.immatriculation || "Inconnu",
+          date: new Date(entry.raw_date).toLocaleDateString("fr-FR"),
+          liters: parseFloat(entry.liters) || 0,
+          cost: parseFloat(entry.cost) || 0,
+          distanceTraveled: parseFloat(entry.distance_traveled) || 0,
+          litersPer100km: parseFloat(entry.liters_per_100km) || 0,
+          voyage: typeof entry.voyage === "string" ? entry.voyage : "Non spécifié",
+        }));
+        */
+      },
+    },
   };
 
   // Handle report submission
@@ -834,13 +957,13 @@ const FleetChatbot = () => {
       driverName: selectedDriver,
     };
 
-    const userMessage = `Rapport demandé: ${reportType}${selectedTruck ? ` pour camion ${selectedTruck}` : ""}${selectedDriver ? ` pour chauffeur ${selectedDriver}` : ""}${selectedDate ? ` pour ${selectedDate}` : selectedMonth ? ` pour ${selectedMonth}` : ""}${isChart ? " (graphique)" : ""}`;
+    const userMessage = `Rapport demandé: ${reportType}${selectedTruck ? ` pour camion ${selectedTruck}` : ""}${selectedDriver ? ` pour chauffeur ${selectedDriver}` : ""}${selectedDate ? ` pour ${selectedDate}` : selectedMonth ? ` pour ${selectedMonth}` : ""}${isChart && reportType !== "daily_fuel_consumption" ? " (graphique)" : ""}`;
     let response = "Rapport non disponible.";
 
     try {
       const handler = reportHandlers[reportType]?.handler;
       if (handler) {
-        response = await handler(params, isChart);
+        response = await handler(params, isChart && reportType !== "daily_fuel_consumption");
       }
       setMessages((prev) => [
         ...prev,
@@ -985,9 +1108,10 @@ const FleetChatbot = () => {
                 <option value="truck_fuel_summary">Résumé Carburant Camion</option>
                 <option value="driver_salary_summary">Résumé Salaire Chauffeur</option>
                 <option value="driver_payment_history">Historique Paiements Chauffeur</option>
+                <option value="daily_fuel_consumption">Consommation Quotidienne Carburant</option>
               </select>
             </div>
-            {(reportType === "cash_summary" || reportType === "entry_list") && (
+            {(reportType === "cash_summary" || reportType === "entry_list" || reportType === "daily_fuel_consumption") && (
               <div className="chatbot-report-form-group">
                 <label htmlFor="date">Date:</label>
                 <input
@@ -1059,17 +1183,19 @@ const FleetChatbot = () => {
                 </select>
               </div>
             )}
-            <div className="chatbot-report-form-group chatbot-checkbox-group">
-              <label className="chart-checkbox-label">
-                <input
-                  type="checkbox"
-                  checked={isChart}
-                  onChange={(e) => setIsChart(e.target.checked)}
-                  className="chart-checkbox"
-                />
-                Afficher en graphique
-              </label>
-            </div>
+            {reportType !== "daily_fuel_consumption" && (
+              <div className="chatbot-report-form-group chatbot-checkbox-group">
+                <label className="chart-checkbox-label">
+                  <input
+                    type="checkbox"
+                    checked={isChart}
+                    onChange={(e) => setIsChart(e.target.checked)}
+                    className="chart-checkbox"
+                  />
+                  Afficher en graphique
+                </label>
+              </div>
+            )}
             <div className="chatbot-report-buttons">
               <button type="submit" disabled={loading}>
                 {loading ? "..." : "Générer Rapport"}
